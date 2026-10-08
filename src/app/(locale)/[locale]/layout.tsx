@@ -25,6 +25,7 @@ export async function generateMetadata({
     verification: {
       other: {
         "msvalidate.01": "8D9A6810D64EB8733A61244AF6C21A33",
+        "google-adsense-account": "ca-pub-8033378933696766",
       },
     },
     icons: {

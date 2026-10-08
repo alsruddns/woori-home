@@ -27,7 +27,7 @@ test("service links and featured detail links use locale-first URLs", () => {
 
 test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
   assert.match(site, /https:\/\/www\.woori\.today/);
-  assert.match(layout, /canonical, languages: \{ ko:/);
+  assert.match(layout, /canonical,\s*languages:\s*\{\s*ko:/);
   assert.match(layout, /openGraph: \{[^}]*url: canonical/s);
   assert.match(home, /"@type": "WebSite"/);
   assert.match(home, /"@context": "https:\/\/schema\.org"/);
