@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import { isLocale, localeNames, locales, messages, type Locale } from "@/lib/site";
 import { calculators, tools } from "@/lib/site";
 
@@ -18,7 +19,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     <header className="site-header"><div className="header-inner">
-      <a className="brand" href={`/${locale}`} aria-label="WOORI.TODAY home"><span className="brand-mark">W</span><span>WOORI<span className="brand-dot">.</span>TODAY</span></a>
+      <a className="brand" href={`/${locale}`} aria-label="WOORI.TODAY home"><Image className="brand-logo" src="/woori-logo.png" alt="" width={419} height={99} priority /></a>
       <nav className="main-nav" aria-label="Primary navigation"><a href={`/${locale}`}>{copy.home}</a><a href={serviceHrefs.money(locale)}>{copy.money}</a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}</a><a href={serviceHrefs.tools(locale)}>{copy.tools}</a></nav>
       <nav className="language-nav" aria-label="Language">{locales.map((item) => <a key={item} href={`/${item}`} lang={item} aria-current={item === locale ? "page" : undefined} title={localeNames[item]}>{item.toUpperCase()}</a>)}</nav>
     </div></header>
@@ -30,6 +31,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <section className="tools-section"><div className="section-wrap"><div className="section-heading"><div><span className="section-kicker">04 / ONLINE TOOLS</span><h2>{copy.toolsHeading}</h2><p>{copy.toolsBody}</p></div><a className="text-link heading-link" href={serviceHrefs.tools(locale)}>{copy.moreTools}<span aria-hidden="true">→</span></a></div><div className="catalog-grid">{tools.map((item) => <a className="catalog-card tool-card" key={item.slug} href={`/${locale}/tools/${item.slug}`}><span className="catalog-category">{copy.groups[item.category as keyof typeof copy.groups]}</span><span className="catalog-name">{item.names[locale]}</span><span className="catalog-arrow" aria-hidden="true">↗</span></a>)}</div></div></section>
       <section className="closing-cta section-wrap"><div><span className="section-kicker">WOORI.TODAY</span><h2>{copy.eyebrow}</h2></div><div className="closing-links"><a href={serviceHrefs.money(locale)}>{copy.money}<span>↗</span></a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}<span>↗</span></a><a href={serviceHrefs.tools(locale)}>{copy.tools}<span>↗</span></a></div></section>
     </main>
-    <footer className="site-footer"><div className="footer-main section-wrap"><div><a className="brand footer-brand" href={`/${locale}`}><span className="brand-mark">W</span><span>WOORI<span className="brand-dot">.</span>TODAY</span></a><p>{copy.footer}</p></div><div className="footer-services"><span>{copy.featured}</span><a href={serviceHrefs.money(locale)}>{copy.money}</a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}</a><a href={serviceHrefs.tools(locale)}>{copy.tools}</a></div></div><div className="footer-bottom section-wrap"><span>© {new Date().getFullYear()} WOORI.TODAY</span><nav aria-label="Language">{locales.map((item) => <a key={item} href={`/${item}`} lang={item} aria-current={item === locale ? "page" : undefined}>{localeNames[item]}</a>)}</nav><span className="footer-domain">www.woori.today</span></div></footer>
+    <footer className="site-footer"><div className="footer-main section-wrap"><div><a className="brand footer-brand" href={`/${locale}`} aria-label="WOORI.TODAY home"><Image className="brand-logo" src="/woori-logo.png" alt="" width={419} height={99} /></a><p>{copy.footer}</p></div><div className="footer-services"><span>{copy.featured}</span><a href={serviceHrefs.money(locale)}>{copy.money}</a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}</a><a href={serviceHrefs.tools(locale)}>{copy.tools}</a></div></div><div className="footer-bottom section-wrap"><span>© {new Date().getFullYear()} WOORI.TODAY</span><nav aria-label="Language">{locales.map((item) => <a key={item} href={`/${item}`} lang={item} aria-current={item === locale ? "page" : undefined}>{localeNames[item]}</a>)}</nav><span className="footer-domain">www.woori.today</span></div></footer>
   </>;
 }
