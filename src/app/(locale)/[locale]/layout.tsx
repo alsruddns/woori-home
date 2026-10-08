@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Analytics from "../../analytics";
 import { isLocale, locales, messages, origin } from "@/lib/site";
 import "../../globals.css";
 
@@ -69,7 +70,7 @@ export default async function LocaleLayout({
   if (!isLocale(locale)) notFound();
   return (
     <html lang={locale}>
-      <body>{children}</body>
+      <body>{children}<Analytics /></body>
     </html>
   );
 }
