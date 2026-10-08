@@ -13,6 +13,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const canonical = `${origin}/${locale}`;
   return {
     metadataBase: new URL(origin), title: content.title, description: content.description,
+    icons: {
+      icon: "/_assets/portal/icon.png",
+      apple: "/_assets/portal/apple-icon.png",
+    },
     alternates: { canonical, languages: { ko: `${origin}/ko`, en: `${origin}/en`, ja: `${origin}/ja`, zh: `${origin}/zh`, "x-default": `${origin}/ko` } },
     openGraph: { type: "website", siteName: "WOORI.TODAY", title: content.title, description: content.description, url: canonical, locale: { ko: "ko_KR", en: "en_US", ja: "ja_JP", zh: "zh_CN" }[locale] },
     twitter: { card: "summary", title: content.title, description: content.description },
