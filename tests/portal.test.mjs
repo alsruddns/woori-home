@@ -7,6 +7,8 @@ const home = await readFile(new URL("../src/app/(locale)/[locale]/page.tsx", imp
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const robots = await readFile(new URL("../src/app/robots.ts", import.meta.url), "utf8");
+const privacyPage = await readFile(new URL("../src/app/(locale)/[locale]/privacy/page.tsx", import.meta.url), "utf8");
+const privacyCopy = await readFile(new URL("../src/lib/privacy.ts", import.meta.url), "utf8");
 
 test("portal defines all supported locales and localized home content", () => {
   for (const locale of ["ko", "en", "ja", "zh"]) {
@@ -35,10 +37,22 @@ test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
   assert.doesNotMatch(layout + home, /http:\/\/woori\.today/);
 });
 
-test("portal sitemap contains only the four locale home pages", () => {
+test("portal sitemap contains locale home and privacy pages with matching alternates", () => {
   assert.match(sitemap, /url: `\$\{origin\}\/\$\{locale\}`/);
-  assert.match(sitemap, /locales\.map/);
+  assert.match(sitemap, /url: `\$\{origin\}\/\$\{locale\}\/privacy`/);
+  assert.match(sitemap, /alternates\("\/privacy"\)/);
+  assert.match(sitemap, /locales\.flatMap/);
+  assert.match(sitemap, /flatMap/);
   assert.doesNotMatch(sitemap, /money|calculators|tools/);
+});
+
+test("localized privacy pages have canonical, hreflang, content, and MoneyBook policy links", () => {
+  for (const locale of ["ko", "en", "ja", "zh"]) assert.match(privacyCopy, new RegExp(`\\b${locale}: \\{`));
+  assert.match(privacyPage, /canonical, languages: alternates\("\/privacy"\)\.languages/);
+  assert.match(privacyPage, /\$\{locale\}\/money\/privacy/);
+  assert.match(privacyCopy, /Consent Mode/);
+  assert.match(privacyCopy, /Google Analytics 4/);
+  assert.match(privacyCopy, /Google AdSense/);
 });
 
 test("robots lists all four production sitemap endpoints", () => {
