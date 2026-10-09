@@ -5,10 +5,12 @@ import { readFile } from "node:fs/promises";
 const site = await readFile(new URL("../src/lib/site.ts", import.meta.url), "utf8");
 const home = await readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8");
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
+const rootLayout = await readFile(new URL("../src/app/(root)/layout.tsx", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const robots = await readFile(new URL("../src/app/robots.ts", import.meta.url), "utf8");
 const privacyPage = await readFile(new URL("../src/app/(locale)/[locale]/privacy/page.tsx", import.meta.url), "utf8");
 const privacyCopy = await readFile(new URL("../src/lib/privacy.ts", import.meta.url), "utf8");
+const analytics = await readFile(new URL("../src/app/analytics.tsx", import.meta.url), "utf8");
 
 test("portal defines all supported locales and localized home content", () => {
   for (const locale of ["ko", "en", "ja", "zh"]) {
@@ -53,6 +55,15 @@ test("localized privacy pages have canonical, hreflang, content, and MoneyBook p
   assert.match(privacyCopy, /Consent Mode/);
   assert.match(privacyCopy, /Google Analytics 4/);
   assert.match(privacyCopy, /Google AdSense/);
+});
+
+test("shared analytics component loads AdSense once alongside GA4 on each root layout", () => {
+  assert.match(analytics, /id="google-adsense"/);
+  assert.ok(analytics.includes("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8033378933696766"));
+  assert.match(analytics, /crossOrigin="anonymous"/);
+  assert.equal((analytics.match(/id="google-adsense"/g) ?? []).length, 1);
+  assert.equal((layout.match(/<Analytics\s*\/>/g) ?? []).length, 1);
+  assert.equal((rootLayout.match(/<Analytics\s*\/>/g) ?? []).length, 1);
 });
 
 test("robots lists all four production sitemap endpoints", () => {
