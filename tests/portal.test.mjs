@@ -43,6 +43,7 @@ test("all locale dictionaries, legal pages, and service names are complete witho
     const missing = baseKeys.filter((key) => !(key in home));
     if (missing.length) errors.push(`${locale}: home keys ${missing.join(", ")}`);
     if (!notFoundData.notFoundMessages[locale]) errors.push(`${locale}: missing 404 copy`);
+    if (!siteData.newTabLabels[locale]) errors.push(`${locale}: missing new-tab accessibility label`);
     if (!siteData.uiLabels[locale]?.language || !siteData.uiLabels[locale]?.primaryNav) errors.push(`${locale}: missing accessibility labels`);
     if (!siteData.sectionLabels[locale]?.calculator || !siteData.sectionLabels[locale]?.tools) errors.push(`${locale}: missing service section labels`);
     for (const [kind, dictionary, count] of [["privacy", privacyData.privacyContent, 10], ["terms", termsData.termsContent, 13]]) {
@@ -103,8 +104,17 @@ test("featured services lead the home page and open locale-preserving service li
   assert.ok(headerPosition >= 0 && headerPosition < servicesPosition);
   assert.ok(servicesPosition < heroPosition && heroPosition < moneySectionPosition);
   assert.match(home, /const serviceHrefs = \{ money: \(locale: Locale\) => `\/\$\{locale\}\/money`, calculators: \(locale: Locale\) => `\/\$\{locale\}\/calculators`, tools: \(locale: Locale\) => `\/\$\{locale\}\/tools` \}/);
-  assert.match(home, /<a className="text-link" href=\{service\.href\} target="_blank" rel="noopener noreferrer" aria-label=\{/);
+  assert.match(home, /<a className=\{`\$\{service\.className\} service-card-link`\} href=\{service\.href\} key=\{service\.key\} target="_blank" rel="noopener noreferrer" aria-label=\{/);
   assert.match(home, /newTabLabels\[locale\]/);
+  assert.match(home, /<h2 id="services-heading">\{copy\.featured\}<\/h2>/);
+  assert.doesNotMatch(home, /01 \/ WOORI\.TODAY/);
+  const cardsStart = home.indexOf("{services.map((service, index) =>");
+  const cardsEnd = home.indexOf(")}</div></section>", cardsStart);
+  assert.ok(cardsStart >= 0 && cardsEnd > cardsStart, "featured card list should render");
+  const cardMarkup = home.slice(cardsStart, cardsEnd);
+  assert.equal((cardMarkup.match(/<a\b/g) ?? []).length, 1, "each repeated card template has exactly one link");
+  assert.doesNotMatch(cardMarkup, /<article\b|<button\b|<a\b.*<a\b/s, "service cards must not contain nested interactive elements");
+  assert.match(cardMarkup, /<span className="text-link" aria-hidden="true">\{service\.cta\}/);
   assert.doesNotMatch(home, /className="button button-primary" href=\{serviceHrefs\.money\(locale\)\}/);
   assert.match(site, /export const newTabLabels: Record<Locale, string>/);
 });
