@@ -1,10 +1,48 @@
+import { translatedMessages } from "./translations";
+import { catalogTranslations } from "./catalog-translations";
+
 export const origin = "https://www.woori.today";
-export const locales = ["ko", "en", "ja", "zh"] as const;
-export type Locale = (typeof locales)[number];
+export const localeConfig = [
+  { route: "ko", hreflang: "ko", nativeName: "한국어", ogLocale: "ko_KR" },
+  { route: "en", hreflang: "en", nativeName: "English", ogLocale: "en_US" },
+  { route: "ja", hreflang: "ja", nativeName: "日本語", ogLocale: "ja_JP" },
+  { route: "zh", hreflang: "zh", nativeName: "简体中文", ogLocale: "zh_CN" },
+  { route: "es", hreflang: "es", nativeName: "Español", ogLocale: "es_ES" },
+  { route: "pt-br", hreflang: "pt-BR", nativeName: "Português (Brasil)", ogLocale: "pt_BR" },
+  { route: "de", hreflang: "de", nativeName: "Deutsch", ogLocale: "de_DE" },
+  { route: "fr", hreflang: "fr", nativeName: "Français", ogLocale: "fr_FR" },
+  { route: "vi", hreflang: "vi", nativeName: "Tiếng Việt", ogLocale: "vi_VN" },
+  { route: "id", hreflang: "id", nativeName: "Bahasa Indonesia", ogLocale: "id_ID" },
+  { route: "th", hreflang: "th", nativeName: "ไทย", ogLocale: "th_TH" },
+  { route: "zh-tw", hreflang: "zh-TW", nativeName: "繁體中文", ogLocale: "zh_TW" },
+  { route: "it", hreflang: "it", nativeName: "Italiano", ogLocale: "it_IT" },
+  { route: "nl", hreflang: "nl", nativeName: "Nederlands", ogLocale: "nl_NL" },
+  { route: "hi", hreflang: "hi", nativeName: "हिन्दी", ogLocale: "hi_IN" },
+] as const;
+export const locales = localeConfig.map((item) => item.route);
+export type Locale = (typeof localeConfig)[number]["route"];
 export const isLocale = (value: string): value is Locale => locales.some((locale) => locale === value);
-export const localeNames: Record<Locale, string> = { ko: "한국어", en: "English", ja: "日本語", zh: "中文" };
+export const localeNames = Object.fromEntries(localeConfig.map((item) => [item.route, item.nativeName])) as Record<Locale, string>;
+export const uiLabels: Record<Locale, { language: string; primaryNav: string }> = {
+  ko: { language: "언어 선택", primaryNav: "주요 탐색" }, en: { language: "Choose language", primaryNav: "Primary navigation" }, ja: { language: "言語を選択", primaryNav: "メインナビゲーション" }, zh: { language: "选择语言", primaryNav: "主要导航" },
+  es: { language: "Elegir idioma", primaryNav: "Navegación principal" }, "pt-br": { language: "Escolher idioma", primaryNav: "Navegação principal" }, de: { language: "Sprache auswählen", primaryNav: "Hauptnavigation" }, fr: { language: "Choisir la langue", primaryNav: "Navigation principale" }, vi: { language: "Chọn ngôn ngữ", primaryNav: "Điều hướng chính" }, id: { language: "Pilih bahasa", primaryNav: "Navigasi utama" }, th: { language: "เลือกภาษา", primaryNav: "เมนูหลัก" }, "zh-tw": { language: "選擇語言", primaryNav: "主要導覽" }, it: { language: "Scegli la lingua", primaryNav: "Navigazione principale" }, nl: { language: "Taal kiezen", primaryNav: "Hoofdnavigatie" }, hi: { language: "भाषा चुनें", primaryNav: "मुख्य नेविगेशन" },
+};
+export const sectionLabels: Record<Locale, { calculator: string; tools: string }> = {
+  ko: { calculator: "계산기", tools: "온라인 도구" }, en: { calculator: "Calculator", tools: "Online tools" }, ja: { calculator: "計算ツール", tools: "オンラインツール" }, zh: { calculator: "计算器", tools: "在线工具" },
+  es: { calculator: "Calculadoras", tools: "Herramientas en línea" }, "pt-br": { calculator: "Calculadoras", tools: "Ferramentas online" }, de: { calculator: "Rechner", tools: "Online-Tools" }, fr: { calculator: "Calculatrices", tools: "Outils en ligne" }, vi: { calculator: "Máy tính", tools: "Công cụ trực tuyến" }, id: { calculator: "Kalkulator", tools: "Alat online" }, th: { calculator: "เครื่องคำนวณ", tools: "เครื่องมือออนไลน์" }, "zh-tw": { calculator: "計算機", tools: "線上工具" }, it: { calculator: "Calcolatori", tools: "Strumenti online" }, nl: { calculator: "Calculators", tools: "Online tools" }, hi: { calculator: "कैलकुलेटर", tools: "ऑनलाइन टूल" },
+};
+export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
+export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;
+export const publicPortalPaths = ["", "/privacy", "/terms"] as const;
+export function getLocalePath(pathname: string, locale: Locale) {
+  const segments = pathname.split("/").filter(Boolean);
+  const suffix = segments.slice(1).join("/");
+  const supportedPage = ["", "privacy", "terms"].includes(suffix);
+  return `/${locale}${supportedPage && suffix ? `/${suffix}` : ""}`;
+}
 
 export const messages = {
+  ...translatedMessages,
   ko: {
     title: "WOORI.TODAY | 가계부, 계산기, 온라인 도구",
     description: "공유 가계부, 금융·생활 계산기, 이미지·텍스트·개발 도구를 무료로 이용할 수 있는 생활 서비스 플랫폼.",
@@ -91,9 +129,9 @@ export const messages = {
 } as const;
 
 export type Messages = (typeof messages)[Locale];
-export const alternates = (path = "") => ({ languages: { ko: `${origin}/ko${path}`, en: `${origin}/en${path}`, ja: `${origin}/ja${path}`, zh: `${origin}/zh${path}`, "x-default": `${origin}/ko${path}` } });
+export const alternates = (path = "") => ({ languages: { ...Object.fromEntries(localeConfig.map((item) => [item.hreflang, `${origin}/${item.route}${path}`])), "x-default": `${origin}/ko${path}` } });
 
-export const calculators = [
+const calculatorEntries = [
   { slug: "compound-interest", category: "finance", names: { ko: "복리 계산기", en: "Compound interest", ja: "複利計算", zh: "复利计算器" } },
   { slug: "savings-interest", category: "finance", names: { ko: "적금 이자 계산기", en: "Savings interest", ja: "積立預金の利息", zh: "定期储蓄利息" } },
   { slug: "loan-interest", category: "finance", names: { ko: "대출 이자 계산기", en: "Loan repayment", ja: "ローン返済計算", zh: "贷款还款计算器" } },
@@ -108,7 +146,7 @@ export const calculators = [
   { slug: "dday", category: "life", names: { ko: "D-Day 계산기", en: "D-Day calculator", ja: "D-Day計算", zh: "倒数日计算器" } },
 ];
 
-export const tools = [
+const toolEntries = [
   { slug: "character-count", category: "text", names: { ko: "글자 수 세기", en: "Character counter", ja: "文字数カウント", zh: "字数统计" } },
   { slug: "text-compare", category: "text", names: { ko: "텍스트 비교", en: "Text compare", ja: "テキスト比較", zh: "文本比较" } },
   { slug: "json-formatter", category: "developer", names: { ko: "JSON 정리 도구", en: "JSON formatter", ja: "JSON整形", zh: "JSON 格式化" } },
@@ -122,3 +160,11 @@ export const tools = [
   { slug: "pdf-merge", category: "pdf", names: { ko: "PDF 합치기", en: "Merge PDFs", ja: "PDFを結合", zh: "合并 PDF" } },
   { slug: "pdf-split", category: "pdf", names: { ko: "PDF 페이지 추출", en: "Split PDF", ja: "PDFを分割", zh: "拆分 PDF" } },
 ];
+
+const withLocalizedNames = <T extends { slug: string; names: Record<string, string> }>(entries: T[]) => entries.map((entry) => ({
+  ...entry,
+  names: Object.fromEntries(locales.map((locale) => [locale, catalogTranslations[locale]?.[entry.slug] ?? entry.names[locale] ?? entry.names.en])),
+}));
+
+export const calculators = withLocalizedNames(calculatorEntries);
+export const tools = withLocalizedNames(toolEntries);

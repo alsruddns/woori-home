@@ -1,6 +1,9 @@
 import type { Locale } from "./site";
+import { localizedTerms } from "./legal-translations";
 
-export const termsContent = {
+export type TermsCopy = { title: string; description: string; intro: string; sections: { title: string; body: string }[]; privacyLabel: string; moneyLabel: string; home: string; privacy: string; terms: string; footer: string };
+export const termsContent: Partial<Record<Locale, TermsCopy>> = {
+  ...localizedTerms,
   ko: {
     title: "WOORI.TODAY 이용약관",
     description: "WOORI.TODAY 계산기, 온라인 도구 및 관련 서비스 이용약관",
@@ -87,4 +90,4 @@ export const termsContent = {
     ],
     privacyLabel: "查看隐私政策", moneyLabel: "查看 MoneyBook 使用条款", home: "首页", privacy: "隐私政策", terms: "使用条款", footer: "让日常生活更便利。",
   },
-} satisfies Record<Locale, { title: string; description: string; intro: string; sections: { title: string; body: string }[]; privacyLabel: string; moneyLabel: string; home: string; privacy: string; terms: string; footer: string }>;
+};
