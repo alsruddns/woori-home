@@ -95,6 +95,20 @@ test("service links and featured detail links use locale-first URLs", () => {
   assert.doesNotMatch(home + site, /href=["']\/(?:calculator|tools|money)(?:["'/])/);
 });
 
+test("featured services lead the home page and open locale-preserving service links in new tabs", () => {
+  const headerPosition = home.indexOf('<header className="site-header">');
+  const servicesPosition = home.indexOf('<section className="services section-wrap"');
+  const heroPosition = home.indexOf('<section className="hero">');
+  const moneySectionPosition = home.indexOf('<section className="money-section">');
+  assert.ok(headerPosition >= 0 && headerPosition < servicesPosition);
+  assert.ok(servicesPosition < heroPosition && heroPosition < moneySectionPosition);
+  assert.match(home, /const serviceHrefs = \{ money: \(locale: Locale\) => `\/\$\{locale\}\/money`, calculators: \(locale: Locale\) => `\/\$\{locale\}\/calculators`, tools: \(locale: Locale\) => `\/\$\{locale\}\/tools` \}/);
+  assert.match(home, /<a className="text-link" href=\{service\.href\} target="_blank" rel="noopener noreferrer" aria-label=\{/);
+  assert.match(home, /newTabLabels\[locale\]/);
+  assert.doesNotMatch(home, /className="button button-primary" href=\{serviceHrefs\.money\(locale\)\}/);
+  assert.match(site, /export const newTabLabels: Record<Locale, string>/);
+});
+
 test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
   assert.match(site, /https:\/\/www\.woori\.today/);
   assert.match(layout, /canonical,\s*languages:\s*alternates\(\)\.languages/);
