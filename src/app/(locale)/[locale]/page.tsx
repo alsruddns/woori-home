@@ -5,6 +5,9 @@ import { calculators, tools } from "@/lib/site";
 import { privacyContent } from "@/lib/privacy";
 import { termsContent } from "@/lib/terms";
 import LanguageSelector from "./language-selector";
+import FamilySiteSelect from "./family-site-select";
+import ContactDialog from "./contact-dialog";
+import { familyContactCopy } from "@/lib/family-contact";
 
 const serviceHrefs = { money: (locale: Locale) => `/${locale}/money`, calculators: (locale: Locale) => `/${locale}/calculators`, tools: (locale: Locale) => `/${locale}/tools` };
 const serviceIcons = { money: "↗", calculators: "∑", tools: "⌘" };
@@ -23,9 +26,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     <header className="site-header"><div className="header-inner">
-      <a className="brand" href={`/${locale}`}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="WOORI.TODAY logo" width={419} height={99} priority /></a>
+      <a className="brand" href={`/${locale}`} aria-label={familyContactCopy[locale].logoLabel}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="" width={419} height={99} priority /></a>
       <nav className="main-nav" aria-label={uiLabels[locale].primaryNav}><a href={`/${locale}`}>{copy.home}</a><a href={serviceHrefs.money(locale)}>{copy.money}</a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}</a><a href={serviceHrefs.tools(locale)}>{copy.tools}</a></nav>
-      <LanguageSelector locale={locale} />
+      <div className="header-controls"><FamilySiteSelect locale={locale} /><LanguageSelector locale={locale} /></div>
     </div></header>
     <main>
       <section className="services section-wrap" aria-labelledby="services-heading"><div className="section-heading"><div><h2 id="services-heading">{copy.featured}</h2></div></div><div className="service-grid">{services.map((service, index) => <a className={`${service.className} service-card-link`} href={service.href} key={service.key} target="_blank" rel="noopener noreferrer" aria-label={`${service.title}: ${service.cta}, ${newTabLabels[locale]}`}><div className="card-top"><span className="card-index">0{index + 1}</span><span className="card-icon" aria-hidden="true">{serviceIcons[service.key]}</span></div><h3>{service.title}</h3><p>{service.description}</p><span className="text-link" aria-hidden="true">{service.cta}<span>↗</span></span></a>)}</div></section>
@@ -35,6 +38,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
       <section className="tools-section"><div className="section-wrap"><div className="section-heading"><div><span className="section-kicker">04 / {sectionLabels[locale].tools.toUpperCase()}</span><h2>{copy.toolsHeading}</h2><p>{copy.toolsBody}</p></div><a className="text-link heading-link" href={serviceHrefs.tools(locale)}>{copy.moreTools}<span aria-hidden="true">→</span></a></div><div className="catalog-grid">{tools.map((item) => <a className="catalog-card tool-card" key={item.slug} href={`/${locale}/tools/${item.slug}`}><span className="catalog-category">{copy.groups[item.category as keyof typeof copy.groups]}</span><span className="catalog-name">{item.names[locale]}</span><span className="catalog-arrow" aria-hidden="true">↗</span></a>)}</div></div></section>
       <section className="closing-cta section-wrap"><div><span className="section-kicker">WOORI.TODAY</span><h2>{copy.eyebrow}</h2></div><div className="closing-links"><a href={serviceHrefs.money(locale)}>{copy.money}<span>↗</span></a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}<span>↗</span></a><a href={serviceHrefs.tools(locale)}>{copy.tools}<span>↗</span></a></div></section>
     </main>
-    <footer className="site-footer"><div className="footer-main section-wrap"><div><a className="brand footer-brand" href={`/${locale}`}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="WOORI.TODAY logo" width={419} height={99} /></a><p>{copy.footer}</p></div><div className="footer-services"><span>{copy.featured}</span><a href={serviceHrefs.money(locale)}>{copy.money}</a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}</a><a href={serviceHrefs.tools(locale)}>{copy.tools}</a><a href={`/${locale}/privacy`}>{privacyContent[locale]!.title}</a><a href={`/${locale}/terms`}>{termsContent[locale]!.terms}</a></div></div><div className="footer-bottom section-wrap"><span>© {new Date().getFullYear()} WOORI.TODAY</span><LanguageSelector locale={locale} /><span className="footer-domain">www.woori.today</span></div></footer>
+    <footer className="site-footer"><div className="footer-main section-wrap"><div><a className="brand footer-brand" href={`/${locale}`} aria-label={familyContactCopy[locale].logoLabel}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="" width={419} height={99} /></a><p>{copy.footer}</p></div><div className="footer-services"><span>{copy.featured}</span><a href={serviceHrefs.money(locale)}>{copy.money}</a><a href={serviceHrefs.calculators(locale)}>{copy.calculators}</a><a href={serviceHrefs.tools(locale)}>{copy.tools}</a><a href={`/${locale}/privacy`}>{privacyContent[locale]!.title}</a><a href={`/${locale}/terms`}>{termsContent[locale]!.terms}</a><ContactDialog locale={locale} /></div></div><div className="footer-bottom section-wrap"><span>© {new Date().getFullYear()} WOORI.TODAY</span><LanguageSelector locale={locale} /><span className="footer-domain">www.woori.today</span></div></footer>
   </>;
 }
