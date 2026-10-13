@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Analytics from "../../analytics";
-import { isLocale, locales, messages, origin } from "@/lib/site";
+import { alternates, isLocale, locales, messages, ogLocaleFor, origin, localeConfig } from "@/lib/site";
 import "../../globals.css";
 
 export const dynamicParams = false;
@@ -35,13 +35,7 @@ export async function generateMetadata({
     },
     alternates: {
       canonical,
-      languages: {
-        ko: `${origin}/ko`,
-        en: `${origin}/en`,
-        ja: `${origin}/ja`,
-        zh: `${origin}/zh`,
-        "x-default": `${origin}/ko`,
-      },
+      languages: alternates().languages,
     },
     openGraph: {
       type: "website",
@@ -49,7 +43,7 @@ export async function generateMetadata({
       title: content.title,
       description: content.description,
       url: canonical,
-      locale: { ko: "ko_KR", en: "en_US", ja: "ja_JP", zh: "zh_CN" }[locale],
+      locale: ogLocaleFor(locale),
     },
     twitter: {
       card: "summary",
@@ -69,7 +63,7 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <html lang={locale}>
+    <html lang={localeConfig.find((item) => item.route === locale)!.hreflang}>
       <body>{children}<Analytics /></body>
     </html>
   );

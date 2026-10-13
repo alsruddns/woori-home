@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 
 const site = await readFile(new URL("../src/lib/site.ts", import.meta.url), "utf8");
+const translations = await readFile(new URL("../src/lib/translations.ts", import.meta.url), "utf8");
 const home = await readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8");
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
 const rootLayout = await readFile(new URL("../src/app/(root)/layout.tsx", import.meta.url), "utf8");
@@ -11,13 +13,77 @@ const robots = await readFile(new URL("../src/app/robots.ts", import.meta.url), 
 const privacyPage = await readFile(new URL("../src/app/(locale)/[locale]/privacy/page.tsx", import.meta.url), "utf8");
 const privacyCopy = await readFile(new URL("../src/lib/privacy.ts", import.meta.url), "utf8");
 const analytics = await readFile(new URL("../src/app/analytics.tsx", import.meta.url), "utf8");
+const require = createRequire(import.meta.url);
+const ts = require("typescript");
+require.extensions[".ts"] = (module, filename) => {
+  const source = require("node:fs").readFileSync(filename, "utf8");
+  const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+  module._compile(output, filename);
+};
+const siteData = require("../src/lib/site.ts");
+const privacyData = require("../src/lib/privacy.ts");
+const termsData = require("../src/lib/terms.ts");
+const notFoundData = require("../src/lib/not-found.ts");
+const { getLocalePath } = siteData;
 
 test("portal defines all supported locales and localized home content", () => {
-  for (const locale of ["ko", "en", "ja", "zh"]) {
-    assert.match(site, new RegExp(`\\b${locale}: \\{`));
-    assert.match(site, new RegExp(`\\b${locale}: "`));
-  }
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) assert.ok(site.includes(`route: "${locale}"`), `missing locale config: ${locale}`);
+  for (const locale of ["ko", "en", "ja", "zh"]) assert.match(site, new RegExp(`\\b${locale}: \\{`));
+  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) assert.ok(translations.includes(`${locale}: {`) || translations.includes(`"${locale}": {`), `missing home translation: ${locale}`);
   assert.match(layout, /if \(!isLocale\(locale\)\) notFound\(\)/);
+});
+
+test("all locale dictionaries, legal pages, and service names are complete without English fallbacks", () => {
+  const errors = [];
+  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+  const baseKeys = Object.keys(siteData.messages.en).sort();
+  for (const locale of expectedLocales) {
+    const home = siteData.messages[locale];
+    if (!home) { errors.push(`${locale}: missing home dictionary`); continue; }
+    const missing = baseKeys.filter((key) => !(key in home));
+    if (missing.length) errors.push(`${locale}: home keys ${missing.join(", ")}`);
+    if (!notFoundData.notFoundMessages[locale]) errors.push(`${locale}: missing 404 copy`);
+    if (!siteData.uiLabels[locale]?.language || !siteData.uiLabels[locale]?.primaryNav) errors.push(`${locale}: missing accessibility labels`);
+    if (!siteData.sectionLabels[locale]?.calculator || !siteData.sectionLabels[locale]?.tools) errors.push(`${locale}: missing service section labels`);
+    for (const [kind, dictionary, count] of [["privacy", privacyData.privacyContent, 10], ["terms", termsData.termsContent, 13]]) {
+      const copy = dictionary[locale];
+      if (!copy) { errors.push(`${locale}: missing ${kind} dictionary`); continue; }
+      if (copy.sections.length !== count) errors.push(`${locale}: ${kind} expected ${count} sections, got ${copy.sections.length}`);
+      if (locale !== "en") {
+        for (const section of copy.sections) {
+          if (section.body === dictionary.en.sections.find((item) => item.title.split(". ")[0] === section.title.split(". ")[0])?.body) errors.push(`${locale}: English fallback in ${kind} ${section.title}`);
+        }
+      }
+    }
+    for (const item of [...siteData.calculators, ...siteData.tools]) {
+      if (!item.names[locale]) errors.push(`${locale}: missing service name ${item.slug}`);
+      else if (locale !== "en" && item.names[locale] === item.names.en) errors.push(`${locale}: English service name ${item.slug}`);
+    }
+  }
+  assert.deepEqual(errors, [], errors.join("\n"));
+});
+
+test("sitemap has 45 canonical portal URLs with 15 hreflang entries and x-default", () => {
+  const entries = siteData.locales.flatMap((locale) => siteData.publicPortalPaths.map((path) => ({ url: `${siteData.origin}/${locale}${path}`, languages: siteData.alternates(path).languages })));
+  assert.equal(entries.length, 45);
+  assert.equal(new Set(entries.map((entry) => entry.url)).size, 45);
+  for (const entry of entries) {
+    assert.equal(Object.keys(entry.languages).length, 16);
+    assert.equal(entry.languages["x-default"], entry.url.replace(/^https:\/\/www\.woori\.today\/(?:[^/]+)(.*)$/, "https://www.woori.today/ko$1"));
+  }
+});
+
+test("language selection preserves each supported page path", async () => {
+  assert.equal(getLocalePath("/ko/privacy", "es"), "/es/privacy");
+  assert.equal(getLocalePath("/es/terms", "de"), "/de/terms");
+  assert.equal(getLocalePath("/ja", "hi"), "/hi");
+  const selector = require("node:fs").readFileSync(new URL("../src/app/(locale)/[locale]/language-selector.tsx", import.meta.url), "utf8");
+  assert.match(selector, /aria-label=\{uiLabels\[locale\]\.language\}/);
+  assert.match(selector, /value=\{locale\}/);
+  assert.match(selector, /locales\.map/);
+  const styles = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
+  assert.match(styles, /\.language-select\{min-width:160px/);
+  assert.match(styles, /@media\(max-width:680px\)\{\.language-select\{min-width:160px;max-width:180px/);
 });
 
 test("service links and featured detail links use locale-first URLs", () => {
@@ -31,7 +97,9 @@ test("service links and featured detail links use locale-first URLs", () => {
 
 test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
   assert.match(site, /https:\/\/www\.woori\.today/);
-  assert.match(layout, /canonical,\s*languages:\s*\{\s*ko:/);
+  assert.match(layout, /canonical,\s*languages:\s*alternates\(\)\.languages/);
+  assert.match(site, /hreflang: "pt-BR"/);
+  assert.match(site, /hreflang: "zh-TW"/);
   assert.match(layout, /openGraph: \{[^}]*url: canonical/s);
   assert.match(home, /"@type": "WebSite"/);
   assert.match(home, /"@context": "https:\/\/schema\.org"/);
@@ -40,9 +108,8 @@ test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
 });
 
 test("portal sitemap contains locale home and privacy pages with matching alternates", () => {
-  assert.match(sitemap, /url: `\$\{origin\}\/\$\{locale\}`/);
-  assert.match(sitemap, /url: `\$\{origin\}\/\$\{locale\}\/privacy`/);
-  assert.match(sitemap, /alternates\("\/privacy"\)/);
+  assert.match(sitemap, /url: `\$\{origin\}\/\$\{locale\}\$\{path\}`/);
+  assert.match(sitemap, /publicPortalPaths\.map/);
   assert.match(sitemap, /locales\.flatMap/);
   assert.match(sitemap, /flatMap/);
   assert.doesNotMatch(sitemap, /money|calculators|tools/);

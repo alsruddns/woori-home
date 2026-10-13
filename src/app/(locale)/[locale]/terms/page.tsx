@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { alternates, isLocale, localeNames, locales, origin } from "@/lib/site";
+import { alternates, isLocale, origin, ogLocaleFor } from "@/lib/site";
+import LanguageSelector from "../language-selector";
 import { termsContent } from "@/lib/terms";
+import { messages, uiLabels } from "@/lib/site";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const copy = termsContent[locale];
+  const copy = termsContent[locale]!;
   const canonical = `${origin}/${locale}/terms`;
   return {
     title: copy.title,
@@ -19,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       title: copy.title,
       description: copy.description,
       url: canonical,
-      locale: { ko: "ko_KR", en: "en_US", ja: "ja_JP", zh: "zh_CN" }[locale],
+      locale: ogLocaleFor(locale),
     },
     twitter: { card: "summary", title: copy.title, description: copy.description },
   };
@@ -28,24 +30,22 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const copy = termsContent[locale];
+  const copy = termsContent[locale]!;
   return (
     <>
       <header className="site-header">
         <div className="header-inner">
           <a className="brand" href={`/${locale}`}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="WOORI.TODAY" width={419} height={99} priority /></a>
-          <nav className="main-nav" aria-label="Main navigation">
-            <a href={`/${locale}`}>{copy.home}</a><a href={`/${locale}/money`}>MoneyBook</a><a href={`/${locale}/calculators`}>Calculator</a><a href={`/${locale}/tools`}>Tools</a>
+          <nav className="main-nav" aria-label={uiLabels[locale].primaryNav}>
+            <a href={`/${locale}`}>{copy.home}</a><a href={`/${locale}/money`}>{messages[locale].money}</a><a href={`/${locale}/calculators`}>{messages[locale].calculators}</a><a href={`/${locale}/tools`}>{messages[locale].tools}</a>
           </nav>
-          <nav className="language-nav" aria-label="Language">
-            {locales.map((item) => <a key={item} href={`/${item}/terms`} lang={item} aria-current={item === locale ? "page" : undefined} title={localeNames[item]}>{item.toUpperCase()}</a>)}
-          </nav>
+          <LanguageSelector locale={locale} />
         </div>
       </header>
       <main className="legal-page">
         <article className="legal-content">
           <header className="legal-heading">
-            <span className="section-kicker">WOORI.TODAY / TERMS</span>
+            <span className="section-kicker">WOORI.TODAY / {copy.terms.toUpperCase()}</span>
             <h1>{copy.title}</h1>
             <p className="legal-intro">{copy.intro}</p>
           </header>
@@ -62,9 +62,9 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
       <footer className="site-footer">
         <div className="footer-main section-wrap">
           <div><a className="brand footer-brand" href={`/${locale}`}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="WOORI.TODAY" width={419} height={99} /></a><p>{copy.footer}</p></div>
-          <div className="footer-services"><a href={`/${locale}/money`}>MoneyBook</a><a href={`/${locale}/calculators`}>Calculator</a><a href={`/${locale}/tools`}>Tools</a><a href={`/${locale}/privacy`}>{copy.privacy}</a><a href={`/${locale}/terms`}>{copy.terms}</a></div>
+          <div className="footer-services"><a href={`/${locale}/money`}>{messages[locale].money}</a><a href={`/${locale}/calculators`}>{messages[locale].calculators}</a><a href={`/${locale}/tools`}>{messages[locale].tools}</a><a href={`/${locale}/privacy`}>{copy.privacy}</a><a href={`/${locale}/terms`}>{copy.terms}</a></div>
         </div>
-        <div className="footer-bottom section-wrap"><span>© {new Date().getFullYear()} WOORI.TODAY</span><nav aria-label="Language">{locales.map((item) => <a key={item} href={`/${item}/terms`} lang={item} aria-current={item === locale ? "page" : undefined}>{localeNames[item]}</a>)}</nav><span className="footer-domain">www.woori.today</span></div>
+        <div className="footer-bottom section-wrap"><span>© {new Date().getFullYear()} WOORI.TODAY</span><LanguageSelector locale={locale} /><span className="footer-domain">www.woori.today</span></div>
       </footer>
     </>
   );

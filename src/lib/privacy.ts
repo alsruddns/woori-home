@@ -1,6 +1,9 @@
 import type { Locale } from "./site";
+import { localizedPrivacy } from "./legal-translations";
 
-export const privacyContent = {
+export type PrivacyCopy = { title: string; description: string; intro: string; updated: string; sections: { title: string; body: string }[]; googleLabel: string; moneyLabel: string };
+export const privacyContent: Partial<Record<Locale, PrivacyCopy>> = {
+  ...localizedPrivacy,
   ko: {
     title: "개인정보처리방침",
     description: "WOORI.TODAY 전체 웹 서비스의 개인정보 처리와 쿠키, 분석 및 광고 관련 안내입니다.",
@@ -81,4 +84,4 @@ export const privacyContent = {
     googleLabel: "Google 隐私权政策",
     moneyLabel: "MoneyBook 隐私政策",
   },
-} satisfies Record<Locale, { title: string; description: string; intro: string; updated: string; sections: { title: string; body: string }[]; googleLabel: string; moneyLabel: string }>;
+};
