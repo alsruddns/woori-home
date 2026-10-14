@@ -1,4 +1,4 @@
-﻿import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import test from "node:test";
@@ -24,10 +24,18 @@ test("portal family sites have localized names, correct Korean labels, and all 1
   }
 });
 
-test("portal family selector keeps locale, service order, current state, and secure new-tab navigation", async () => {
-  const source = await readFile(new URL("../src/app/(locale)/[locale]/family-site-select.tsx", import.meta.url), "utf8");
+test("portal family selector keeps a fixed translated trigger, locale routes, and secure new-tab navigation", async () => {
+  const [source, styles] = await Promise.all([
+    readFile(new URL("../src/app/(locale)/[locale]/family-site-select.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/globals.css", import.meta.url), "utf8"),
+  ]);
   assert.match(source, /portal:.*calculators:.*tools:.*money:/);
-  assert.match(source, /value="portal"/);
+  assert.match(source, /value="family"/);
+  assert.match(source, /<option value="family" disabled>\{copy.label\}<\/option>/);
+  assert.doesNotMatch(source, /family-site-label/);
   assert.match(source, /window\.open\(target, "_blank", "noopener,noreferrer"\)/);
   assert.match(source, /aria-describedby="family-site-new-tab"/);
+  assert.match(styles, /\.family-site-select,\.language-select\{height:40px/);
+  assert.match(styles, /\.family-site-select\{[^}]*height:36px/);
+  assert.match(styles, /\.language-select\{[^}]*height:36px/);
 });
