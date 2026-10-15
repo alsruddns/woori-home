@@ -30,8 +30,11 @@ export async function generateMetadata({
       },
     },
     icons: {
-      icon: "/_assets/portal/icon.png",
-      apple: "/_assets/portal/apple-icon.png",
+      icon: [
+        { url: "/favicon.ico" },
+        { url: "/icon.png", type: "image/png" },
+      ],
+      apple: "/apple-icon.png",
     },
     alternates: {
       canonical,
