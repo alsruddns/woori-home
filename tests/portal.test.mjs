@@ -11,6 +11,9 @@ const rootLayout = await readFile(new URL("../src/app/(root)/layout.tsx", import
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const robots = await readFile(new URL("../src/app/robots.ts", import.meta.url), "utf8");
 const privacyPage = await readFile(new URL("../src/app/(locale)/[locale]/privacy/page.tsx", import.meta.url), "utf8");
+const termsPage = await readFile(new URL("../src/app/(locale)/[locale]/terms/page.tsx", import.meta.url), "utf8");
+const contactDialog = await readFile(new URL("../src/app/(locale)/[locale]/contact-dialog.tsx", import.meta.url), "utf8");
+const familyContact = await readFile(new URL("../src/lib/family-contact.ts", import.meta.url), "utf8");
 const privacyCopy = await readFile(new URL("../src/lib/privacy.ts", import.meta.url), "utf8");
 const analytics = await readFile(new URL("../src/app/analytics.tsx", import.meta.url), "utf8");
 const require = createRequire(import.meta.url);
@@ -84,7 +87,7 @@ test("language selection preserves each supported page path", async () => {
   assert.match(selector, /locales\.map/);
   const styles = await readFile(new URL("../src/app/globals.css", import.meta.url), "utf8");
   assert.match(styles, /\.language-select\{min-width:160px/);
-  assert.match(styles, /@media\(max-width:680px\)\{\.language-select\{min-width:160px;max-width:180px/);
+  assert.match(styles, /\.header-controls \.language-select\{width:auto;min-width:0!important/);
 });
 
 test("service links and featured detail links use locale-first URLs", () => {
@@ -103,7 +106,7 @@ test("featured services lead the home page and open locale-preserving service li
   const moneySectionPosition = home.indexOf('<section className="money-section">');
   assert.ok(headerPosition >= 0 && headerPosition < servicesPosition);
   assert.ok(servicesPosition < heroPosition && heroPosition < moneySectionPosition);
-  assert.match(home, /const serviceHrefs = \{ money: \(locale: Locale\) => `\/\$\{locale\}\/money`, calculators: \(locale: Locale\) => `\/\$\{locale\}\/calculators`, tools: \(locale: Locale\) => `\/\$\{locale\}\/tools` \}/);
+  assert.match(home, /docs: \(locale: Locale\) => `\/\$\{locale\}\/docs`, quiz: \(locale: Locale\) => `\/\$\{locale\}\/quiz`/);
   assert.match(home, /<a className=\{`\$\{service\.className\} service-card-link`\} href=\{service\.href\} key=\{service\.key\} target="_blank" rel="noopener noreferrer" aria-label=\{/);
   assert.match(home, /newTabLabels\[locale\]/);
   assert.match(home, /<h2 id="services-heading">\{copy\.featured\}<\/h2>/);
@@ -136,7 +139,7 @@ test("portal sitemap contains locale home and privacy pages with matching altern
   assert.match(sitemap, /publicPortalPaths\.map/);
   assert.match(sitemap, /locales\.flatMap/);
   assert.match(sitemap, /flatMap/);
-  assert.doesNotMatch(sitemap, /money|calculators|tools/);
+  assert.doesNotMatch(sitemap, /money|calculators|tools|docs|quiz/);
 });
 
 test("localized privacy pages have canonical, hreflang, content, and MoneyBook policy links", () => {
@@ -157,9 +160,23 @@ test("shared analytics component loads AdSense once alongside GA4 on each root l
   assert.equal((rootLayout.match(/<Analytics\s*\/>/g) ?? []).length, 1);
 });
 
-test("robots lists all four production sitemap endpoints", () => {
-  for (const path of ["sitemap.xml", "calculator-sitemap.xml", "tools-sitemap.xml", "money-sitemap.xml"]) assert.ok(robots.includes(path));
+test("robots lists all six production sitemap endpoints", () => {
+  for (const path of ["sitemap.xml", "calculator-sitemap.xml", "tools-sitemap.xml", "money-sitemap.xml", "docs-sitemap.xml", "quiz-sitemap.xml"]) assert.ok(robots.includes(path));
   assert.match(robots, /allow: "\/"/);
+  assert.match(robots, /disallow: \["\/api\/"\]/);
+});
+
+test("privacy and terms routes plus the localized contact dialog are connected", () => {
+  assert.match(privacyPage, /generateMetadata/);
+  assert.match(termsPage, /generateMetadata/);
+  assert.match(termsPage, /alternates\("\/terms"\)/);
+  assert.match(home, /href=\{`\/\$\{locale\}\/privacy`\}/);
+  assert.match(home, /href=\{`\/\$\{locale\}\/terms`\}/);
+  assert.match(contactDialog, /<dialog/);
+  assert.match(contactDialog, /copy\.types\.map/);
+  assert.match(contactDialog, /mailto:krdd125@gmail\.com/);
+  assert.match(familyContact, /types: \[string, string, string, string\]/);
+  for (const type of ["일반 문의", "협업", "광고", "버그"]) assert.ok(familyContact.includes(type));
 });
 
 test("published calculator and tool examples are represented by locale-first slugs", () => {
