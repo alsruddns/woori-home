@@ -134,6 +134,20 @@ test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
   assert.doesNotMatch(layout + home, /http:\/\/woori\.today/);
 });
 
+test("root favicon and PNG site icons are declared and use square public PNG assets", async () => {
+  const publicDir = new URL("../public/", import.meta.url);
+  const [favicon, icon, appleIcon] = await Promise.all(["favicon.ico", "icon.png", "apple-icon.png"].map((file) => import("node:fs/promises").then(({ readFile }) => readFile(new URL(file, publicDir)))));
+  assert.deepEqual([...favicon.subarray(0, 4)], [0, 0, 1, 0]);
+  for (const [name, png, minimum] of [["icon.png", icon, 48], ["apple-icon.png", appleIcon, 180]]) {
+    assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], `${name} PNG signature`);
+    assert.equal(png.readUInt32BE(16), png.readUInt32BE(20), `${name} is square`);
+    assert.ok(png.readUInt32BE(16) >= minimum, `${name} is at least ${minimum}px`);
+  }
+  assert.match(layout, /url: "\/favicon\.ico"/);
+  assert.match(layout, /url: "\/icon\.png", type: "image\/png"/);
+  assert.match(layout, /apple: "\/apple-icon\.png"/);
+});
+
 test("portal sitemap contains locale home and privacy pages with matching alternates", () => {
   assert.match(sitemap, /url: `\$\{origin\}\/\$\{locale\}\$\{path\}`/);
   assert.match(sitemap, /publicPortalPaths\.map/);
