@@ -1,13 +1,25 @@
 "use client";
 
+import { useState } from "react";
+import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/site";
-import { familySitesCopy } from "@/lib/family-sites";
+import { familySiteKeys, familySitesCopy } from "@/lib/family-sites";
 
-export default function FamilySiteSelect({ locale }: { locale: Locale }) {
+const routes = { portal: "", calculator: "calculators", tools: "tools", moneyBook: "money", docs: "docs", quiz: "quiz" } as const;
+
+export default function FamilySiteNav({ locale }: { locale: Locale }) {
   const copy = familySitesCopy[locale];
-  const paths = { portal: "/" + locale, calculators: "/" + locale + "/calculators", tools: "/" + locale + "/tools", money: "/" + locale + "/money" };
-  return <label className="family-site-control"><span className="visually-hidden" id="family-site-new-tab">{copy.newTab}</span><select className="family-site-select" aria-label={copy.label} aria-describedby="family-site-new-tab" value="family" onChange={(event) => {
-    const target = paths[event.target.value as keyof typeof paths];
-    if (target) window.open(target, "_blank", "noopener,noreferrer");
-  }}><option value="family" disabled>{copy.label}</option><option value="portal">{copy.portal}</option><option value="calculators">{copy.calculator}</option><option value="tools">{copy.tools}</option><option value="money">{copy.moneyBook}</option></select></label>;
+  const pathname = usePathname() ?? `/${locale}`;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const active = familySiteKeys.find((key) => {
+    const segment = routes[key];
+    return segment ? pathname === `/${locale}/${segment}` || pathname.startsWith(`/${locale}/${segment}/`) : pathname === `/${locale}`;
+  }) ?? "portal";
+
+  return <>
+    <button className="mobile-menu-toggle" type="button" aria-expanded={menuOpen} aria-controls="family-site-nav" aria-label={copy.menu} onClick={() => setMenuOpen((open) => !open)}><span/><span/><span/></button>
+    <nav className={`family-site-nav${menuOpen ? " is-open" : ""}`} id="family-site-nav" aria-label={copy.label}>
+      {familySiteKeys.map((key) => <a key={key} href={`/${locale}${routes[key] ? `/${routes[key]}` : ""}`} aria-current={active === key ? "page" : undefined} onClick={() => setMenuOpen(false)}>{copy.sites[key]}</a>)}
+    </nav>
+  </>;
 }

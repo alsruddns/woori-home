@@ -13,6 +13,8 @@ export default function robots(): MetadataRoute.Robots {
       "calculator-sitemap.xml",
       "tools-sitemap.xml",
       "money-sitemap.xml",
+      "docs-sitemap.xml",
+      "quiz-sitemap.xml",
     ].map((path) => `${origin}/${path}`),
   };
 }

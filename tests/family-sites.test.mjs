@@ -9,33 +9,36 @@ require.extensions[".ts"] = (module, filename) => {
   const source = require("node:fs").readFileSync(filename, "utf8");
   module._compile(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, filename);
 };
-const { locales } = require("../src/lib/site.ts");
-const { familySitesCopy } = require("../src/lib/family-sites.ts");
+const { locales, localeNames } = require("../src/lib/site.ts");
+const { familySiteKeys, familySitesCopy } = require("../src/lib/family-sites.ts");
 
-test("portal family sites have localized names, correct Korean labels, and all 15 locales", () => {
-  assert.equal(Object.keys(familySitesCopy).length, 15);
+test("six family sites and Docs/Quiz copy are complete in all 15 locales", () => {
   assert.deepEqual(Object.keys(familySitesCopy), locales);
-  assert.deepEqual(
-    [familySitesCopy.ko.label, familySitesCopy.ko.portal, familySitesCopy.ko.calculator, familySitesCopy.ko.tools, familySitesCopy.ko.moneyBook],
-    ["패밀리사이트", "포탈", "계산기", "온라인 도구", "무료 공유 가계부"],
-  );
+  assert.deepEqual(familySiteKeys, ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"]);
+  assert.deepEqual(Object.values(familySitesCopy.ko.sites), ["포탈", "계산기", "온라인 도구", "무료 공유 가계부", "문서·양식", "퀴즈·테스트"]);
   for (const locale of locales) {
-    for (const field of ["label", "portal", "calculator", "tools", "moneyBook", "newTab"]) assert.ok(familySitesCopy[locale][field], locale + "/" + field);
+    const copy = familySitesCopy[locale];
+    for (const key of familySiteKeys) assert.ok(copy.sites[key], `${locale}/${key}`);
+    for (const field of ["docsTitle", "docsDescription", "docsCta", "quizTitle", "quizDescription", "quizCta", "menu"]) assert.ok(copy[field], `${locale}/${field}`);
+    assert.ok(localeNames[locale], `${locale} display name`);
   }
 });
 
-test("portal family selector keeps a fixed translated trigger, locale routes, and secure new-tab navigation", async () => {
-  const [source, styles] = await Promise.all([
+test("header links preserve locale, indicate active service, and expose a mobile menu", async () => {
+  const [source, page, styles] = await Promise.all([
     readFile(new URL("../src/app/(locale)/[locale]/family-site-select.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/globals.css", import.meta.url), "utf8"),
   ]);
-  assert.match(source, /portal:.*calculators:.*tools:.*money:/);
-  assert.match(source, /value="family"/);
-  assert.match(source, /<option value="family" disabled>\{copy.label\}<\/option>/);
-  assert.doesNotMatch(source, /family-site-label/);
-  assert.match(source, /window\.open\(target, "_blank", "noopener,noreferrer"\)/);
-  assert.match(source, /aria-describedby="family-site-new-tab"/);
-  assert.match(styles, /\.family-site-select,\.language-select\{height:40px/);
-  assert.match(styles, /\.family-site-select\{[^}]*height:36px/);
-  assert.match(styles, /\.language-select\{[^}]*height:36px/);
+  assert.match(source, /familySiteKeys\.map/);
+  assert.match(source, /href=\{`\/\$\{locale\}/);
+  assert.match(source, /aria-current=\{active === key \? "page"/);
+  assert.match(source, /aria-expanded=\{menuOpen\}/);
+  assert.match(source, /setMenuOpen/);
+  assert.match(page, /<FamilySiteNav locale=\{locale\} \/>/);
+  assert.match(page, /serviceHrefs\.docs\(locale\)/);
+  assert.match(page, /serviceHrefs\.quiz\(locale\)/);
+  assert.match(styles, /\.family-site-nav\{display:flex/);
+  assert.match(styles, /\.mobile-menu-toggle\{display:none/);
+  assert.match(styles, /\.family-site-nav\.is-open\{display:grid/);
 });
