@@ -6,6 +6,7 @@ import { createRequire } from "node:module";
 const site = await readFile(new URL("../src/lib/site.ts", import.meta.url), "utf8");
 const translations = await readFile(new URL("../src/lib/translations.ts", import.meta.url), "utf8");
 const home = await readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8");
+const portalFooter = await readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8");
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
 const rootLayout = await readFile(new URL("../src/app/(root)/layout.tsx", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
@@ -27,7 +28,9 @@ const siteData = require("../src/lib/site.ts");
 const privacyData = require("../src/lib/privacy.ts");
 const termsData = require("../src/lib/terms.ts");
 const notFoundData = require("../src/lib/not-found.ts");
+const { familySiteHref } = require("../src/lib/family-sites.ts");
 const { getLocalePath } = siteData;
+const { portalContent, portalUpdates } = require("../src/lib/portal-content.ts");
 
 test("portal defines all supported locales and localized home content", () => {
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) assert.ok(site.includes(`route: "${locale}"`), `missing locale config: ${locale}`);
@@ -91,22 +94,27 @@ test("language selection preserves each supported page path", async () => {
 });
 
 test("service links and featured detail links use locale-first URLs", () => {
-  assert.match(home, /`\/\$\{locale\}\/money`/);
-  assert.match(home, /`\/\$\{locale\}\/calculators`/);
-  assert.match(home, /`\/\$\{locale\}\/tools`/);
+  assert.equal(familySiteHref("ko", "moneyBook"), "/ko/money");
+  assert.equal(familySiteHref("es", "moneyBook"), "/en/money");
+  assert.equal(familySiteHref("pt-br", "docs"), "/pt-br/docs");
+  assert.equal(familySiteHref("en", "quiz"), "/en/quiz");
+  assert.match(home, /serviceHrefs\.money\(locale\)/);
+  assert.match(home, /familySiteHref\(locale, "calculator"\)/);
+  assert.match(home, /familySiteHref\(locale, "tools"\)/);
   assert.match(home, /`\/\$\{locale\}\/calculators\/\$\{item\.slug\}`/);
   assert.match(home, /`\/\$\{locale\}\/tools\/\$\{item\.slug\}`/);
   assert.doesNotMatch(home + site, /href=["']\/(?:calculator|tools|money)(?:["'/])/);
 });
 
-test("featured services lead the home page and open locale-preserving service links in new tabs", () => {
-  const headerPosition = home.indexOf('<header className="site-header">');
+test("portal gives context before five useful service cards", () => {
+  const headerPosition = home.indexOf('<PortalHeader locale={locale} />');
   const servicesPosition = home.indexOf('<section className="services section-wrap"');
   const heroPosition = home.indexOf('<section className="hero">');
+  const aboutPosition = home.indexOf('<section className="portal-about section-wrap"');
   const moneySectionPosition = home.indexOf('<section className="money-section">');
-  assert.ok(headerPosition >= 0 && headerPosition < servicesPosition);
-  assert.ok(servicesPosition < heroPosition && heroPosition < moneySectionPosition);
-  assert.match(home, /docs: \(locale: Locale\) => `\/\$\{locale\}\/docs`, quiz: \(locale: Locale\) => `\/\$\{locale\}\/quiz`/);
+  assert.ok(headerPosition >= 0 && headerPosition < heroPosition && heroPosition < aboutPosition && aboutPosition < servicesPosition && servicesPosition < moneySectionPosition);
+  assert.match(home, /familySiteHref\(locale, "docs"\)/);
+  assert.match(home, /familySiteHref\(locale, "quiz"\)/);
   assert.match(home, /<a className=\{`\$\{service\.className\} service-card-link`\} href=\{service\.href\} key=\{service\.key\} target="_blank" rel="noopener noreferrer" aria-label=\{/);
   assert.match(home, /newTabLabels\[locale\]/);
   assert.match(home, /<h2 id="services-heading">\{copy\.featured\}<\/h2>/);
@@ -120,6 +128,27 @@ test("featured services lead the home page and open locale-preserving service li
   assert.match(cardMarkup, /<span className="text-link" aria-hidden="true">\{service\.cta\}/);
   assert.doesNotMatch(home, /className="button button-primary" href=\{serviceHrefs\.money\(locale\)\}/);
   assert.match(site, /export const newTabLabels: Record<Locale, string>/);
+  assert.equal((home.match(/key: "(?:calculators|tools|money|docs|quiz)" as const/g) ?? []).length, 5);
+  assert.doesNotMatch(home, /closing-cta|closing-links/);
+});
+
+test("15 localized portal guides contain distinct service guidance, verified updates, and seven FAQs", () => {
+  assert.deepEqual(Object.keys(portalContent), siteData.locales);
+  assert.deepEqual(portalUpdates.map((item) => item.commit), ["3465555", "d7167de"]);
+  for (const locale of siteData.locales) {
+    const content = portalContent[locale];
+    assert.ok(content.about.length > 100, `${locale} about`);
+    assert.equal(content.audiences.length, 3);
+    assert.equal(content.how.length, 3);
+    assert.equal(content.reasons.length, 3);
+    assert.equal(content.updates.length, portalUpdates.length);
+    assert.equal(content.faq.length, 7);
+    assert.deepEqual(Object.keys(content.details), ["calculator", "tools", "moneyBook", "docs", "quiz"]);
+    assert.equal(new Set(Object.values(content.details)).size, 5);
+    if (locale !== "en") assert.notEqual(content.about, portalContent.en.about, `${locale} English fallback`);
+    for (const [question, answer] of content.faq) assert.ok(question && answer, `${locale} FAQ`);
+  }
+  for (const section of ["portal-about", "portal-how", "portal-why", "portal-updates", "portal-faq"]) assert.ok(home.includes(section), section);
 });
 
 test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
@@ -159,13 +188,15 @@ test("portal sitemap contains locale home and privacy pages with matching altern
 test("localized privacy pages have canonical, hreflang, content, and MoneyBook policy links", () => {
   for (const locale of ["ko", "en", "ja", "zh"]) assert.match(privacyCopy, new RegExp(`\\b${locale}: \\{`));
   assert.match(privacyPage, /canonical, languages: alternates\("\/privacy"\)\.languages/);
-  assert.match(privacyPage, /\$\{locale\}\/money\/privacy/);
+  assert.match(privacyPage, /familySiteHref\(locale, "moneyBook"\)\}\/privacy/);
   assert.match(privacyCopy, /Consent Mode/);
   assert.match(privacyCopy, /Google Analytics 4/);
   assert.match(privacyCopy, /Google AdSense/);
 });
 
-test("shared analytics component loads AdSense once alongside GA4 on each root layout", () => {
+test("shared analytics gates AdSense when disabled and retains GA4 on each root layout", () => {
+  assert.match(analytics, /NEXT_PUBLIC_ADS_ENABLED === "true"/);
+  assert.match(analytics, /ADS_ENABLED \? <Script/);
   assert.match(analytics, /id="google-adsense"/);
   assert.ok(analytics.includes("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8033378933696766"));
   assert.match(analytics, /crossOrigin="anonymous"/);
@@ -185,7 +216,9 @@ test("privacy and terms routes plus the localized contact dialog are connected",
   assert.match(termsPage, /generateMetadata/);
   assert.match(termsPage, /alternates\("\/terms"\)/);
   assert.match(home, /href=\{`\/\$\{locale\}\/privacy`\}/);
-  assert.match(home, /href=\{`\/\$\{locale\}\/terms`\}/);
+  assert.match(portalFooter, /href=\{`\/\$\{locale\}\/terms`\}/);
+  assert.match(privacyPage, /<PortalFooter locale=\{locale\} \/>/);
+  assert.match(termsPage, /<PortalFooter locale=\{locale\} \/>/);
   assert.match(contactDialog, /<dialog/);
   assert.match(contactDialog, /copy\.types\.map/);
   assert.match(contactDialog, /mailto:krdd125@gmail\.com/);

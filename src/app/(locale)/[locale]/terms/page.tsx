@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { alternates, isLocale, origin, ogLocaleFor } from "@/lib/site";
-import LanguageSelector from "../language-selector";
 import { termsContent } from "@/lib/terms";
-import { messages, uiLabels } from "@/lib/site";
-import FamilySiteSelect from "../family-site-select";
-import ContactDialog from "../contact-dialog";
-import { familyContactCopy } from "@/lib/family-contact";
+import { familySiteHref } from "@/lib/family-sites";
+import PortalHeader from "../portal-header";
+import PortalFooter from "../portal-footer";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
@@ -36,15 +33,7 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
   const copy = termsContent[locale]!;
   return (
     <>
-      <header className="site-header">
-        <div className="header-inner">
-          <a className="brand" href={`/${locale}`} aria-label={familyContactCopy[locale].logoLabel}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="" width={419} height={99} priority /></a>
-          <nav className="main-nav" aria-label={uiLabels[locale].primaryNav}>
-            <a href={`/${locale}`}>{copy.home}</a><a href={`/${locale}/money`}>{messages[locale].money}</a><a href={`/${locale}/calculators`}>{messages[locale].calculators}</a><a href={`/${locale}/tools`}>{messages[locale].tools}</a>
-          </nav>
-          <div className="header-controls"><FamilySiteSelect locale={locale} /><LanguageSelector locale={locale} /></div>
-        </div>
-      </header>
+      <PortalHeader locale={locale} />
       <main className="legal-page">
         <article className="legal-content">
           <header className="legal-heading">
@@ -57,18 +46,12 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
               <h2>{section.title}</h2>
               <p>{section.body}</p>
               {index === 8 && <p className="legal-links"><a href={`/${locale}/privacy`}>{copy.privacyLabel}</a></p>}
-              {index === 12 && <p className="legal-links"><a href={`/${locale}/money/terms`}>{copy.moneyLabel}</a></p>}
+              {index === 12 && <p className="legal-links"><a href={`${familySiteHref(locale, "moneyBook")}/terms`}>{copy.moneyLabel}</a></p>}
             </section>
           ))}
         </article>
       </main>
-      <footer className="site-footer">
-        <div className="footer-main section-wrap">
-          <div><a className="brand footer-brand" href={`/${locale}`} aria-label={familyContactCopy[locale].logoLabel}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="" width={419} height={99} /></a><p>{copy.footer}</p></div>
-          <div className="footer-services"><a href={`/${locale}/money`}>{messages[locale].money}</a><a href={`/${locale}/calculators`}>{messages[locale].calculators}</a><a href={`/${locale}/tools`}>{messages[locale].tools}</a><a href={`/${locale}/privacy`}>{copy.privacy}</a><a href={`/${locale}/terms`}>{copy.terms}</a><ContactDialog locale={locale} /></div>
-        </div>
-        <div className="footer-bottom section-wrap"><span>© {new Date().getFullYear()} WOORI.TODAY</span><LanguageSelector locale={locale} /><span className="footer-domain">www.woori.today</span></div>
-      </footer>
+      <PortalFooter locale={locale} />
     </>
   );
 }

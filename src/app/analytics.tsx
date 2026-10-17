@@ -1,16 +1,17 @@
 import Script from "next/script";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
+const ADS_ENABLED = process.env.NEXT_PUBLIC_ADS_ENABLED === "true";
 
 export default function Analytics() {
   return (
     <>
-      <Script
+      {ADS_ENABLED ? <Script
         id="google-adsense"
         src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8033378933696766"
         crossOrigin="anonymous"
         strategy="afterInteractive"
-      />
+      /> : null}
       {GA_ID ? (
         <>
           <Script

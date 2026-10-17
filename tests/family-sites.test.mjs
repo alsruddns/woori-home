@@ -10,7 +10,7 @@ require.extensions[".ts"] = (module, filename) => {
   module._compile(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, filename);
 };
 const { locales, localeNames } = require("../src/lib/site.ts");
-const { familySiteKeys, familySitesCopy } = require("../src/lib/family-sites.ts");
+const { familySiteHref, familySiteKeys, familySitesCopy, moneyBookFallbackCopy } = require("../src/lib/family-sites.ts");
 
 test("six family sites and Docs/Quiz copy are complete in all 15 locales", () => {
   assert.deepEqual(Object.keys(familySitesCopy), locales);
@@ -25,19 +25,29 @@ test("six family sites and Docs/Quiz copy are complete in all 15 locales", () =>
 });
 
 test("header links preserve locale, indicate active service, and expose a mobile menu", async () => {
-  const [source, page, styles] = await Promise.all([
+  const [source, header, footer, styles] = await Promise.all([
     readFile(new URL("../src/app/(locale)/[locale]/family-site-select.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/portal-header.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/globals.css", import.meta.url), "utf8"),
   ]);
   assert.match(source, /familySiteKeys\.map/);
-  assert.match(source, /href=\{`\/\$\{locale\}/);
+  assert.match(source, /href=\{familySiteHref\(locale, key\)\}/);
+  for (const key of familySiteKeys) {
+    const segment = { portal: "", calculator: "/calculators", tools: "/tools", moneyBook: "/money", docs: "/docs", quiz: "/quiz" }[key];
+    assert.equal(familySiteHref("pt-br", key), key === "moneyBook" ? "/en/money" : `/pt-br${segment}`);
+  }
+  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
+    assert.ok(moneyBookFallbackCopy[locale], `${locale} MoneyBook language notice`);
+    assert.equal(familySiteHref(locale, "moneyBook"), locale === "zh-tw" ? "/zh/money" : "/en/money");
+  }
+  for (const locale of ["ko", "en", "ja", "zh"]) assert.equal(familySiteHref(locale, "moneyBook"), `/${locale}/money`);
   assert.match(source, /aria-current=\{active === key \? "page"/);
   assert.match(source, /aria-expanded=\{menuOpen\}/);
   assert.match(source, /setMenuOpen/);
-  assert.match(page, /<FamilySiteNav locale=\{locale\} \/>/);
-  assert.match(page, /serviceHrefs\.docs\(locale\)/);
-  assert.match(page, /serviceHrefs\.quiz\(locale\)/);
+  assert.match(header, /<FamilySiteNav locale=\{locale\} \/>/);
+  assert.match(footer, /familySiteKeys\.filter/);
+  assert.match(footer, /<ContactDialog locale=\{locale\} \/>/);
   assert.match(styles, /\.family-site-nav\{display:flex/);
   assert.match(styles, /\.mobile-menu-toggle\{display:none/);
   assert.match(styles, /\.family-site-nav\.is-open\{display:grid/);

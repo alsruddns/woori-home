@@ -3,6 +3,34 @@ import type { Locale } from "./site";
 export const familySiteKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
 export type FamilySiteKey = (typeof familySiteKeys)[number];
 
+const familySiteSegments: Record<FamilySiteKey, string> = {
+  portal: "", calculator: "calculators", tools: "tools", moneyBook: "money", docs: "docs", quiz: "quiz",
+};
+
+const moneyBookLocales = ["ko", "en", "ja", "zh"] as const;
+
+export function familySiteHref(locale: Locale, key: FamilySiteKey) {
+  if (key === "moneyBook") {
+    const targetLocale = locale === "zh-tw" ? "zh" : moneyBookLocales.some((item) => item === locale) ? locale : "en";
+    return `/${targetLocale}/money`;
+  }
+  return `/${locale}${familySiteSegments[key] ? `/${familySiteSegments[key]}` : ""}`;
+}
+
+export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
+  es: "La página de MoneyBook se abrirá en inglés.",
+  "pt-br": "A página do MoneyBook será aberta em inglês.",
+  de: "MoneyBook wird auf Englisch geöffnet.",
+  fr: "La page MoneyBook s’ouvrira en anglais.",
+  vi: "MoneyBook sẽ mở bằng tiếng Anh.",
+  id: "MoneyBook akan dibuka dalam bahasa Inggris.",
+  th: "MoneyBook จะเปิดเป็นภาษาอังกฤษ",
+  "zh-tw": "即將開啟簡體中文版本的 MoneyBook。",
+  it: "MoneyBook si aprirà in inglese.",
+  nl: "MoneyBook wordt in het Engels geopend.",
+  hi: "MoneyBook अंग्रेज़ी में खुलेगा।",
+};
+
 export const familySitesCopy: Record<Locale, {
   label: string;
   sites: Record<FamilySiteKey, string>;
