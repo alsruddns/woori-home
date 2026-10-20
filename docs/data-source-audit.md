@@ -81,3 +81,49 @@ Only the ILO modeled unemployment series was added after confirming ILOSTAT's CC
 - [KOSIS OpenAPI terms](https://kosis.kr/openapi/introduce/introduce_02List.do)
 - [KOSIS OpenAPI FAQ](https://kosis.kr/openapi/community/community_0401List.do)
 - [FRED API terms](https://fred.stlouisfed.org/docs/api/terms_of_use.html)
+
+## Phase 5 verification (2026-10-21)
+
+### World Bank electricity access
+
+| Check | Verified result |
+| --- | --- |
+| Official indicator | `EG.ELC.ACCS.ZS`, Access to electricity (% of population) |
+| API | `https://api.worldbank.org/v2/country/{codes}/indicator/EG.ELC.ACCS.ZS` |
+| Authentication | No key required for the Indicators API |
+| Response validation | API v2 array response; numeric non-null observations only; missing years are omitted |
+| Provider metadata | SDG 7.1.1 Electrification Dataset, World Bank (ESMAP); source page says the data is downloaded from ESMAP and released with a new Tracking SDG7 report |
+| Rights | The indicator page explicitly labels this series CC BY 4.0. Attribution to World Bank and the named SDG 7.1.1/ESMAP source is preserved. The general WDI terms warn that other third-party indicators may have additional restrictions; this decision is specific to this indicator page and its published license label. |
+| Observed availability | A direct all-country API query returned 8,122 non-null values across 261 country/aggregate codes for 1990–2026; latest non-null year was 2024. The project snapshot contains 530 values for its 15 countries plus WLD, latest year 2024. |
+| Meaning | Share of population with access to electricity. This is not electricity use, energy consumption, or supply reliability. |
+| Refresh | Monthly with the existing WDI job. Failed refresh does not replace the last known good snapshot. |
+
+### NASA/JPL NeoWs
+
+| Check | Verified result |
+| --- | --- |
+| Official endpoint | `https://api.nasa.gov/neo/rest/v1/feed` (NASA Open APIs catalog; asteroid data attributed to NASA JPL) |
+| Authentication and limits | `DEMO_KEY` works without a project secret; NASA documents 30 requests/hour and 50/day per IP for the demo key, versus the standard documented 1,000/hour for a registered key. One batch request is scheduled daily. `NASA_API_KEY` is optional and only read by the batch process. |
+| Query range | The endpoint documents `start_date` and `end_date`; a 7-day inclusive request was directly tested. The project stores the exact date list returned by the API. |
+| Response fields | `id`, `name`, `close_approach_date`, `estimated_diameter.meters`, `miss_distance.kilometers`, `relative_velocity.kilometers_per_second`, `is_potentially_hazardous_asteroid`, and NASA/JPL object URL. Every stored numeric field is validated as finite. |
+| Reuse assessment | NASA's official media/data guidance generally permits factual use of NASA-originated material without implying endorsement, while preserving exceptions for marked or third-party material. The NeoWs API page identifies NASA/JPL asteroid data and the project republishes only a small set of numeric facts and attribution, not imagery or raw API payloads. The NeoWs API reference itself does not state a standalone license for each record; this assessment is an interpretation of NASA's general guidance, not a per-record license grant. |
+| Operating rules | The API guidance encourages modest access and caching; the project batches one request/day, keeps the result static, does not call NASA from visitor requests, validates format changes, and retains the last checked-in snapshot on failure. The checked-in sample currently contains 57 object/date records across seven UTC dates (2026-10-20 through 2026-10-26). |
+| Safety text | The potentially hazardous flag is described as an official orbit/size classification, not an impact or damage forecast. Diameter values remain a range. |
+| APOD | Not ingested. NASA APOD states many entries are copyrighted and require permission for public/commercial reuse; metadata may link to the original, but a feed presence is not treated as an image license. Video records are also not treated as images. |
+
+### Phase 5 decisions and outstanding checks
+
+- Added only the electricity-access WDI series to the public statistical snapshot. Renewable-energy consumption, energy use, electricity consumption, and legacy CO2 series remain withheld because their current WDI metadata points to IEA or retired series; an explicit compatible reuse basis was not found in this review.
+- NASA NeoWs is integrated as a low-frequency, attributed numeric snapshot. The API's per-record reuse license is not explicitly surfaced by the endpoint; the general NASA-origin material guidance is the basis for this narrow factual use. Reassess if the provider identifies third-party or restricted records.
+- APOD image and video embedding remains deferred pending item-specific rights checks. The Science page links source material only for the NEO records.
+- Further urbanization, elderly population, inflation, trade, and emissions candidates were not added in this phase because their WDI provider notes identify upstream sources whose individual terms were not yet reconciled. No unverified license strings were inferred.
+
+### Phase 5 references
+
+- [World Bank electricity access indicator and CC BY 4.0 label](https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS)
+- [Tracking SDG 7 legal terms](https://trackingsdg7.esmap.org/legal)
+- [NASA Open APIs / NeoWs documentation](https://api.nasa.gov/)
+- [NASA API authentication and rate limits](https://api.nasa.gov/assets/html/authentication.html)
+- [NASA media and data guidance](https://www.nasa.gov/nasa-brand-center/images-and-media/)
+- [NASA APOD copyright FAQ](https://science.nasa.gov/apod/apod-faq/)
+- [JPL SSD/CNEOS API service and fair-use policy](https://ssd-api.jpl.nasa.gov/doc/)

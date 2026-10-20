@@ -8,7 +8,7 @@ const output = resolve(root, "src/data/world-bank.json");
 const countries = ["WLD", "USA", "CHN", "IND", "JPN", "KOR", "DEU", "GBR", "FRA", "BRA", "IDN", "MEX", "ZAF", "NGA", "AUS", "CAN"];
 const indicators = [
   "SP.POP.TOTL", "NY.GDP.MKTP.CD", "NY.GDP.PCAP.CD", "SP.DYN.TFRT.IN", "SP.DYN.LE00.IN", "SP.POP.GROW",
-  "SL.UEM.TOTL.ZS",
+  "SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS",
 ];
 const now = new Date().toISOString();
 const fallback = await readFile(output, "utf8").catch(() => null);

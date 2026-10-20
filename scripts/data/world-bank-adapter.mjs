@@ -2,11 +2,13 @@ const API = "https://api.worldbank.org/v2";
 const LICENSE = "World Bank terms of use; indicator-specific terms may apply";
 const INDICATOR_LICENSES = {
   "SL.UEM.TOTL.ZS": "World Bank terms (CC BY 4.0 default); ILOSTAT data CC BY 4.0",
+  "EG.ELC.ACCS.ZS": "CC BY 4.0; World Bank WDI, SDG 7.1.1 Electrification Dataset (ESMAP/World Bank)",
 };
 const UNITS = {
   "SP.POP.TOTL": "people", "NY.GDP.MKTP.CD": "current US dollars", "NY.GDP.PCAP.CD": "current US dollars per person",
   "SP.DYN.TFRT.IN": "births per woman", "SP.DYN.LE00.IN": "years", "SP.POP.GROW": "percent per year",
   "SL.UEM.TOTL.ZS": "percent of labor force",
+  "EG.ELC.ACCS.ZS": "percent of population",
 };
 
 export async function fetchWorldBankIndicator({ indicator, countries, startYear = 1990, endYear = new Date().getUTCFullYear(), checkedAt = new Date().toISOString() }) {
