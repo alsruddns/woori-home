@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { alternates, isLocale, origin } from "@/lib/site";
+import { platformCopy } from "@/lib/data-platform/locales";
+import { dataCategories } from "@/lib/data-platform/registry";
+import { EmptyCategory } from "../../world-data";
+import { StockPrototype } from "../../stock-prototype";
+
+const valid = new Set(["economy", "stocks", "population", "energy", "science", "about"]);
+const categoryIndex: Record<string, number> = { economy: 1, stocks: 2, population: 3, energy: 4, science: 6, about: 7 };
+export const dynamicParams = false;
+export async function generateStaticParams() { return dataCategories.map(({ id }) => id).filter((id) => valid.has(id)).map((category) => ({ category })); }
+
+export async function generateMetadata({ params }: { params: Promise<{ locale: string; category: string }> }): Promise<Metadata> {
+  const { locale, category } = await params;
+  if (!isLocale(locale) || !valid.has(category)) notFound();
+  const copy = platformCopy[locale]; const title = copy.categories[categoryIndex[category]]; const path = `/${category}`; const url = `${origin}/${locale}${path}`;
+  return { title: `${title} | WOORI.TODAY`, description: copy.notAvailable, robots: { index: false, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description: copy.notAvailable, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description: copy.notAvailable } };
+}
+
+export default async function CategoryPage({ params }: { params: Promise<{ locale: string; category: string }> }) {
+  const { locale, category } = await params;
+  if (!isLocale(locale) || !valid.has(category)) notFound();
+  return category === "stocks" ? <StockPrototype locale={locale} /> : <EmptyCategory locale={locale} title={platformCopy[locale].categories[categoryIndex[category]]} />;
+}
