@@ -11,8 +11,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: `${title} | WOORI.TODAY`, description, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description } };
 }
 
-export default async function CountriesPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function CountriesPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ countries?: string | string[] }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  return <CountryComparison locale={locale} />;
+  const selected = (await searchParams).countries;
+  const requestedCountries = typeof selected === "string" ? selected.split(",").slice(0, 5) : [];
+  return <CountryComparison locale={locale} requestedCountries={requestedCountries} />;
 }

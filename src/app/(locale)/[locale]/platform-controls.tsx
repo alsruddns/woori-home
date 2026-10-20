@@ -36,7 +36,7 @@ export function PlatformControls({ locale }: { locale: Locale }) {
         {localeConfig.map((item) => <option key={item.route} value={item.route}>{item.nativeName}</option>)}
       </select>
     </label>
-    <button className="platform-theme-toggle" onClick={toggleTheme} type="button" aria-label={theme === "dark" ? copy.themeLight : copy.themeDark}>{theme === "dark" ? "Light" : "Dark"}</button>
+    <button className="platform-theme-toggle" onClick={toggleTheme} type="button" aria-label={theme === "dark" ? copy.themeLight : copy.themeDark}>{theme === "dark" ? copy.themeLight : copy.themeDark}</button>
     <button className="platform-mobile-toggle" type="button" aria-expanded={open} aria-controls="platform-mobile-menu" onClick={() => setOpen(!open)}>{copy.menu}</button>
     {open ? <nav id="platform-mobile-menu" className="platform-mobile-menu" aria-label={copy.menu}>
       <strong>{copy.siteLabel}</strong>

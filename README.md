@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WOORI.TODAY Portal and Data Platform
 
-## Getting Started
+The portal and data platform use the Next.js App Router. The public locale routes are `ko`, `en`, `ja`, `zh`, `es`, `pt-br`, `de`, `fr`, `vi`, `id`, `th`, `zh-tw`, `it`, `nl`, and `hi`.
 
-First, run the development server:
+## Run locally on Windows
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
+Requirements: Node.js 20 or later and pnpm 9. PostgreSQL, Docker, API keys, and a network connection are not required to view the checked-in World Bank snapshot.
+
+```powershell
+cd C:\Users\achie\git\woori-home
+git switch develop
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`pnpm dev` starts Next.js on port `3003`. Open <http://localhost:3003/ko>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Useful pages:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- <http://localhost:3003/ko/world> — World Bank overview
+- <http://localhost:3003/ko/countries> — country comparison dashboard
+- <http://localhost:3003/ko/countries/kr> — South Korea dashboard
+- <http://localhost:3003/ko/countries/us> — United States dashboard
+- <http://localhost:3003/ko/countries/jp> — Japan dashboard
+- <http://localhost:3003/ko/economy/gdp> — GDP indicator detail
+- <http://localhost:3003/en/countries> — English comparison dashboard
 
-## Learn More
+Country dashboards and charts use `src/data/world-bank.json`; the browser does not call World Bank. The comparison selector requests only the chosen series from the local `/api/data-compare` route. The monthly GitHub Actions workflow is only needed to refresh the committed snapshot.
 
-To learn more about Next.js, take a look at the following resources:
+## Checks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```powershell
+pnpm test
+pnpm lint
+pnpm exec tsc --noEmit
+pnpm build
+git diff --check
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Production build output uses standalone mode and can be run with `pnpm start` after building.

@@ -3,6 +3,9 @@ import { origin, type Locale } from "@/lib/site";
 import { platformCopy } from "@/lib/data-platform/locales";
 import { indicators } from "@/lib/data-platform/registry";
 import { getSnapshotMetadata, latestByCountry, latestForCountry, observationsFor } from "@/lib/data-platform/snapshot";
+import { countryByCode, countryCodeForIso3 } from "@/lib/data-platform/countries";
+import { CountryComparisonDashboard } from "./country-comparison";
+import type { CountrySeries } from "./country-charts";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -69,9 +72,15 @@ export function IndicatorPage({ locale, slug }: { locale: Locale; slug: string }
   </>;
 }
 
-export function CountryComparison({ locale }: { locale: Locale }) {
+export function CountryComparison({ locale, requestedCountries }: { locale: Locale; requestedCountries?: string[] }) {
   const copy = platformCopy[locale];
-  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header>{indicators.map((indicator) => <section className="platform-table-section" key={indicator.id}><div className="platform-section-heading"><h2>{indicator.label[locale] ?? indicator.label.en}</h2><Link href={indicatorPath(locale, indicator.id)}>{copy.latest} →</Link></div><DataTable locale={locale} indicator={indicator.code} limit={8} /></section>)}</>;
+  const validSelection = [...new Set(requestedCountries?.map((code) => code.toLowerCase()).filter((code) => countryByCode(code)) ?? [])];
+  const initialCountries = validSelection && validSelection.length >= 2 && validSelection.length <= 5 ? [...new Set(validSelection)] : ["kr", "us", "jp"];
+  const initialSeries: CountrySeries[] = initialCountries.map((code) => {
+    const country = countryByCode(code)!;
+    return { code: country.code, iso3: country.iso3, observations: observationsFor("SP.POP.TOTL", country.iso3).map(({ year, value, unit }) => ({ year, value, unit })) };
+  });
+  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header><CountryComparisonDashboard locale={locale} initialCountries={initialCountries} initialSeries={initialSeries} /></>;
 }
 
 export function EmptyCategory({ locale, title }: { locale: Locale; title: string }) {
@@ -82,7 +91,7 @@ export function EmptyCategory({ locale, title }: { locale: Locale; title: string
 function DataTable({ locale, indicator, limit = 12 }: { locale: Locale; indicator: string; limit?: number }) {
   const copy = platformCopy[locale];
   const rows = latestByCountry(indicator).filter((row) => row.country !== "WLD").slice(0, limit);
-  return <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{copy.country}</th><th>{copy.year}</th><th>{copy.value}</th></tr></thead><tbody>{rows.map((row) => <tr key={row.country}><th scope="row">{localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>)}</tbody></table>{rows.length === 0 ? <p className="platform-empty-row">{copy.missing}</p> : null}</div>;
+  return <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{copy.country}</th><th>{copy.year}</th><th>{copy.value}</th></tr></thead><tbody>{rows.map((row) => { const code = countryCodeForIso3(row.country); return <tr key={row.country}><th scope="row">{code ? <Link href={`/${locale}/countries/${code}`}>{localizedCountryName(row.country, row.countryName, locale)}</Link> : localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>; })}</tbody></table>{rows.length === 0 ? <p className="platform-empty-row">{copy.missing}</p> : null}</div>;
 }
 
 function TrendChart({ values, label }: { values: number[]; label: string }) {
