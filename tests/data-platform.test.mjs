@@ -41,11 +41,12 @@ test("the data platform has translations for each supported locale", async () =>
   }
 });
 
-test("market fixtures are visibly marked as development mock data and kept apart from World Bank data", async () => {
-  const [fixtures, preview, productionSnapshot] = await Promise.all([read("src/lib/data-platform/mock-stocks.ts"), read("src/app/(locale)/[locale]/stock-prototype.tsx"), read("src/data/world-bank.json")]);
+test("market fixtures are visibly marked as development sample data and kept apart from World Bank data", async () => {
+  const [fixtures, preview, productionSnapshot] = await Promise.all([read("src/lib/data-platform/mock-stocks.ts"), read("src/app/(locale)/[locale]/stock-market-dashboard.tsx"), read("src/data/world-bank.json")]);
   assert.match(fixtures, /Development-only fixtures/);
   assert.match(fixtures, /DEVELOPMENT MOCK/);
   assert.match(preview, /role="note"/);
+  assert.doesNotMatch(preview, /WOORI\.DATA|MARKET SNAPSHOT UI|Market breadth prototype|Snapshot schema preview|Market cap weighted layout|6 mock securities|debug/i);
   assert.doesNotMatch(productionSnapshot, /mock|DEVELOPMENT/i);
 });
 

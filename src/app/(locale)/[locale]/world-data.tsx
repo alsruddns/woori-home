@@ -30,7 +30,7 @@ export function WorldOverview({ locale }: { locale: Locale }) {
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
     <nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}`}>woori.today</Link><span>/</span><span>{copy.categories[0]}</span></nav>
-    <header className="platform-page-heading"><span className="platform-eyebrow">WOORI.DATA / WORLD BANK</span><h1>{copy.overview}</h1><p>{copy.overviewBody}</p></header>
+    <header className="platform-page-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank</span><h1>{copy.overview}</h1><p>{copy.overviewBody}</p></header>
     <section className="platform-summary" aria-label={copy.dataSource}><div><span>{copy.dataSource}</span><strong>World Development Indicators</strong></div><div><span>{copy.referenceYear}</span><strong>{new Intl.DateTimeFormat(locale).format(new Date(meta.generatedAt))}</strong></div><div><span>{copy.country}</span><strong>{format(count, locale, 0)}</strong></div></section>
     <section className="platform-indicator-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">WORLD BANK · WDI</span><h2>{copy.indicators}</h2></div><Link href={`/${locale}/countries`}>{copy.compare} →</Link></div>
       <div className="platform-indicator-grid">{indicators.map((indicator) => {
@@ -85,7 +85,7 @@ export function CountryComparison({ locale, requestedCountries }: { locale: Loca
 
 export function EmptyCategory({ locale, title }: { locale: Locale; title: string }) {
   const copy = platformCopy[locale];
-  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{title}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WOORI.DATA</span><h1>{title}</h1><p>{copy.notAvailable}</p></header><section className="platform-empty-state"><span>{copy.notAvailable}</span><p>{copy.sourceNote}</p><Link href={`/${locale}/world`}>{copy.overview} →</Link></section></>;
+  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{title}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">{copy.categories[0]}</span><h1>{title}</h1><p>{copy.notAvailable}</p></header><section className="platform-empty-state"><span>{copy.notAvailable}</span><p>{copy.sourceNote}</p><Link href={`/${locale}/world`}>{copy.overview} →</Link></section></>;
 }
 
 function DataTable({ locale, indicator, limit = 12 }: { locale: Locale; indicator: string; limit?: number }) {

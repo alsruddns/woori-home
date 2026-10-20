@@ -13,7 +13,7 @@ export function PlatformSidebar({ locale }: { locale: Locale }) {
   const copy = platformCopy[locale];
   return <aside className="platform-sidebar"><p className="platform-sidebar-label">{copy.menu}</p><nav aria-label={copy.menu}>{dataCategories.map((category, index) => {
     const href = `/${locale}${paths[index]}`;
-    const active = pathname === href || pathname.startsWith(`${href}/`);
+    const active = pathname === href || pathname.startsWith(`${href}/`) || (index === 0 && pathname === `/${locale}`);
     return <Link key={category.id} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined}>{copy.categories[index]}</Link>;
   })}</nav></aside>;
 }

@@ -5,6 +5,9 @@ import { platformCopy } from "@/lib/data-platform/locales";
 import type { Locale } from "@/lib/site";
 import { PlatformControls } from "./platform-controls";
 import { PlatformSidebar } from "./platform-sidebar";
+import { privacyContent } from "@/lib/privacy";
+import { termsContent } from "@/lib/terms";
+import ContactDialog from "./contact-dialog";
 
 export function PlatformLayout({ locale, children }: { locale: Locale; children: ReactNode }) {
   const copy = platformCopy[locale];
@@ -19,7 +22,7 @@ export function PlatformLayout({ locale, children }: { locale: Locale; children:
     </header>
     <div className="platform-frame">
       <PlatformSidebar locale={locale} />
-      <main className="platform-main">{children}<footer className="platform-footer"><span>{copy.sourceNote}</span><a href="https://datahelpdesk.worldbank.org/knowledgebase/articles/889392-about-the-indicators-api">{copy.dataSource}: World Bank</a></footer></main>
+      <main className="platform-main">{children}<footer className="platform-footer"><nav aria-label={copy.siteLabel}><Link href={`/${locale}/about`}>{copy.categories[7]}</Link><Link href={`/${locale}/privacy`}>{privacyContent[locale]!.title}</Link><Link href={`/${locale}/terms`}>{termsContent[locale]!.terms}</Link><ContactDialog locale={locale} /></nav></footer></main>
     </div>
   </div>;
 }

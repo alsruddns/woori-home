@@ -51,11 +51,12 @@ export const indicators: IndicatorDefinition[] = [
 ];
 
 export const stockMarkets = [
-  { id: "us", name: "United States", exchange: "NYSE / Nasdaq", currency: "USD", snapshotFrequency: "daily-close" },
-  { id: "kospi", name: "Korea KOSPI", exchange: "KRX", currency: "KRW", snapshotFrequency: "daily-close" },
-  { id: "kosdaq", name: "Korea KOSDAQ", exchange: "KRX", currency: "KRW", snapshotFrequency: "daily-close" },
-  { id: "japan", name: "Japan", exchange: "JPX", currency: "JPY", snapshotFrequency: "daily-close" },
-  { id: "europe", name: "Europe", exchange: "Multiple exchanges", currency: "EUR", snapshotFrequency: "daily-close" },
+  { id: "us", region: "us", exchange: "nyse-nasdaq", benchmark: null, currency: "USD", snapshotFrequency: "daily-close" },
+  { id: "kospi", region: "korea", exchange: "krx", benchmark: "KOSPI", currency: "KRW", snapshotFrequency: "daily-close" },
+  { id: "kosdaq", region: "korea", exchange: "krx", benchmark: "KOSDAQ", currency: "KRW", snapshotFrequency: "daily-close" },
+  { id: "japan", region: "japan", exchange: "jpx", benchmark: null, currency: "JPY", snapshotFrequency: "daily-close" },
+  { id: "europe", region: "europe", exchange: "multiple", benchmark: null, currency: "EUR", snapshotFrequency: "daily-close" },
 ] as const;
 
-export type StockSnapshot = { market: string; asOf: string; licensedSource: string; currency: string; securities: { symbol: string; name: string; sector: string; marketCap: number; changePercent: number }[] };
+export type StockMarketId = (typeof stockMarkets)[number]["id"];
+export type StockSnapshot = { market: StockMarketId; asOf: string; licensedSource: string; currency: string; securities: { symbol: string; name: string; sector: string; marketCap: number; changePercent: number }[] };

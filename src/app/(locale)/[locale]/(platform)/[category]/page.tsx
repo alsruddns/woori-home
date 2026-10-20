@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { alternates, isLocale, origin } from "@/lib/site";
 import { platformCopy } from "@/lib/data-platform/locales";
 import { dataCategories } from "@/lib/data-platform/registry";
+import { portalContent } from "@/lib/portal-content";
+import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { EmptyCategory } from "../../world-data";
-import { StockPrototype } from "../../stock-prototype";
+import { StockMarketDashboard, StockMarketLoading } from "../../stock-market-dashboard";
+import PortalIntroduction from "../../portal-introduction";
 
 const valid = new Set(["economy", "stocks", "population", "energy", "science", "about"]);
 const categoryIndex: Record<string, number> = { economy: 1, stocks: 2, population: 3, energy: 4, science: 6, about: 7 };
@@ -14,12 +18,17 @@ export async function generateStaticParams() { return dataCategories.map(({ id }
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; category: string }> }): Promise<Metadata> {
   const { locale, category } = await params;
   if (!isLocale(locale) || !valid.has(category)) notFound();
-  const copy = platformCopy[locale]; const title = copy.categories[categoryIndex[category]]; const path = `/${category}`; const url = `${origin}/${locale}${path}`;
-  return { title: `${title} | WOORI.TODAY`, description: copy.notAvailable, robots: { index: false, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description: copy.notAvailable, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description: copy.notAvailable } };
+  const copy = platformCopy[locale];
+  const title = category === "stocks" ? stockCopy[locale].title : category === "about" ? portalContent[locale].aboutTitle : copy.categories[categoryIndex[category]];
+  const description = category === "stocks" ? stockCopy[locale].description : category === "about" ? portalContent[locale].about : copy.notAvailable;
+  const path = `/${category}`; const url = `${origin}/${locale}${path}`;
+  return { title: `${title} | WOORI.TODAY`, description, robots: { index: category === "about", follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description } };
 }
 
 export default async function CategoryPage({ params }: { params: Promise<{ locale: string; category: string }> }) {
   const { locale, category } = await params;
   if (!isLocale(locale) || !valid.has(category)) notFound();
-  return category === "stocks" ? <StockPrototype locale={locale} /> : <EmptyCategory locale={locale} title={platformCopy[locale].categories[categoryIndex[category]]} />;
+  if (category === "stocks") return <Suspense fallback={<StockMarketLoading locale={locale} />}><StockMarketDashboard locale={locale} /></Suspense>;
+  if (category === "about") return <PortalIntroduction locale={locale} />;
+  return <EmptyCategory locale={locale} title={platformCopy[locale].categories[categoryIndex[category]]} />;
 }

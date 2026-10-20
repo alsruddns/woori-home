@@ -5,7 +5,13 @@ import { createRequire } from "node:module";
 
 const site = await readFile(new URL("../src/lib/site.ts", import.meta.url), "utf8");
 const translations = await readFile(new URL("../src/lib/translations.ts", import.meta.url), "utf8");
-const home = await readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8");
+const home = await readFile(new URL("../src/app/(locale)/[locale]/portal-introduction.tsx", import.meta.url), "utf8");
+const dashboardHome = await readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8");
+const platformHome = await readFile(new URL("../src/app/(locale)/[locale]/platform-home.tsx", import.meta.url), "utf8");
+const categoryRoute = await readFile(new URL("../src/app/(locale)/[locale]/(platform)/[category]/page.tsx", import.meta.url), "utf8");
+const stockPage = await readFile(new URL("../src/app/(locale)/[locale]/stock-market-dashboard.tsx", import.meta.url), "utf8");
+const worldData = await readFile(new URL("../src/app/(locale)/[locale]/world-data.tsx", import.meta.url), "utf8");
+const platformStyles = await readFile(new URL("../src/app/(locale)/[locale]/platform.css", import.meta.url), "utf8");
 const portalFooter = await readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8");
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
 const rootLayout = await readFile(new URL("../src/app/(root)/layout.tsx", import.meta.url), "utf8");
@@ -31,6 +37,10 @@ const notFoundData = require("../src/lib/not-found.ts");
 const { familySiteHref } = require("../src/lib/family-sites.ts");
 const { getLocalePath } = siteData;
 const { portalContent, portalUpdates } = require("../src/lib/portal-content.ts");
+const { stockCopy, weekdayNoSnapshot } = require("../src/lib/data-platform/stock-copy.ts");
+const { classifyStockDate, adjacentAvailableDates } = require("../src/lib/data-platform/stock-selection.ts");
+const { snapshotDatesForMarket, stockSnapshotForDate } = require("../src/lib/data-platform/mock-stocks.ts");
+const { stockMarkets } = require("../src/lib/data-platform/registry.ts");
 
 test("portal defines all supported locales and localized home content", () => {
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) assert.ok(site.includes(`route: "${locale}"`), `missing locale config: ${locale}`);
@@ -107,12 +117,11 @@ test("service links and featured detail links use locale-first URLs", () => {
 });
 
 test("portal gives context before five useful service cards", () => {
-  const headerPosition = home.indexOf('<PortalHeader locale={locale} />');
   const servicesPosition = home.indexOf('<section className="services section-wrap"');
   const heroPosition = home.indexOf('<section className="hero">');
   const aboutPosition = home.indexOf('<section className="portal-about section-wrap"');
   const moneySectionPosition = home.indexOf('<section className="money-section">');
-  assert.ok(headerPosition >= 0 && headerPosition < heroPosition && heroPosition < aboutPosition && aboutPosition < servicesPosition && servicesPosition < moneySectionPosition);
+  assert.ok(heroPosition >= 0 && heroPosition < aboutPosition && aboutPosition < servicesPosition && servicesPosition < moneySectionPosition);
   assert.match(home, /familySiteHref\(locale, "docs"\)/);
   assert.match(home, /familySiteHref\(locale, "quiz"\)/);
   assert.match(home, /<a className=\{`\$\{service\.className\} service-card-link`\} href=\{service\.href\} key=\{service\.key\} target="_blank" rel="noopener noreferrer" aria-label=\{/);
@@ -158,9 +167,81 @@ test("canonical, hreflang, Open Graph, and JSON-LD use the www origin", () => {
   assert.match(site, /hreflang: "zh-TW"/);
   assert.match(layout, /openGraph: \{[^}]*url: canonical/s);
   assert.match(home, /"@type": "WebSite"/);
-  assert.match(home, /"@context": "https:\/\/schema\.org"/);
-  assert.doesNotMatch(layout + home, /https?:\/\/(?:localhost|127\.0\.0\.1)/);
-  assert.doesNotMatch(layout + home, /http:\/\/woori\.today/);
+  assert.match(platformHome, /"@type": "WebSite"/);
+  assert.match(home + platformHome, /"@context": "https:\/\/schema\.org"/);
+  assert.doesNotMatch(layout + home + dashboardHome + platformHome, /https?:\/\/(?:localhost|127\.0\.0\.1)/);
+  assert.doesNotMatch(layout + home + dashboardHome + platformHome, /http:\/\/woori\.today/);
+});
+
+test("the new localized data home keeps the portal guide at about and preserves indexable SEO", () => {
+  assert.match(dashboardHome, /PlatformLayout locale=\{locale\}/);
+  assert.match(dashboardHome, /PlatformHome locale=\{locale\}/);
+  assert.match(platformHome, /SP\.POP\.TOTL/);
+  assert.match(platformHome, /NY\.GDP\.MKTP\.CD/);
+  assert.match(platformHome, /mockDisclosure/);
+  assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
+  assert.match(categoryRoute, /robots: \{ index: category === "about", follow: true \}/);
+  assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
+  assert.match(site, /publicDataPaths = \["\/world", "\/countries", "\/about"\]/);
+  assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
+});
+
+test("stock markets have translated names and every visible control in all 15 locales", () => {
+  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+  assert.deepEqual(Object.keys(stockCopy).sort(), [...expectedLocales].sort());
+  for (const locale of expectedLocales) {
+    const copy = stockCopy[locale];
+    assert.ok(copy.title && copy.description && copy.intro && copy.marketLabel && copy.dateLabel && copy.previousDate && copy.nextDate, `${locale}: market controls`);
+    assert.ok(copy.mockLabel && copy.mockDisclosure && copy.sourceLabel && copy.sourceDisclosure, `${locale}: sample disclosure`);
+    assert.ok(copy.noSnapshotTitle && weekdayNoSnapshot[locale] && copy.weekend && copy.futureDate && copy.invalidDate, `${locale}: empty and error states`);
+    for (const market of ["us", "kospi", "kosdaq", "japan", "europe"]) assert.ok(copy.marketNames[market] && copy.venues[market], `${locale}: ${market}`);
+    for (const sector of ["Technology", "Health", "Energy", "Consumer", "Finance", "Industrials"]) assert.ok(copy.sectors[sector], `${locale}: ${sector}`);
+  }
+  assert.notEqual(stockCopy.ko.marketNames.us, stockCopy.en.marketNames.us);
+  assert.notEqual(stockCopy.ja.marketNames.japan, stockCopy.en.marketNames.japan);
+  assert.equal(stockCopy.ko.marketNames.kospi, "대한민국");
+  assert.equal(stockCopy.ko.marketNames.kosdaq, "대한민국");
+  assert.equal(stockCopy.ja.marketNames.kospi, "韓国");
+  assert.equal(stockCopy["zh-tw"].marketNames.europe, "歐洲");
+  for (const locale of expectedLocales) {
+    for (const region of Object.values(stockCopy[locale].marketNames)) assert.doesNotMatch(region, /\?/u, `${locale}: corrupted market region`);
+  }
+  assert.equal(stockMarkets.find((item) => item.id === "kospi").benchmark, "KOSPI");
+  assert.equal(stockMarkets.find((item) => item.id === "kosdaq").benchmark, "KOSDAQ");
+  assert.match(stockPage, /search\.get\("market"\)/);
+  assert.match(stockPage, /search\.get\("date"\)/);
+  assert.match(stockPage, /router\.push\(`\/\$\{locale\}\/stocks\?/);
+  assert.match(stockPage, /snapshotDatesForMarket\(nextMarket\.id\)\.at\(-1\)/);
+  assert.match(stockPage, /classifyStockDate/);
+  assert.match(stockPage, /max=\{today\}/);
+  assert.match(categoryRoute, /<Suspense fallback=\{<StockMarketLoading locale=\{locale\} \/>\}>/);
+  assert.match(categoryRoute, /robots: \{ index: category === "about", follow: true \}/);
+  assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
+});
+
+test("stock date selection never substitutes another market date and distinguishes missing dates", () => {
+  assert.deepEqual(snapshotDatesForMarket("us"), ["2026-10-19"]);
+  assert.equal(stockSnapshotForDate("us", "2026-10-19").market, "us");
+  assert.equal(stockSnapshotForDate("us", "2026-10-18"), undefined);
+  assert.equal(classifyStockDate(["2026-10-19"], "2026-10-19", "2026-10-20"), "available");
+  assert.equal(classifyStockDate(["2026-10-19"], "2026-10-18", "2026-10-20"), "weekend");
+  assert.equal(classifyStockDate(["2026-10-19"], "2026-10-20", "2026-10-20"), "missing");
+  assert.equal(classifyStockDate(["2026-10-19"], "2026-10-21", "2026-10-20"), "future");
+  assert.equal(classifyStockDate(["2026-10-19"], "2026-13-01", "2026-10-20"), "invalid");
+  assert.equal(classifyStockDate([], "2026-10-19", "2026-10-20"), "empty");
+  assert.deepEqual(adjacentAvailableDates(["2026-10-21", "2026-10-19", "2026-10-20"], "2026-10-20"), { previous: "2026-10-19", next: "2026-10-21" });
+});
+
+test("market snapshots are disclosed, accessible, theme-aware, and free of internal labels", () => {
+  assert.doesNotMatch(stockPage + worldData + platformHome, /WOORI\.DATA|MARKET SNAPSHOT UI|Market breadth prototype|Snapshot schema preview|Market cap weighted layout|6 mock securities/i);
+  assert.match(stockPage, /role="note"/);
+  assert.match(stockPage, /tabIndex=\{0\}/);
+  assert.match(stockPage, /aria-label=\{accessibleName\}/);
+  assert.match(stockPage, /changeTone/);
+  assert.match(platformStyles, /\.platform-stock-tile\.is-flat/);
+  assert.match(platformStyles, /html\[data-theme="light"\] \.platform-stock-tile\.is-up/);
+  assert.match(platformStyles, /@media\(max-width:600px\).*platform-stock-tile/s);
+  assert.doesNotMatch(stockPage, /licensedSource\}/);
 });
 
 test("root favicon and PNG site icons are declared and use square public PNG assets", async () => {

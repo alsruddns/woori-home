@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { localeConfig, type Locale } from "@/lib/site";
 import { platformCopy } from "@/lib/data-platform/locales";
 import { familySiteHref, familySitesCopy } from "@/lib/family-sites";
@@ -18,7 +18,9 @@ export function PlatformControls({ locale }: { locale: Locale }) {
   const router = useRouter();
   const copy = platformCopy[locale];
   const family = familySitesCopy[locale];
+  const pathname = usePathname();
   const familyKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
+  const categoryPaths = ["/world", "/economy", "/stocks", "/population", "/energy", "/countries", "/science", "/about"] as const;
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -40,9 +42,9 @@ export function PlatformControls({ locale }: { locale: Locale }) {
     <button className="platform-mobile-toggle" type="button" aria-expanded={open} aria-controls="platform-mobile-menu" onClick={() => setOpen(!open)}>{copy.menu}</button>
     {open ? <nav id="platform-mobile-menu" className="platform-mobile-menu" aria-label={copy.menu}>
       <strong>{copy.siteLabel}</strong>
-      {familyKeys.map((key) => <a key={key} href={familySiteHref(locale, key)} onClick={() => setOpen(false)}>{family.sites[key]}</a>)}
+      {familyKeys.map((key) => <a key={key} href={familySiteHref(locale, key)} aria-current={key === "portal" && pathname === `/${locale}` ? "page" : undefined} onClick={() => setOpen(false)}>{family.sites[key]}</a>)}
       <strong>{copy.menu}</strong>
-      {copy.categories.map((label, index) => <a key={index} href={`/${locale}${["/world", "/economy", "/stocks", "/population", "/energy", "/countries", "/science", "/about"][index]}`} onClick={() => setOpen(false)}>{label}</a>)}
+      {copy.categories.map((label, index) => { const href = `/${locale}${categoryPaths[index]}`; const active = pathname === href || pathname.startsWith(`${href}/`) || (index === 0 && pathname === `/${locale}`); return <a key={index} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined} onClick={() => setOpen(false)}>{label}</a>; })}
     </nav> : null}
   </div>;
 }

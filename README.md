@@ -25,7 +25,17 @@ Useful pages:
 - <http://localhost:3003/ko/economy/gdp> — GDP indicator detail
 - <http://localhost:3003/en/countries> — English comparison dashboard
 
+Useful stock and introduction pages:
+
+- <http://localhost:3003/ko/stocks>
+- <http://localhost:3003/ko/stocks?market=us&date=2026-10-19>
+- <http://localhost:3003/en/stocks>
+- <http://localhost:3003/ja/stocks>
+- <http://localhost:3003/ko/about>
+
 Country dashboards and charts use `src/data/world-bank.json`; the browser does not call World Bank. The comparison selector requests only the chosen series from the local `/api/data-compare` route. The monthly GitHub Actions workflow is only needed to refresh the committed snapshot.
+
+The stock market screen is a clearly disclosed interface example using synthetic sample entries. It is not live or historical market data, and no redistribution rights have been verified. Only dates present in each market's local sample snapshot show a treemap.
 
 ## Checks
 
