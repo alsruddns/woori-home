@@ -25,7 +25,11 @@ export function PlatformControls({ locale }: { locale: Locale }) {
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
-    window.localStorage.setItem("woori-platform-theme", next);
+    try {
+      window.localStorage.setItem("woori-platform-theme", next);
+    } catch {
+      // The selected theme still applies for this page if storage is unavailable.
+    }
     document.dispatchEvent(new Event("woori-theme-change"));
   }
 

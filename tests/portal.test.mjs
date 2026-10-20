@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { runInNewContext } from "node:vm";
 
 const site = await readFile(new URL("../src/lib/site.ts", import.meta.url), "utf8");
 const translations = await readFile(new URL("../src/lib/translations.ts", import.meta.url), "utf8");
@@ -14,6 +15,8 @@ const worldData = await readFile(new URL("../src/app/(locale)/[locale]/world-dat
 const platformStyles = await readFile(new URL("../src/app/(locale)/[locale]/platform.css", import.meta.url), "utf8");
 const portalFooter = await readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8");
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
+const platformLayout = await readFile(new URL("../src/app/(locale)/[locale]/platform-layout.tsx", import.meta.url), "utf8");
+const platformControls = await readFile(new URL("../src/app/(locale)/[locale]/platform-controls.tsx", import.meta.url), "utf8");
 const rootLayout = await readFile(new URL("../src/app/(root)/layout.tsx", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const robots = await readFile(new URL("../src/app/robots.ts", import.meta.url), "utf8");
@@ -37,6 +40,7 @@ const notFoundData = require("../src/lib/not-found.ts");
 const { familySiteHref } = require("../src/lib/family-sites.ts");
 const { getLocalePath } = siteData;
 const { portalContent, portalUpdates } = require("../src/lib/portal-content.ts");
+const { platformCopy } = require("../src/lib/data-platform/locales.ts");
 const { stockCopy, weekdayNoSnapshot } = require("../src/lib/data-platform/stock-copy.ts");
 const { classifyStockDate, adjacentAvailableDates } = require("../src/lib/data-platform/stock-selection.ts");
 const { snapshotDatesForMarket, stockSnapshotForDate } = require("../src/lib/data-platform/mock-stocks.ts");
@@ -184,6 +188,41 @@ test("the new localized data home keeps the portal guide at about and preserves 
   assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
   assert.match(site, /publicDataPaths = \["\/world", "\/countries", "\/about"\]/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
+});
+
+test("localized data copy explains missing years without technical interpolation wording", () => {
+  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+  for (const locale of expectedLocales) {
+    const copy = platformCopy[locale];
+    assert.ok(copy.overviewBody && copy.latest && copy.previousChange && copy.updated && copy.sourceNote, `${locale}: missing data copy`);
+    assert.doesNotMatch(copy.overviewBody, /interpolat|補間|插值|보간/i, `${locale}: technical interpolation wording`);
+    assert.doesNotMatch(copy.updated, /snapshot/i, `${locale}: technical snapshot wording`);
+    assert.doesNotMatch(copy.sourceNote, /\bAPI\b|\bbatch(?:es)?\b/i, `${locale}: technical collection wording`);
+  }
+  assert.equal(platformCopy.ko.overviewBody, "World Bank 세계개발지표(WDI)의 국가별 공개 통계를 제공합니다. 데이터가 없는 연도는 임의의 값으로 채우지 않습니다.");
+  assert.match(platformCopy.en.overviewBody, /Years without data are not filled with estimated values/);
+});
+
+test("theme is initialized once before hydration and uses a narrow root suppression", () => {
+  assert.match(layout, /<html[\s\S]*?data-theme="dark" suppressHydrationWarning>/);
+  assert.ok(layout.indexOf("<script") < layout.indexOf("{children}"), "theme script must run before page content");
+  assert.match(layout, /localStorage\.getItem\('woori-platform-theme'\)/);
+  assert.match(layout, /t==='light'\?'light':'dark'/);
+  assert.doesNotMatch(platformLayout, /localStorage|document\.documentElement\.dataset\.theme/);
+  assert.match(platformControls, /useSyncExternalStore\(subscribeTheme, getTheme, \(\) => "dark"\)/);
+  assert.match(platformControls, /document\.documentElement\.dataset\.theme = next/);
+  assert.match(platformControls, /localStorage\.setItem\("woori-platform-theme", next\)/);
+  assert.match(platformControls, /woori-theme-change/);
+
+  const script = layout.match(/__html: "([^"]+)"/)[1];
+  for (const [stored, expected] of [[null, "dark"], ["dark", "dark"], ["light", "light"], ["invalid", "dark"]]) {
+    const html = { dataset: {} };
+    runInNewContext(script, { document: { documentElement: html }, localStorage: { getItem: () => stored } });
+    assert.equal(html.dataset.theme, expected, `stored theme ${stored}`);
+  }
+  const unavailableStorageHtml = { dataset: {} };
+  runInNewContext(script, { document: { documentElement: unavailableStorageHtml }, localStorage: { getItem: () => { throw new Error("blocked"); } } });
+  assert.equal(unavailableStorageHtml.dataset.theme, "dark");
 });
 
 test("stock markets have translated names and every visible control in all 15 locales", () => {
