@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { alternates, isLocale, origin } from "@/lib/site";
+import { isLocale, origin } from "@/lib/site";
 import { indicators } from "@/lib/data-platform/registry";
 import { IndicatorPage } from "../../../world-data";
 
@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const label = indicator.label[locale] ?? indicator.label.en;
   const description = indicator.definition[locale] ?? indicator.definition.en;
   const path = `/${category}/${slug}`; const url = `${origin}/${locale}${path}`;
-  return { title: `${label} | WOORI.TODAY`, description, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${label} | WOORI.TODAY`, description } };
+  return { title: `${label} | WOORI.TODAY`, description, robots: { index: locale === "ko" || locale === "en", follow: true }, alternates: { canonical: url, languages: { ko: `${origin}/ko${path}`, en: `${origin}/en${path}`, "x-default": `${origin}/en${path}` } }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${label} | WOORI.TODAY`, description } };
 }
 
 export default async function IndicatorByCategoryPage({ params }: { params: Promise<{ locale: string; category: string; slug: string }> }) {
