@@ -1,6 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { recordBatchStatus, writeJsonAtomically } from "./batch-status.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const output = resolve(root, "src/data/nasa-neows.json");
@@ -14,14 +15,32 @@ url.searchParams.set("start_date", startDate);
 url.searchParams.set("end_date", endDate);
 url.searchParams.set("api_key", apiKey);
 const previousText = await readFile(output, "utf8").catch(() => null);
+const pause = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function fetchPayload() {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        headers: { "User-Agent": "WOORI.TODAY data refresh/1.0 (official batch snapshot)" },
+        signal: AbortSignal.timeout(45000),
+      });
+      if (response.ok) return response.json();
+      if (![408, 429, 500, 502, 503, 504].includes(response.status) || attempt === 3) throw new Error(`NASA NeoWs returned HTTP ${response.status}`);
+      const retryAfter = Number(response.headers.get("retry-after"));
+      await pause(Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter * 1000, 20000) : 1000 * (attempt + 1));
+    } catch (error) {
+      if (error.message?.includes("HTTP") || attempt === 3) {
+        if (error.message?.includes("HTTP")) throw error;
+        throw new Error("NASA NeoWs network request failed or timed out");
+      }
+      await pause(1000 * (attempt + 1));
+    }
+  }
+  throw new Error("NASA NeoWs request retries exhausted");
+}
 
 try {
-  const response = await fetch(url, {
-    headers: { "User-Agent": "WOORI.TODAY data refresh/1.0 (official batch snapshot)" },
-    signal: AbortSignal.timeout(45000),
-  });
-  if (!response.ok) throw new Error(`NASA NeoWs returned HTTP ${response.status}`);
-  const payload = await response.json();
+  const payload = await fetchPayload();
   const daily = payload?.near_earth_objects;
   if (!daily || typeof daily !== "object" || Object.keys(daily).length === 0) throw new Error("NASA NeoWs response has no date groups");
 
@@ -53,14 +72,16 @@ try {
   const previous = previousText ? JSON.parse(previousText) : null;
   if (previous?.schemaVersion === 1 && comparable(previous) === comparable(nextBase)) {
     console.log(`NASA NeoWs snapshot unchanged (${objects.length} records); retaining the existing file.`);
+    await recordBatchStatus({ snapshotPath: output, sourceId: "nasa", datasetId: "near-earth-objects", status: "unchanged", referenceDate: endDate, recordCount: objects.length });
     process.exit(0);
   }
 
   const snapshot = { ...nextBase, fetchedAt: new Date().toISOString() };
-  await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, `${JSON.stringify(snapshot)}\n`, "utf8");
+  await writeJsonAtomically(output, snapshot);
+  await recordBatchStatus({ snapshotPath: output, sourceId: "nasa", datasetId: "near-earth-objects", status: "success", referenceDate: endDate, recordCount: objects.length, attemptedAt: snapshot.fetchedAt });
   console.log(`Wrote ${objects.length} validated NASA NeoWs records for ${startDate} through ${endDate}.`);
 } catch (error) {
+  await recordBatchStatus({ snapshotPath: output, sourceId: "nasa", datasetId: "near-earth-objects", status: "failed", error });
   console.error("NASA NeoWs refresh failed; the previous checked-in snapshot was retained.");
-  throw error;
+  throw new Error(error.message?.includes("HTTP") ? error.message : "NASA NeoWs refresh failed; see the action log for the sanitized error category.");
 }

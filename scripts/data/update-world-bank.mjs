@@ -1,7 +1,8 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { fetchWorldBankIndicator } from "./world-bank-adapter.mjs";
+import { recordBatchStatus, writeJsonAtomically } from "./batch-status.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const output = resolve(root, "src/data/world-bank.json");
@@ -35,13 +36,14 @@ try {
   const snapshot = { schemaVersion: 2, source: "World Bank", generatedAt: now, indicatorMetadata, observations: normalizedObservations };
   if (previous?.schemaVersion === 2 && comparable(previous) === comparable(snapshot)) {
     console.log(`World Bank snapshot unchanged (${observations.length} observations); keeping the existing file.`);
+    await recordBatchStatus({ snapshotPath: output, sourceId: "world-bank", datasetId: "world-development-indicators", status: "unchanged", referenceDate: String(Math.max(...observations.map((row) => row.year))), recordCount: observations.length, attemptedAt: now });
     process.exit(0);
   }
-  await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, `${JSON.stringify(snapshot)}\n`, "utf8");
+  await writeJsonAtomically(output, snapshot);
+  await recordBatchStatus({ snapshotPath: output, sourceId: "world-bank", datasetId: "world-development-indicators", status: "success", referenceDate: String(Math.max(...observations.map((row) => row.year))), recordCount: observations.length, attemptedAt: now });
   console.log(`Wrote ${observations.length} validated observations from ${indicators.length} World Bank indicators.`);
 } catch (error) {
-  if (fallback) await writeFile(output, fallback, "utf8");
+  await recordBatchStatus({ snapshotPath: output, sourceId: "world-bank", datasetId: "world-development-indicators", status: "failed", error, attemptedAt: now });
   console.error("World Bank refresh failed; the last checked-in snapshot was retained.");
   throw error;
 }

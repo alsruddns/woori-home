@@ -8,9 +8,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: nasa-neows-refresh-develop
+  cancel-in-progress: false
+
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,12 +23,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: node scripts/data/update-nasa-neows.mjs
+      - id: refresh
+        run: node scripts/data/update-nasa-neows.mjs
+        continue-on-error: true
         env:
           NASA_API_KEY: ${{ secrets.NASA_API_KEY }}
-      - name: Commit snapshot when data changes
+      - name: Commit snapshot and batch status on develop
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/data/nasa-neows.json
+          git add src/data/nasa-neows.json src/data/nasa-neows.status.json
           git diff --cached --quiet || { git commit -m "Update : [Data] Refresh NASA NEO snapshot" && git push origin develop; }
+      - name: Mark failed collection
+        if: steps.refresh.outcome == 'failure'
+        run: exit 1

@@ -103,7 +103,7 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
 
 .ranking-filters,.paper-filters{display:flex;align-items:end;flex-wrap:wrap;gap:10px;margin:14px 0;padding:13px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-surface)}
 .ranking-filters label,.paper-filters label{display:grid;gap:5px;min-width:150px;color:var(--platform-muted);font-size:11px}
-.ranking-filters select,.paper-filters select,.ranking-filters button,.paper-filters button{min-height:38px;padding:7px 10px;border:1px solid var(--platform-border);border-radius:6px;background:var(--platform-bg);color:var(--platform-text);font:inherit;font-size:12px}
+.ranking-filters select,.paper-filters select,.ranking-filters input,.paper-filters input,.ranking-filters button,.paper-filters button{min-height:38px;padding:7px 10px;border:1px solid var(--platform-border);border-radius:6px;background:var(--platform-bg);color:var(--platform-text);font:inherit;font-size:12px}
 .ranking-filters button,.paper-filters button{cursor:pointer}
 .platform-briefing{margin:10px 0 25px;padding:18px;border:1px solid var(--platform-border);border-radius:9px;background:var(--platform-surface)}
 .platform-briefing>p{max-width:850px;margin:0;color:var(--platform-muted);font-size:12px;line-height:1.75}
@@ -117,7 +117,7 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
 .paper-detail dl{display:grid;gap:10px;margin:0}
 .paper-detail dl div{display:grid;grid-template-columns:minmax(120px, .35fr) 1fr;gap:12px;padding-bottom:9px;border-bottom:1px solid var(--platform-border)}
 .paper-detail dt{color:var(--platform-muted);font-size:11px}.paper-detail dd{margin:0;font-size:12px;overflow-wrap:anywhere}.paper-detail p{color:var(--platform-muted);font-size:11px;line-height:1.7}.paper-detail>a{font-size:12px;color:var(--platform-accent);text-decoration:underline;text-underline-offset:3px}
-@media(max-width:600px){.ranking-filters label,.paper-filters label{min-width:100%;flex:1 1 100%}.ranking-filters select,.paper-filters select{min-height:42px}.ranking-filters button,.paper-filters button{width:100%;min-height:42px}.paper-detail dl div{grid-template-columns:1fr;gap:4px}}
+@media(max-width:600px){.ranking-filters label,.paper-filters label{min-width:100%;flex:1 1 100%}.ranking-filters select,.paper-filters select,.ranking-filters input,.paper-filters input{min-height:42px}.ranking-filters button,.paper-filters button{width:100%;min-height:42px}.paper-detail dl div{grid-template-columns:1fr;gap:4px}}
 .country-period-analysis{margin:16px 0 24px;padding:14px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-surface)}
 .country-period-controls{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
 .country-period-controls label{display:grid;gap:5px;min-width:140px;color:var(--platform-muted);font-size:11px}

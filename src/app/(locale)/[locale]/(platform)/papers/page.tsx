@@ -2,18 +2,19 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { alternates, isLocale, origin } from "@/lib/site";
-import { researchApplyLabel, researchCopy } from "@/lib/data-platform/research-copy";
+import { researchApplyLabel, researchCopy, researchFilterCopy } from "@/lib/data-platform/research-copy";
+import { filterResearchPapers } from "@/lib/data-platform/research-search";
 import paperSnapshot from "@/data/research-papers.json";
 
 type Topic = keyof typeof researchCopy.en.topics;
 type Paper = (typeof paperSnapshot.records)[number];
 const topics: Topic[] = ["ai", "medicine", "physics", "energy"];
 
-export async function generateMetadata({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ topic?: string; sort?: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ topic?: string; sort?: string; q?: string; from?: string; to?: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const filters = await searchParams;
-  const filtered = Boolean(filters.topic || filters.sort);
+  const filtered = Boolean(filters.topic || filters.sort || filters.q || filters.from || filters.to);
   const copy = researchCopy[locale];
   const url = `${origin}/${locale}/papers`;
   return {
@@ -28,7 +29,7 @@ export async function generateMetadata({ params, searchParams }: { params: Promi
 
 export default async function ResearchPapersPage({ params, searchParams }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ topic?: string; sort?: string }>;
+  searchParams: Promise<{ topic?: string; sort?: string; q?: string; from?: string; to?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
@@ -36,18 +37,19 @@ export default async function ResearchPapersPage({ params, searchParams }: {
   const topic = topics.includes(requested.topic as Topic) ? requested.topic as Topic : "all";
   const sort = requested.sort === "citations" ? "citations" : "recent";
   const copy = researchCopy[locale];
-  const records = (paperSnapshot.records as Paper[])
-    .filter((paper) => !paper.retracted && (topic === "all" || paper.topic === topic))
-    .sort((a, b) => sort === "citations"
-      ? (b.citationCount ?? -1) - (a.citationCount ?? -1) || b.publishedAt.localeCompare(a.publishedAt)
-      : b.indexedAt.localeCompare(a.indexedAt) || b.publishedAt.localeCompare(a.publishedAt));
+  const filterCopy = researchFilterCopy[locale];
+  const filtered = filterResearchPapers(paperSnapshot.records as Paper[], { topic, sort, query: requested.q, from: requested.from, to: requested.to, locale });
+  const records = filtered.records;
   return <>
     <nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}`}>woori.today</Link><span>/</span><span>{copy.papers}</span></nav>
     <header className="platform-page-heading"><span className="platform-eyebrow">{copy.paperSource}</span><h1>{copy.papers}</h1><p>{copy.papersDescription}</p></header>
     <section className="platform-summary"><div><span>{copy.updated}</span><strong>{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${paperSnapshot.fetchedAt.slice(0, 10)}T00:00:00Z`))}</strong></div><div><span>{copy.paperSource}</span><strong>Crossref REST API</strong></div><div><span>{copy.field}</span><strong>{records.length}</strong></div></section>
     <form className="paper-filters" action={`/${locale}/papers`}>
+      <label>{filterCopy.keywords}<input type="search" name="q" defaultValue={requested.q?.slice(0, 120) ?? ""} maxLength={120}/></label>
       <label>{copy.field}<select name="topic" defaultValue={topic}><option value="all">{copy.allFields}</option>{topics.map((item) => <option key={item} value={item}>{copy.topics[item]}</option>)}</select></label>
       <label>{copy.recentIndex}<select name="sort" defaultValue={sort}><option value="recent">{copy.recentFirst}</option><option value="citations">{copy.citedFirst}</option></select></label>
+      <label>{filterCopy.fromDate}<input type="date" name="from" defaultValue={filtered.from}/></label>
+      <label>{filterCopy.toDate}<input type="date" name="to" defaultValue={filtered.to}/></label>
       <button type="submit">{researchApplyLabel[locale]}</button>
     </form>
     <p className="paper-metadata-notice">{copy.metadataNotice} {copy.noSummary}</p>

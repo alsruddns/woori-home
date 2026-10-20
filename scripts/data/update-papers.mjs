@@ -1,6 +1,7 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
+import { basename, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { recordBatchStatus, writeJsonAtomically } from "./batch-status.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const defaultOutput = resolve(root, "src/data/research-papers.json");
@@ -93,17 +94,38 @@ export async function collectPapers({ fetchImpl = fetch, now = new Date(), fixtu
   return { schemaVersion: 1, source: "Crossref REST API", sourceUrl: "https://api.crossref.org/works", license: "Crossref bibliographic metadata reuse guidance; abstracts excluded", fetchedAt: checkedAt, indexedSince: from, records: sorted };
 }
 
-export async function updatePapers({ output = defaultOutput, fetchImpl = fetch, now = new Date(), fixture } = {}) {
+export async function updatePapers({ output = defaultOutput, fetchImpl = fetch, now = new Date(), fixture, forceRefresh = false } = {}) {
   const previousText = await readFile(output, "utf8").catch(() => null);
   const previous = previousText ? JSON.parse(previousText) : null;
-  const next = await collectPapers({ fetchImpl, now, fixture });
+  const statusPath = resolve(dirname(output), `${basename(output, ".json")}.status.json`);
+  const previousStatus = await readFile(statusPath, "utf8").then(JSON.parse).catch(() => null);
+  const utcDate = now.toISOString().slice(0, 10);
+  if (!forceRefresh && previous && previousStatus && ["success", "unchanged"].includes(previousStatus.status) && previousStatus.lastAttemptAt?.slice(0, 10) === utcDate) {
+    console.log(`Crossref was already checked successfully on ${utcDate}; retaining the current snapshot.`);
+    return { changed: false, snapshot: previous };
+  }
+  let next;
+  try {
+    next = await collectPapers({ fetchImpl, now, fixture });
+  } catch (error) {
+    await recordBatchStatus({ snapshotPath: output, sourceId: "crossref", datasetId: "recent-research-papers", status: "failed", error, attemptedAt: now.toISOString() });
+    throw error;
+  }
+  if (previous?.schemaVersion === 1 && Array.isArray(previous.records)) {
+    const recent = new Map(previous.records
+      .filter((record) => typeof record.indexedAt === "string" && record.indexedAt >= next.indexedSince)
+      .map((record) => [record.doi.toLowerCase(), record]));
+    for (const record of next.records) recent.set(record.doi.toLowerCase(), record);
+    next.records = [...recent.values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.doi.localeCompare(b.doi));
+  }
   const comparable = (snapshot) => JSON.stringify({ schemaVersion: snapshot.schemaVersion, source: snapshot.source, sourceUrl: snapshot.sourceUrl, license: snapshot.license, records: snapshot.records });
   if (previous?.schemaVersion === 1 && comparable(previous) === comparable(next)) {
     console.log(`Research paper metadata unchanged (${next.records.length} records); retaining the existing file.`);
+    await recordBatchStatus({ snapshotPath: output, sourceId: "crossref", datasetId: "recent-research-papers", status: "unchanged", referenceDate: next.records.reduce((latest, record) => record.indexedAt > latest ? record.indexedAt : latest, ""), recordCount: next.records.length, attemptedAt: now.toISOString() });
     return { changed: false, snapshot: previous };
   }
-  await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, `${JSON.stringify(next)}\n`, "utf8");
+  await writeJsonAtomically(output, next);
+  await recordBatchStatus({ snapshotPath: output, sourceId: "crossref", datasetId: "recent-research-papers", status: "success", referenceDate: next.records.reduce((latest, record) => record.indexedAt > latest ? record.indexedAt : latest, ""), recordCount: next.records.length, attemptedAt: now.toISOString() });
   console.log(`Wrote ${next.records.length} validated Crossref records indexed since ${next.indexedSince}.`);
   return { changed: true, snapshot: next };
 }

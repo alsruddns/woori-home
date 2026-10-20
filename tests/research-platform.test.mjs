@@ -12,7 +12,7 @@ require.extensions[".ts"] = (module, filename) => {
   module._compile(output, filename);
 };
 const { rankCountryObservations, periodChange } = require("../src/lib/data-platform/rankings.ts");
-const { researchCopy, localizedNewCategories } = require("../src/lib/data-platform/research-copy.ts");
+const { researchCopy, localizedNewCategories, researchFilterCopy } = require("../src/lib/data-platform/research-copy.ts");
 const { comparePeriodCopy, isRateIndicator } = require("../src/lib/data-platform/compare-period-copy.ts");
 
 test("country rankings use exact-year country values, exclude aggregates, sort both ways, and share ties", () => {
@@ -45,6 +45,7 @@ test("research and commodity navigation copy is complete in every supported loca
     const copy = researchCopy[locale];
     assert.ok(copy.papers && copy.papersDescription && copy.metadataNotice && copy.noSummary, `${locale}: papers copy`);
     assert.ok(copy.refreshNotice && copy.retractionNotice && copy.unknown, `${locale}: paper status copy`);
+    assert.ok(researchFilterCopy[locale].keywords && researchFilterCopy[locale].fromDate && researchFilterCopy[locale].toDate, `${locale}: paper filters`);
     assert.ok(copy.commodities && copy.commoditiesDescription && copy.rightsPending && copy.unitNote, `${locale}: commodity copy`);
     assert.ok(!JSON.stringify(copy).includes("�"), `${locale}: malformed replacement character`);
     assert.doesNotMatch(JSON.stringify(copy), /[?]{2,}|[\uF900-\uFAFF]/, `${locale}: suspiciously corrupted translation`);

@@ -154,3 +154,26 @@ Only the ILO modeled unemployment series was added after confirming ILOSTAT's CC
 - [NASA media and data guidance](https://www.nasa.gov/nasa-brand-center/images-and-media/)
 - [NASA APOD copyright FAQ](https://science.nasa.gov/apod/apod-faq/)
 - [JPL SSD/CNEOS API service and fair-use policy](https://ssd-api.jpl.nasa.gov/doc/)
+
+## Phase 11–14 batch state and research/mineral source review — 2026-10-21
+
+### Collection status and publication boundary
+
+- Each checked-in snapshot has a sibling `*.status.json` file with `sourceId`, `datasetId`, attempt/success timestamps, latest reference date, content SHA-256 and shortened version, record count, status (`success`, `unchanged`, `failed`, `partial`, or `disabled`), and a sanitized error category. Failure updates preserve the last successful snapshot metadata.
+- Snapshot replacement uses a same-directory temporary file and rename. The public data snapshot is replaced only after normalization and validation finish. The status is collection status only; it does not claim that visitors received the file.
+- The three update workflows upload the snapshot and status file to `develop` only, use concurrency locks, bounded retries in the source adapters, and 15-minute job timeouts. If collection fails, the workflow still records the failure status before returning a failed job.
+- GitHub CLI authentication was available, but `gh workflow list --all` returned only the main-branch `publish.yml`. The data workflows exist only on `develop`; therefore GitHub does not currently offer them for `workflow_dispatch`, and their schedules are not active. No remote workflow run was dispatched.
+- Local live-source runs succeeded for Crossref (37 records), World Bank (4,514 observations; unchanged), and NASA NeoWs (57 records; unchanged). Re-running Crossref on the same UTC day was skipped after a successful run; its API search result is otherwise allowed one daily refresh, and recently indexed records are retained within the 30-day window to dampen result-set fluctuation.
+- A `develop` commit is not a production data delivery. The current `publish.yml` builds/deploys on `main`; this task did not change it or production. A separately approved integration still needs a data publication path that atomically makes a validated version available to the running container and records publication success separately from collection success.
+
+### Additional scholarly metadata candidates
+
+- **OpenAlex:** its current API documentation states that OpenAlex data is CC0. Basic queries are available without a key, with current request-rate limits and daily budgets documented by OpenAlex. No OpenAlex records are ingested yet; adding another overlapping index requires explicit deduplication and source-specific attribution design. References: https://help.openalex.org/api/ and https://help.openalex.org/api/authentication/.
+- **arXiv:** its API returns bibliographic metadata and has a documented query interface. The API terms require attribution/acknowledgment and prohibit implying endorsement; metadata rights do not grant rights to every paper's full text. It also asks clients to cache and use a delay for consecutive requests. No arXiv records are ingested yet. References: https://info.arxiv.org/help/api/tou.html and https://github.com/arXiv/arxiv-docs/blob/develop/source/help/api/user-manual.md.
+- **PubMed/NCBI:** E-utilities is the official structured API. NCBI asks clients to stay at or below three requests per second without an API key, include registered tool/email details for scripted access, and warns that abstracts may contain publisher/author copyrighted material. No PubMed records or abstracts are copied. References: https://www.ncbi.nlm.nih.gov/books/NBK25497/ and https://www.ncbi.nlm.nih.gov/home/about/policies/.
+
+### USGS mineral statistics candidate
+
+- USGS Mineral Commodity Summaries 2026 is an official annual release with separate CSV tables covering U.S. salient statistics and world production statistics for more than 90 nonfuel mineral commodities. The official data-release page marks this release CC0 1.0. The related USGS catalog reports statistical years 2021–2025; these are annual production/supply statistics, not daily market prices.
+- The release page and rights were verified, but the ScienceBase item/API endpoint returned a Cloudflare browser challenge from this workstation. The CSV was not downloaded or schema-validated here, so no production, reserve, or price values have been published. A later batch implementation should download the official CSV once per annual release, validate its per-file metadata and units, then normalize a small subset (for example copper, lithium, nickel, and rare earths) without retaining raw files in the website bundle.
+- References: https://www.usgs.gov/data/mineral-commodity-summaries-2026-data-release, https://www.usgs.gov/sciencebase-instructions-and-documentation/api-and-web-services, https://www.usgs.gov/sciencebase-instructions-and-documentation/search-queries.

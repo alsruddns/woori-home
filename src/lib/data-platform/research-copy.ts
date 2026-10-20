@@ -57,6 +57,23 @@ export const researchApplyLabel: Record<Locale, string> = {
   ko:"필터 적용", en:"Apply filters", ja:"絞り込む", zh:"应用筛选", es:"Aplicar filtros", "pt-br":"Aplicar filtros", de:"Filter anwenden", fr:"Appliquer les filtres", vi:"Áp dụng bộ lọc", id:"Terapkan filter", th:"ใช้ตัวกรอง", "zh-tw":"套用篩選", it:"Applica filtri", nl:"Filters toepassen", hi:"फ़िल्टर लागू करें",
 };
 
+export const researchFilterCopy: Record<Locale, { keywords: string; fromDate: string; toDate: string }> = {
+  ko:{keywords:"제목, 저자 또는 DOI 검색",fromDate:"발표 시작일",toDate:"발표 종료일"},
+  en:{keywords:"Search title, author, or DOI",fromDate:"Published from",toDate:"Published to"},
+  ja:{keywords:"タイトル・著者・DOIを検索",fromDate:"公開開始日",toDate:"公開終了日"},
+  zh:{keywords:"搜索标题、作者或 DOI",fromDate:"发表日期（起）",toDate:"发表日期（止）"},
+  es:{keywords:"Buscar título, autor o DOI",fromDate:"Publicado desde",toDate:"Publicado hasta"},
+  "pt-br":{keywords:"Buscar título, autor ou DOI",fromDate:"Publicado a partir de",toDate:"Publicado até"},
+  de:{keywords:"Titel, Autor oder DOI suchen",fromDate:"Veröffentlicht ab",toDate:"Veröffentlicht bis"},
+  fr:{keywords:"Rechercher un titre, un auteur ou un DOI",fromDate:"Publié à partir du",toDate:"Publié jusqu’au"},
+  vi:{keywords:"Tìm tiêu đề, tác giả hoặc DOI",fromDate:"Công bố từ ngày",toDate:"Công bố đến ngày"},
+  id:{keywords:"Cari judul, penulis, atau DOI",fromDate:"Terbit sejak",toDate:"Terbit hingga"},
+  th:{keywords:"ค้นหาชื่อเรื่อง ผู้เขียน หรือ DOI",fromDate:"วันที่เผยแพร่เริ่มต้น",toDate:"วันที่เผยแพร่สิ้นสุด"},
+  "zh-tw":{keywords:"搜尋標題、作者或 DOI",fromDate:"發表日期（起）",toDate:"發表日期（迄）"},
+  it:{keywords:"Cerca titolo, autore o DOI",fromDate:"Pubblicato dal",toDate:"Pubblicato al"},
+  nl:{keywords:"Zoek titel, auteur of DOI",fromDate:"Gepubliceerd vanaf",toDate:"Gepubliceerd tot"},
+  hi:{keywords:"शीर्षक, लेखक या DOI खोजें",fromDate:"प्रकाशन की शुरुआत",toDate:"प्रकाशन की समाप्ति"},
+};
 export const paperLicenseLabel: Record<Locale, string> = {
   ko:"Crossref에 등록된 라이선스 URL", en:"License URL listed by Crossref", ja:"Crossrefに登録されたライセンスURL", zh:"Crossref 中列出的许可链接", es:"URL de licencia indicada en Crossref", "pt-br":"URL da licença informada no Crossref", de:"Bei Crossref hinterlegte Lizenz-URL", fr:"URL de licence indiquée dans Crossref", vi:"URL giấy phép được ghi trong Crossref", id:"URL lisensi yang tercatat di Crossref", th:"URL ใบอนุญาตที่ระบุใน Crossref", "zh-tw":"Crossref 列出的授權網址", it:"URL della licenza indicato in Crossref", nl:"Licentie-URL vermeld bij Crossref", hi:"Crossref में दी गई लाइसेंस URL",
 };
