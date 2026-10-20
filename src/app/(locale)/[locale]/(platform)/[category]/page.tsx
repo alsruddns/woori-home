@@ -9,6 +9,9 @@ import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { IndicatorCategory, EmptyCategory } from "../../world-data";
 import { StockMarketDashboard, StockMarketLoading } from "../../stock-market-dashboard";
 import PortalIntroduction from "../../portal-introduction";
+import { energyPageCopy } from "@/lib/data-platform/energy-copy";
+import { scienceCopy } from "@/lib/data-platform/science-copy";
+import { ScienceDashboard } from "../../science-dashboard";
 
 const valid = new Set(["economy", "stocks", "population", "energy", "science", "about"]);
 const categoryIndex: Record<string, number> = { economy: 1, stocks: 2, population: 3, energy: 4, science: 6, about: 7 };
@@ -19,18 +22,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale, category } = await params;
   if (!isLocale(locale) || !valid.has(category)) notFound();
   const copy = platformCopy[locale];
-  const title = category === "stocks" ? stockCopy[locale].title : category === "about" ? portalContent[locale].aboutTitle : copy.categories[categoryIndex[category]];
-  const description = category === "stocks" ? stockCopy[locale].description : category === "about" ? portalContent[locale].about : copy.overviewBody;
+  const title = category === "stocks" ? stockCopy[locale].title : category === "about" ? portalContent[locale].aboutTitle : category === "science" ? scienceCopy[locale].title : copy.categories[categoryIndex[category]];
+  const description = category === "stocks" ? stockCopy[locale].description : category === "about" ? portalContent[locale].about : category === "science" ? scienceCopy[locale].description : category === "energy" ? energyPageCopy[locale].intro : copy.overviewBody;
   const path = `/${category}`; const url = `${origin}/${locale}${path}`;
-  const index = category === "about" || category === "economy" || category === "population";
+  const index = category === "about" || category === "economy" || category === "population" || category === "energy" || category === "science";
   return { title: `${title} | WOORI.TODAY`, description, robots: { index, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description } };
 }
 
-export default async function CategoryPage({ params }: { params: Promise<{ locale: string; category: string }> }) {
+export default async function CategoryPage({ params, searchParams }: { params: Promise<{ locale: string; category: string }>; searchParams: Promise<{ date?: string }> }) {
   const { locale, category } = await params;
   if (!isLocale(locale) || !valid.has(category)) notFound();
   if (category === "stocks") return <Suspense fallback={<StockMarketLoading locale={locale} />}><StockMarketDashboard locale={locale} /></Suspense>;
   if (category === "about") return <PortalIntroduction locale={locale} />;
   if (category === "economy" || category === "population") return <IndicatorCategory locale={locale} category={category} title={platformCopy[locale].categories[categoryIndex[category]]} />;
+  if (category === "energy") return <IndicatorCategory locale={locale} category="energy" title={platformCopy[locale].categories[categoryIndex.energy]} />;
+  if (category === "science") return <ScienceDashboard locale={locale} requestedDate={(await searchParams).date} />;
   return <EmptyCategory locale={locale} title={platformCopy[locale].categories[categoryIndex[category]]} />;
 }

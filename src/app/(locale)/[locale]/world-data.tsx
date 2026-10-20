@@ -7,6 +7,7 @@ import { countryByCode, countryCodeForIso3 } from "@/lib/data-platform/countries
 import { unitFor } from "@/lib/data-platform/country-units";
 import { CountryComparisonDashboard } from "./country-comparison";
 import type { CountrySeries } from "./country-charts";
+import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-copy";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -59,7 +60,7 @@ export function IndicatorPage({ locale, slug }: { locale: Locale; slug: string }
   const definition = indicator.definition[locale] ?? copy.sourceNote;
   const interpretation = indicator.interpretation[locale] ?? copy.sourceNote;
   const url = `${origin}/${locale}/${indicator.category}/${indicator.id}`;
-  const structuredData = { "@context": "https://schema.org", "@type": "Dataset", name: label, description: definition, url, creator: { "@type": "Organization", name: "World Bank" }, temporalCoverage: reference ? `${series[0]?.year ?? reference.year}/${reference.year}` : undefined, variableMeasured: label, license: "https://data.worldbank.org/summary-terms-of-use", distribution: { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: `https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json` } };
+  const structuredData = { "@context": "https://schema.org", "@type": "Dataset", name: label, description: definition, url, creator: { "@type": "Organization", name: "World Bank" }, temporalCoverage: reference ? `${series[0]?.year ?? reference.year}/${reference.year}` : undefined, variableMeasured: label, license: indicator.id === "electricity-access" ? "https://creativecommons.org/licenses/by/4.0/" : "https://data.worldbank.org/summary-terms-of-use", distribution: { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: `https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json` } };
   const prior = reference ? series.filter((item) => item.year < reference.year).at(-1) : undefined;
   const delta = prior && reference ? (reference.value - prior.value) / Math.abs(prior.value) * 100 : null;
   return <>
@@ -76,9 +77,15 @@ export function IndicatorPage({ locale, slug }: { locale: Locale; slug: string }
 export function IndicatorCategory({ locale, category, title }: { locale: Locale; category: "economy" | "population" | "energy"; title: string }) {
   const copy = platformCopy[locale];
   const entries = indicators.filter((item) => item.category === category);
+  const energy = category === "energy" ? energyPageCopy[locale] : null;
+  const pageUrl = `${origin}/${locale}/${category}`;
+  const structuredData = { "@context": "https://schema.org", "@type": "CollectionPage", name: title, description: energy?.intro ?? copy.overviewBody, url: pageUrl, inLanguage: locale, hasPart: entries.map((item) => ({ "@type": "Dataset", name: item.label[locale], url: `${origin}/${locale}/${category}/${item.id}` })) };
+  const breadcrumbs = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: copy.categories[0], item: `${origin}/${locale}` }, { "@type": "ListItem", position: 2, name: title, item: pageUrl }] };
   return <>
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs).replace(/</g, "\\u003c") }} />
     <nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{title}</span></nav>
-    <header className="platform-page-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank WDI</span><h1>{title}</h1><p>{copy.overviewBody}</p></header>
+    <header className="platform-page-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank WDI</span><h1>{title}</h1><p>{energy?.intro ?? copy.overviewBody}</p></header>
     <section className="platform-indicator-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{title}</h2></div><span>{copy.referenceYear}</span></div>
       <div className="platform-indicator-grid">{entries.map((indicator) => {
         const latest = latestByCountry(indicator.code).filter((item) => item.country !== "WLD").sort((a, b) => b.year - a.year)[0];
@@ -90,7 +97,8 @@ export function IndicatorCategory({ locale, category, title }: { locale: Locale;
         </Link>;
       })}</div>
     </section>
-    <p className="platform-data-note">{copy.sourceNote} <a href="https://data.worldbank.org/summary-terms-of-use">World Bank terms</a></p>
+    {energy ? <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">EG.ELC.ACCS.ZS</span><h2>{energy.comparison}</h2></div><span>{energy.dateLabel}</span></div><DataTable locale={locale} indicator="EG.ELC.ACCS.ZS" limit={15} /></section> : null}
+    <p className="platform-data-note">{energy ? energyAccessCopy[locale].source : copy.sourceNote} <a href={category === "energy" ? "https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS" : "https://data.worldbank.org/summary-terms-of-use"}>{category === "energy" ? "EG.ELC.ACCS.ZS · CC BY 4.0" : "World Bank terms"}</a></p>
   </>;
 }
 

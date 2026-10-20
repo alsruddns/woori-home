@@ -7,6 +7,9 @@ import { latestForCountry } from "@/lib/data-platform/snapshot";
 import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { countryCopy } from "@/lib/data-platform/country-copy";
 import { mockStockSnapshots } from "@/lib/data-platform/mock-stocks";
+import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-copy";
+import { scienceCopy } from "@/lib/data-platform/science-copy";
+import neoSnapshot from "@/data/nasa-neows.json";
 
 const viewLabels: Record<Locale, string> = {
   ko:"데이터 보기", en:"Explore data", ja:"データを見る", zh:"查看数据", es:"Ver datos", "pt-br":"Ver dados", de:"Daten ansehen", fr:"Voir les données", vi:"Xem dữ liệu", id:"Lihat data", th:"ดูข้อมูล", "zh-tw":"查看資料", it:"Visualizza i dati", nl:"Bekijk gegevens", hi:"डेटा देखें",
@@ -19,6 +22,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   const familyCopy = familySitesCopy[locale];
   const population = latestForCountry("SP.POP.TOTL", "WLD");
   const gdp = latestForCountry("NY.GDP.MKTP.CD", "WLD");
+  const electricityAccess = latestForCountry("EG.ELC.ACCS.ZS", "WLD");
   const populationIndicator = indicators.find((item) => item.id === "population")!;
   const gdpIndicator = indicators.find((item) => item.id === "gdp")!;
   const latestSample = Object.values(mockStockSnapshots).filter(Boolean).map((snapshot) => snapshot!.asOf).sort().at(-1);
@@ -29,10 +33,8 @@ export function PlatformHome({ locale }: { locale: Locale }) {
     { href: `/${locale}/countries`, title: copy.categories[5], detail: countries.dataGapNote },
     { href: `/${locale}/stocks`, title: copy.categories[2], detail: stocks.description, sample: true },
   ];
-  const extensions = [
-    { href: `/${locale}/energy`, title: copy.categories[4] },
-    { href: `/${locale}/science`, title: copy.categories[6] },
-  ];
+  const scienceDate = neoSnapshot.dates[0];
+  const scienceCount = neoSnapshot.objects.filter((item) => item.closeApproachDate === scienceDate).length;
   const familyKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -44,6 +46,10 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   };
   const format = (value: number, maximumFractionDigits = 0) => new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
   const date = (value?: string) => value ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`)) : copy.missing;
+  const extensions = [
+    { href: `/${locale}/energy`, title: copy.categories[4], detail: energyPageCopy[locale].intro, value: electricityAccess ? `${format(electricityAccess.value, 1)}%` : copy.missing, meta: electricityAccess ? `${energyPageCopy[locale].dateLabel}: ${electricityAccess.year} · ${energyAccessCopy[locale].source}` : copy.notAvailable },
+    { href: `/${locale}/science`, title: scienceCopy[locale].title, detail: scienceCopy[locale].description, value: format(scienceCount), meta: `${scienceCopy[locale].date}: ${date(scienceDate)} · ${scienceCopy[locale].source}` },
+  ];
 
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
@@ -58,8 +64,8 @@ export function PlatformHome({ locale }: { locale: Locale }) {
         {card.sample ? <div className="platform-home-sample"><strong>{stocks.statusLabel} · {date(latestSample)}</strong><span>{stocks.mockLabel}</span><p>{stocks.mockDisclosure}</p></div> : null}
       </article>)}</div>
     </section>
-    <section className="platform-home-section platform-home-extensions"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.notAvailable}</span><h2>{extensions.map((item) => item.title).join(" · ")}</h2></div></div>
-      <div className="platform-home-grid">{extensions.map((item) => <article className="platform-home-card is-unavailable" key={item.href}><Link href={item.href}><h3>{item.title}</h3><p>{copy.notAvailable}</p></Link></article>)}</div>
+    <section className="platform-home-section platform-home-extensions"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{extensions.map((item) => item.title).join(" · ")}</h2></div></div>
+      <div className="platform-home-grid">{extensions.map((item) => <article className="platform-home-card" key={item.href}><Link href={item.href}><h3>{item.title}</h3><p>{item.detail}</p><strong>{item.value}</strong><span className="platform-card-meta">{item.meta}</span><span className="platform-home-link">{viewLabels[locale]} →</span></Link></article>)}</div>
     </section>
     <p className="platform-home-about"><Link href={`/${locale}/about`}>{copy.categories[7]} →</Link></p>
     <p className="platform-home-source">{countries.sourceNote}</p>

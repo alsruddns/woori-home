@@ -12,7 +12,7 @@ test("World Bank snapshot contains validated observations and complete provenanc
   assert.equal(snapshot.source, "World Bank");
   assert.ok(Date.parse(snapshot.generatedAt));
   assert.ok(snapshot.observations.length > 1000);
-  assert.equal(Object.keys(storedSnapshot.indicatorMetadata).length, 7);
+  assert.equal(Object.keys(storedSnapshot.indicatorMetadata).length, 8);
   assert.equal(Object.keys(storedSnapshot.observations[0]).length, 5);
   for (const row of snapshot.observations) {
     assert.match(row.country, /^[A-Z]{3}$/);
@@ -27,15 +27,56 @@ test("World Bank snapshot contains validated observations and complete provenanc
     assert.ok(row.lastCheckedAt);
     assert.ok(row.lastUpdatedAt);
   }
+  const access = snapshot.observations.filter((row) => row.indicator === "EG.ELC.ACCS.ZS");
+  assert.ok(access.length > 0);
+  assert.ok(access.every((row) => row.unit === "percent of population" && /CC BY 4\.0/.test(row.license)));
+  assert.equal(Math.max(...access.map((row) => row.year)), 2024);
 });
 
 test("only source-reviewed WDI additions are shipped and their upstream attribution is preserved", () => {
   const indicators = new Set(snapshot.observations.map((row) => row.indicator));
   assert.ok(indicators.has("SL.UEM.TOTL.ZS"));
-  for (const deferred of ["NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG", "EG.FEC.RNEW.ZS", "EG.USE.PCAP.KG.OE", "EG.USE.ELEC.KH.PC", "EG.ELC.ACCS.ZS"]) assert.ok(!indicators.has(deferred), `${deferred} rights remain unverified`);
+  for (const deferred of ["NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG", "EG.FEC.RNEW.ZS", "EG.USE.PCAP.KG.OE", "EG.USE.ELEC.KH.PC"]) assert.ok(!indicators.has(deferred), `${deferred} rights remain unverified`);
   const laborSource = snapshot.observations.find((row) => row.indicator === "SL.UEM.TOTL.ZS");
   assert.match(laborSource.dataProvider, /International Labour Organization/);
   assert.match(laborSource.license, /ILOSTAT data CC BY 4\.0/);
+});
+
+test("NASA NeoWs snapshot is validated, date-scoped, and kept independent of visitor API calls", async () => {
+  const data = JSON.parse(await read("src/data/nasa-neows.json"));
+  const [adapter, workflow, category, page, audit] = await Promise.all([
+    read("scripts/data/update-nasa-neows.mjs"), read(".github/workflows/update-nasa-neows.yml"),
+    read("src/app/(locale)/[locale]/(platform)/[category]/page.tsx"), read("src/app/(locale)/[locale]/science-dashboard.tsx"),
+    read("docs/data-source-audit.md"),
+  ]);
+  assert.equal(data.schemaVersion, 1);
+  assert.equal(data.dates.length, 7);
+  assert.ok(data.objects.length > 0);
+  assert.ok(data.objects.every((item) => Number.isFinite(item.missDistanceKm) && Number.isFinite(item.relativeVelocityKmS) && Number.isFinite(item.estimatedDiameterMinM) && Number.isFinite(item.estimatedDiameterMaxM)));
+  assert.match(adapter, /NASA_API_KEY \|\| "DEMO_KEY"/);
+  assert.match(adapter, /previous checked-in snapshot was retained/);
+  assert.match(adapter, /typeof asteroid\.is_potentially_hazardous_asteroid !== "boolean"/);
+  assert.match(workflow, /ref: develop/);
+  assert.match(workflow, /git push origin develop/);
+  assert.match(category, /ScienceDashboard locale=\{locale\} requestedDate=\{\(await searchParams\)\.date\}/);
+  assert.match(page, /requestedDate && dates\.includes\(requestedDate\) \? requestedDate : requestedDate \? null/);
+  assert.match(page, /objects\.filter\(\(object\) => object\.closeApproachDate === selected\)/);
+  assert.match(audit, /APOD image and video embedding remains deferred/);
+});
+
+test("energy and science data copy covers all 15 locales without an English-only fallback", async () => {
+  const [energy, science, route, sitemap] = await Promise.all([
+    read("src/lib/data-platform/energy-copy.ts"), read("src/lib/data-platform/science-copy.ts"),
+    read("src/app/(locale)/[locale]/(platform)/[category]/page.tsx"), read("src/app/sitemap.ts"),
+  ]);
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
+    assert.match(energy, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing energy content`);
+    assert.match(science, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing science content`);
+  }
+  assert.match(energy, /distinct from electricity consumption/i);
+  assert.match(route, /category === "energy" \|\| category === "science"/);
+  assert.match(sitemap, /energyDetails/);
+  assert.doesNotMatch(route, /indicator\.definition\[locale\] \?\? platformCopy\[locale\]\.sourceNote/);
 });
 
 test("World Bank refresh is a batch adapter and retains the old snapshot on failure", async () => {

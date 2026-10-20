@@ -1,5 +1,6 @@
 import type { IndicatorDefinition } from "./model";
 import { expandedIndicator } from "./expanded-indicator-copy";
+import { energyAccessCopy } from "./energy-copy";
 
 export const dataCategories = [
   { id: "world", label: "World overview", path: "/world" },
@@ -50,6 +51,12 @@ export const indicators: IndicatorDefinition[] = [
     interpretation: { en: "The rate reflects births, deaths, and migration together. It is a percentage change, not the number of additional people.", ko: "출생·사망·이동이 함께 반영됩니다. 사람 수의 증감이 아니라 백분율 변화입니다." },
   },
   expandedIndicator("unemployment", "SL.UEM.TOTL.ZS", "economy"),
+  {
+    id: "electricity-access", category: "energy", code: "EG.ELC.ACCS.ZS", unit: "percent of population",
+    label: Object.fromEntries(Object.entries(energyAccessCopy).map(([locale, copy]) => [locale, copy.label])),
+    definition: Object.fromEntries(Object.entries(energyAccessCopy).map(([locale, copy]) => [locale, copy.definition])),
+    interpretation: Object.fromEntries(Object.entries(energyAccessCopy).map(([locale, copy]) => [locale, copy.interpretation])),
+  },
 ];
 
 export const stockMarkets = [

@@ -182,11 +182,14 @@ test("the new localized data home keeps the portal guide at about and preserves 
   assert.match(dashboardHome, /PlatformHome locale=\{locale\}/);
   assert.match(platformHome, /SP\.POP\.TOTL/);
   assert.match(platformHome, /NY\.GDP\.MKTP\.CD/);
+  assert.match(platformHome, /EG\.ELC\.ACCS\.ZS/);
+  assert.match(platformHome, /neoSnapshot\.objects/);
+  assert.doesNotMatch(platformHome, /is-unavailable/);
   assert.match(platformHome, /mockDisclosure/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
   assert.match(categoryRoute, /const index = category === "about" \|\| category === "economy" \|\| category === "population"/);
   assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
-  assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/about"\]/);
+  assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/energy", "\/science", "\/about"\]/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
 });
 

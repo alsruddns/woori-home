@@ -25,6 +25,10 @@ Useful pages:
 - <http://localhost:3003/ko/economy/gdp> — GDP indicator detail
 - <http://localhost:3003/ko/economy/unemployment> — ILO modeled unemployment indicator detail
 - <http://localhost:3003/en/countries> — English comparison dashboard
+- <http://localhost:3003/ko/energy> — Energy dashboard with World Bank electricity-access data
+- <http://localhost:3003/ko/energy/electricity-access> — Electricity-access indicator detail
+- <http://localhost:3003/ko/science> — NASA/JPL near-Earth object snapshot
+- <http://localhost:3003/ko/science?date=2026-10-20> — Select an available UTC approach date
 
 Useful stock and introduction pages:
 
@@ -39,6 +43,8 @@ Country dashboards and charts use `src/data/world-bank.json`; the browser does n
 The snapshot stores common source/provider metadata once per indicator and keeps observations compact. Source-specific reuse decisions and deferred data candidates are documented in `docs/data-source-audit.md`.
 
 The stock market screen is a clearly disclosed interface example using synthetic sample entries. It is not live or historical market data, and no redistribution rights have been verified. Only dates present in each market's local sample snapshot show a treemap.
+
+The energy dashboard uses the checked-in World Bank electricity-access series and does not call an external API while visitors browse. The science page uses a separate checked-in NASA/JPL NeoWs snapshot; the optional `NASA_API_KEY` is only used by the daily GitHub Actions refresh. Local development does not need the key or network access. NASA APOD imagery is not copied or displayed because rights vary by item.
 
 ## Checks
 
