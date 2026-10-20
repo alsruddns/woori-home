@@ -4,6 +4,7 @@ import { platformCopy } from "@/lib/data-platform/locales";
 import { indicators } from "@/lib/data-platform/registry";
 import { getSnapshotMetadata, latestByCountry, latestForCountry, observationsFor } from "@/lib/data-platform/snapshot";
 import { countryByCode, countryCodeForIso3 } from "@/lib/data-platform/countries";
+import { unitFor } from "@/lib/data-platform/country-units";
 import { CountryComparisonDashboard } from "./country-comparison";
 import type { CountrySeries } from "./country-charts";
 
@@ -55,8 +56,8 @@ export function IndicatorPage({ locale, slug }: { locale: Locale; slug: string }
   const reference = latestForCountry(indicator.code, "WLD") ?? rows[0] ?? null;
   const series = reference ? observationsFor(indicator.code, reference.country).sort((a, b) => a.year - b.year) : [];
   const label = indicator.label[locale] ?? indicator.label.en;
-  const definition = indicator.definition[locale] ?? indicator.definition.en;
-  const interpretation = indicator.interpretation[locale] ?? indicator.interpretation.en;
+  const definition = indicator.definition[locale] ?? copy.sourceNote;
+  const interpretation = indicator.interpretation[locale] ?? copy.sourceNote;
   const url = `${origin}/${locale}/${indicator.category}/${indicator.id}`;
   const structuredData = { "@context": "https://schema.org", "@type": "Dataset", name: label, description: definition, url, creator: { "@type": "Organization", name: "World Bank" }, temporalCoverage: reference ? `${series[0]?.year ?? reference.year}/${reference.year}` : undefined, variableMeasured: label, license: "https://data.worldbank.org/summary-terms-of-use", distribution: { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: `https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json` } };
   const prior = reference ? series.filter((item) => item.year < reference.year).at(-1) : undefined;
@@ -65,10 +66,31 @@ export function IndicatorPage({ locale, slug }: { locale: Locale; slug: string }
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
     <nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{label}</span></nav>
     <header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / {indicator.code}</span><h1>{label}</h1><p>{definition}</p></header>
-    <section className="platform-metric-summary"><div><span>{copy.latest}</span><strong>{reference ? format(reference.value, locale, 2) : copy.missing}</strong><small>{reference ? `${localizedCountryName(reference.country, reference.countryName, locale)} · ${reference.year} · ${indicator.unit}` : copy.notAvailable}</small></div><div><span>{copy.previousChange}</span><strong>{delta === null ? copy.missing : `${delta > 0 ? "+" : ""}${format(delta, locale, 2)}%`}</strong><small>{prior && reference ? `${prior.year} → ${reference.year}` : "—"}</small></div><div><span>{copy.updated}</span><strong>{reference?.lastCheckedAt.slice(0, 10) ?? copy.missing}</strong><small>{copy.dataSource}: {reference?.source ?? "World Bank"}</small></div></section>
-    <section className="platform-chart-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{reference?.countryName ?? "World"}</span><h2>{copy.latest}</h2></div><span>{copy.referenceYear}: {reference?.year ?? "—"}</span></div><TrendChart values={series.map((item) => item.value)} label={`${label}, ${reference?.countryName ?? ""}`} /></section>
+    <section className="platform-metric-summary"><div><span>{copy.latest}</span><strong>{reference ? format(reference.value, locale, 2) : copy.missing}</strong><small>{reference ? `${localizedCountryName(reference.country, reference.countryName, locale)} · ${reference.year} · ${unitFor(locale, indicator)}` : copy.notAvailable}</small></div><div><span>{copy.previousChange}</span><strong>{delta === null ? copy.missing : `${delta > 0 ? "+" : ""}${format(delta, locale, 2)}%`}</strong><small>{prior && reference ? `${prior.year} → ${reference.year}` : "—"}</small></div><div><span>{copy.updated}</span><strong>{reference?.lastCheckedAt.slice(0, 10) ?? copy.missing}</strong><small>{copy.dataSource}: {reference?.source ?? "World Bank"}</small></div></section>
+    <section className="platform-chart-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{reference?.countryName ?? "World"}</span><h2>{copy.latest}</h2></div><span>{copy.referenceYear}: {reference?.year ?? "—"}</span></div><TrendChart locale={locale} values={series.map((item) => item.value)} label={`${label}, ${reference?.countryName ?? ""}`} /></section>
     <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{indicator.code}</span><h2>{copy.compare}</h2></div></div><DataTable locale={locale} indicator={indicator.code} /></section>
-    <section className="platform-explainer"><article><h2>{copy.definition}</h2><p>{definition}</p></article><article><h2>{copy.interpretation}</h2><p>{interpretation}</p></article><article><h2>{copy.dataSource}</h2><p>{copy.sourceNote} <a href={`https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json`}>World Bank · {indicator.code}</a></p></article></section>
+    <section className="platform-explainer"><article><h2>{copy.definition}</h2><p>{definition}</p></article><article><h2>{copy.interpretation}</h2><p>{interpretation}</p></article><article><h2>{copy.dataSource}</h2><p>{copy.sourceNote} <a href={`https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json`}>World Bank · {indicator.code}</a>{reference?.dataProvider ? ` · ${reference.dataProvider}` : ""}</p><small>{reference?.license}</small></article></section>
+  </>;
+}
+
+export function IndicatorCategory({ locale, category, title }: { locale: Locale; category: "economy" | "population" | "energy"; title: string }) {
+  const copy = platformCopy[locale];
+  const entries = indicators.filter((item) => item.category === category);
+  return <>
+    <nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{title}</span></nav>
+    <header className="platform-page-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank WDI</span><h1>{title}</h1><p>{copy.overviewBody}</p></header>
+    <section className="platform-indicator-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{title}</h2></div><span>{copy.referenceYear}</span></div>
+      <div className="platform-indicator-grid">{entries.map((indicator) => {
+        const latest = latestByCountry(indicator.code).filter((item) => item.country !== "WLD").sort((a, b) => b.year - a.year)[0];
+        return <Link className="platform-indicator-card" href={`/${locale}/${category}/${indicator.id}`} key={indicator.id}>
+          <span className="platform-card-label">{indicator.label[locale]}</span>
+          <strong>{latest ? format(latest.value, locale, 2) : copy.missing}</strong>
+          <span className="platform-card-meta">{latest ? `${localizedCountryName(latest.country, latest.countryName, locale)} · ${latest.year} · ${unitFor(locale, indicator)}` : copy.notAvailable}</span>
+          <span className="platform-card-link">{copy.latest} →</span>
+        </Link>;
+      })}</div>
+    </section>
+    <p className="platform-data-note">{copy.sourceNote} <a href="https://data.worldbank.org/summary-terms-of-use">World Bank terms</a></p>
   </>;
 }
 
@@ -94,8 +116,8 @@ function DataTable({ locale, indicator, limit = 12 }: { locale: Locale; indicato
   return <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{copy.country}</th><th>{copy.year}</th><th>{copy.value}</th></tr></thead><tbody>{rows.map((row) => { const code = countryCodeForIso3(row.country); return <tr key={row.country}><th scope="row">{code ? <Link href={`/${locale}/countries/${code}`}>{localizedCountryName(row.country, row.countryName, locale)}</Link> : localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>; })}</tbody></table>{rows.length === 0 ? <p className="platform-empty-row">{copy.missing}</p> : null}</div>;
 }
 
-function TrendChart({ values, label }: { values: number[]; label: string }) {
-  if (values.length < 2) return <p className="platform-empty-row">{platformCopy.en.missing}</p>;
+function TrendChart({ locale, values, label }: { locale: Locale; values: number[]; label: string }) {
+  if (values.length < 2) return <p className="platform-empty-row">{platformCopy[locale].missing}</p>;
   const min = Math.min(...values); const max = Math.max(...values); const span = max - min || 1;
   const points = values.map((value, index) => `${(index / (values.length - 1)) * 100},${92 - ((value - min) / span) * 82}`).join(" ");
   return <div className="platform-chart-wrap"><svg className="platform-trend-chart" viewBox="0 0 100 100" role="img" aria-label={label} preserveAspectRatio="none"><line x1="0" y1="92" x2="100" y2="92"/><polyline points={points}/></svg><div className="platform-chart-labels"><span>{min.toLocaleString()}</span><span>{max.toLocaleString()}</span></div></div>;

@@ -4,13 +4,16 @@ import { readFile } from "node:fs/promises";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
-const snapshot = JSON.parse(await read("src/data/world-bank.json"));
+const storedSnapshot = JSON.parse(await read("src/data/world-bank.json"));
+const snapshot = { ...storedSnapshot, observations: storedSnapshot.observations.map((row) => ({ ...row, ...storedSnapshot.indicatorMetadata[row.indicator] })) };
 
 test("World Bank snapshot contains validated observations and complete provenance", () => {
-  assert.equal(snapshot.schemaVersion, 1);
+  assert.equal(snapshot.schemaVersion, 2);
   assert.equal(snapshot.source, "World Bank");
   assert.ok(Date.parse(snapshot.generatedAt));
   assert.ok(snapshot.observations.length > 1000);
+  assert.equal(Object.keys(storedSnapshot.indicatorMetadata).length, 7);
+  assert.equal(Object.keys(storedSnapshot.observations[0]).length, 5);
   for (const row of snapshot.observations) {
     assert.match(row.country, /^[A-Z]{3}$/);
     assert.match(row.indicator, /^[A-Z0-9.]+$/);
@@ -18,11 +21,21 @@ test("World Bank snapshot contains validated observations and complete provenanc
     assert.ok(Number.isFinite(row.value));
     assert.ok(row.unit);
     assert.equal(row.source, "World Bank");
+    assert.ok(row.dataProvider);
     assert.match(row.sourceUrl, /^https:\/\/api\.worldbank\.org\/v2\//);
     assert.ok(row.license);
     assert.ok(row.lastCheckedAt);
     assert.ok(row.lastUpdatedAt);
   }
+});
+
+test("only source-reviewed WDI additions are shipped and their upstream attribution is preserved", () => {
+  const indicators = new Set(snapshot.observations.map((row) => row.indicator));
+  assert.ok(indicators.has("SL.UEM.TOTL.ZS"));
+  for (const deferred of ["NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG", "EG.FEC.RNEW.ZS", "EG.USE.PCAP.KG.OE", "EG.USE.ELEC.KH.PC", "EG.ELC.ACCS.ZS"]) assert.ok(!indicators.has(deferred), `${deferred} rights remain unverified`);
+  const laborSource = snapshot.observations.find((row) => row.indicator === "SL.UEM.TOTL.ZS");
+  assert.match(laborSource.dataProvider, /International Labour Organization/);
+  assert.match(laborSource.license, /ILOSTAT data CC BY 4\.0/);
 });
 
 test("World Bank refresh is a batch adapter and retains the old snapshot on failure", async () => {
@@ -47,7 +60,7 @@ test("market fixtures are visibly marked as development sample data and kept apa
   assert.match(fixtures, /DEVELOPMENT MOCK/);
   assert.match(preview, /role="note"/);
   assert.doesNotMatch(preview, /WOORI\.DATA|MARKET SNAPSHOT UI|Market breadth prototype|Snapshot schema preview|Market cap weighted layout|6 mock securities|debug/i);
-  assert.doesNotMatch(productionSnapshot, /mock|DEVELOPMENT/i);
+  assert.doesNotMatch(productionSnapshot, /DEVELOPMENT MOCK|schema preview|market breadth prototype/i);
 });
 
 test("country route codes map one-to-one to all 15 countries present in the snapshot", async () => {

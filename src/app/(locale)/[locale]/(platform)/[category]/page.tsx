@@ -6,7 +6,7 @@ import { platformCopy } from "@/lib/data-platform/locales";
 import { dataCategories } from "@/lib/data-platform/registry";
 import { portalContent } from "@/lib/portal-content";
 import { stockCopy } from "@/lib/data-platform/stock-copy";
-import { EmptyCategory } from "../../world-data";
+import { IndicatorCategory, EmptyCategory } from "../../world-data";
 import { StockMarketDashboard, StockMarketLoading } from "../../stock-market-dashboard";
 import PortalIntroduction from "../../portal-introduction";
 
@@ -20,9 +20,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   if (!isLocale(locale) || !valid.has(category)) notFound();
   const copy = platformCopy[locale];
   const title = category === "stocks" ? stockCopy[locale].title : category === "about" ? portalContent[locale].aboutTitle : copy.categories[categoryIndex[category]];
-  const description = category === "stocks" ? stockCopy[locale].description : category === "about" ? portalContent[locale].about : copy.notAvailable;
+  const description = category === "stocks" ? stockCopy[locale].description : category === "about" ? portalContent[locale].about : copy.overviewBody;
   const path = `/${category}`; const url = `${origin}/${locale}${path}`;
-  return { title: `${title} | WOORI.TODAY`, description, robots: { index: category === "about", follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description } };
+  const index = category === "about" || category === "economy" || category === "population";
+  return { title: `${title} | WOORI.TODAY`, description, robots: { index, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description } };
 }
 
 export default async function CategoryPage({ params }: { params: Promise<{ locale: string; category: string }> }) {
@@ -30,5 +31,6 @@ export default async function CategoryPage({ params }: { params: Promise<{ local
   if (!isLocale(locale) || !valid.has(category)) notFound();
   if (category === "stocks") return <Suspense fallback={<StockMarketLoading locale={locale} />}><StockMarketDashboard locale={locale} /></Suspense>;
   if (category === "about") return <PortalIntroduction locale={locale} />;
+  if (category === "economy" || category === "population") return <IndicatorCategory locale={locale} category={category} title={platformCopy[locale].categories[categoryIndex[category]]} />;
   return <EmptyCategory locale={locale} title={platformCopy[locale].categories[categoryIndex[category]]} />;
 }

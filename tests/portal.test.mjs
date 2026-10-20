@@ -184,9 +184,9 @@ test("the new localized data home keeps the portal guide at about and preserves 
   assert.match(platformHome, /NY\.GDP\.MKTP\.CD/);
   assert.match(platformHome, /mockDisclosure/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
-  assert.match(categoryRoute, /robots: \{ index: category === "about", follow: true \}/);
+  assert.match(categoryRoute, /const index = category === "about" \|\| category === "economy" \|\| category === "population"/);
   assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
-  assert.match(site, /publicDataPaths = \["\/world", "\/countries", "\/about"\]/);
+  assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/about"\]/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
 });
 
@@ -254,7 +254,7 @@ test("stock markets have translated names and every visible control in all 15 lo
   assert.match(stockPage, /classifyStockDate/);
   assert.match(stockPage, /max=\{today\}/);
   assert.match(categoryRoute, /<Suspense fallback=\{<StockMarketLoading locale=\{locale\} \/>\}>/);
-  assert.match(categoryRoute, /robots: \{ index: category === "about", follow: true \}/);
+  assert.match(categoryRoute, /const index = category === "about" \|\| category === "economy" \|\| category === "population"/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
 });
 

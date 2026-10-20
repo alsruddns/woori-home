@@ -6,6 +6,7 @@ export type DataObservation = {
   value: number;
   unit: string;
   source: "World Bank";
+  dataProvider: string;
   sourceUrl: string;
   license: string;
   publishedAt: string | null;
@@ -14,15 +15,16 @@ export type DataObservation = {
 };
 
 export type DataSnapshot = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   source: "World Bank";
   generatedAt: string;
-  observations: DataObservation[];
+  indicatorMetadata: Record<string, Omit<DataObservation, "country" | "countryName" | "indicator" | "year" | "value">>;
+  observations: Pick<DataObservation, "country" | "countryName" | "indicator" | "year" | "value">[];
 };
 
 export type IndicatorDefinition = {
   id: string;
-  category: "world" | "economy" | "population";
+  category: "world" | "economy" | "population" | "energy";
   code: string;
   unit: string;
   label: Record<string, string>;

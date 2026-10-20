@@ -1,5 +1,6 @@
 import type { Locale } from "@/lib/site";
 import type { IndicatorDefinition } from "./model";
+import { expandedUnit } from "./expanded-indicator-copy";
 
 type Units = Record<string, string>;
 export const countryUnits: Record<Locale, Units> = {
@@ -21,5 +22,5 @@ export const countryUnits: Record<Locale, Units> = {
 };
 
 export function unitFor(locale: Locale, indicator: IndicatorDefinition) {
-  return countryUnits[locale][indicator.id] ?? indicator.unit;
+  return countryUnits[locale][indicator.id] ?? expandedUnit(locale, indicator.id) ?? indicator.unit;
 }

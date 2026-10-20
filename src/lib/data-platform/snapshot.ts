@@ -1,7 +1,11 @@
 import snapshotData from "@/data/world-bank.json";
 import type { DataObservation, DataSnapshot } from "./model";
 
-const snapshot = snapshotData as DataSnapshot;
+const storedSnapshot = snapshotData as DataSnapshot;
+const snapshot = {
+  ...storedSnapshot,
+  observations: storedSnapshot.observations.map((row) => ({ ...row, ...storedSnapshot.indicatorMetadata[row.indicator] })),
+};
 const observationsByIndicator = new Map<string, DataObservation[]>();
 const observationsByIndicatorCountry = new Map<string, DataObservation[]>();
 

@@ -1,4 +1,5 @@
 import type { IndicatorDefinition } from "./model";
+import { expandedIndicator } from "./expanded-indicator-copy";
 
 export const dataCategories = [
   { id: "world", label: "World overview", path: "/world" },
@@ -48,6 +49,7 @@ export const indicators: IndicatorDefinition[] = [
     definition: { en: "Annual population growth is the exponential rate of growth of the midyear population from year t−1 to t, expressed as a percentage.", ko: "연간 인구 증가율은 전년 중간 인구에서 해당 연도 중간 인구로의 지수 성장률을 백분율로 나타낸 값입니다." },
     interpretation: { en: "The rate reflects births, deaths, and migration together. It is a percentage change, not the number of additional people.", ko: "출생·사망·이동이 함께 반영됩니다. 사람 수의 증감이 아니라 백분율 변화입니다." },
   },
+  expandedIndicator("unemployment", "SL.UEM.TOTL.ZS", "economy"),
 ];
 
 export const stockMarkets = [
