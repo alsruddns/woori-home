@@ -9,6 +9,8 @@ import { unitFor } from "@/lib/data-platform/country-units";
 import { platformCopy } from "@/lib/data-platform/locales";
 import Link from "next/link";
 import { CountryTrendChart, type CountrySeries } from "./country-charts";
+import { periodChange } from "@/lib/data-platform/rankings";
+import { comparePeriodCopy, isRateIndicator } from "@/lib/data-platform/compare-period-copy";
 
 export function CountryComparisonDashboard({ locale, initialCountries, initialSeries }: { locale: Locale; initialCountries: string[]; initialSeries: CountrySeries[] }) {
   const copy = countryCopy[locale];
@@ -21,6 +23,8 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   const [series, setSeries] = useState(initialSeries);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [startYear, setStartYear] = useState<number | null>(null);
+  const [endYear, setEndYear] = useState<number | null>(null);
   const indicator = indicators.find((item) => item.id === indicatorId)!;
   const hasChanges = indicatorId !== draftIndicator || countries.join(",") !== draftCountries.join(",");
 
@@ -55,6 +59,28 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   const sortedCountries = [...supportedCountries].sort((a, b) => countryName(a.code, locale).localeCompare(countryName(b.code, locale), locale));
   const latest = series.map((item) => ({ code: item.code, observation: item.observations.at(-1) ?? null }));
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: indicator.id === "population" || indicator.id === "gdp" ? 0 : 2 });
+  const yearSets = series.map((item) => new Set(item.observations.map((row) => row.year)));
+  const commonYears = yearSets.length ? [...yearSets[0]].filter((year) => yearSets.every((years) => years.has(year))).sort((a, b) => a - b) : [];
+  const availableYears = commonYears.length ? commonYears : [...new Set(series.flatMap((item) => item.observations.map((row) => row.year)))].sort((a, b) => a - b);
+  const fromYear = availableYears.includes(startYear ?? -1) ? startYear! : availableYears[0];
+  const toYear = availableYears.includes(endYear ?? -1) ? endYear! : availableYears.at(-1);
+  const periodCopy = comparePeriodCopy[locale];
+  const pointUnit = isRateIndicator(indicator.id) ? comparePeriodCopy[locale].percentagePointUnit : unitFor(locale, indicator);
+  const periodRows = series.map((item) => {
+    const start = item.observations.find((row) => row.year === fromYear);
+    const end = item.observations.find((row) => row.year === toYear);
+    return { code: item.code, start: start?.value, end: end?.value, change: periodChange(start?.value, end?.value) };
+  });
+
+  function chooseStartYear(value: number) {
+    setStartYear(value);
+    if (toYear !== undefined && value > toYear) setEndYear(value);
+  }
+
+  function chooseEndYear(value: number) {
+    setEndYear(value);
+    if (fromYear !== undefined && value < fromYear) setStartYear(value);
+  }
 
   return <section className="country-comparison-dashboard" aria-busy={busy}>
     <div className="country-comparison-controls">
@@ -63,6 +89,7 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
       <button className="country-compare-button" type="button" disabled={!hasChanges || draftCountries.length < 2} onClick={compare}>{copy.compareCountries}</button>
       {error ? <p className="country-comparison-error" role="alert">{copy.loadError}</p> : null}
     </div>
+    {availableYears.length > 0 ? <section className="country-period-analysis"><div className="country-comparison-heading"><div><span className="platform-eyebrow">{indicator.code} · {unitFor(locale, indicator)}</span><h2>{periodCopy.range}</h2></div></div><div className="country-period-controls"><label>{periodCopy.from}<select value={fromYear ?? ""} onChange={(event) => chooseStartYear(Number(event.target.value))}>{availableYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label><label>{periodCopy.to}<select value={toYear ?? ""} onChange={(event) => chooseEndYear(Number(event.target.value))}>{availableYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label></div><div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{platform.country}</th><th>{periodCopy.startValue} · {fromYear}</th><th>{periodCopy.endValue} · {toYear}</th><th>{isRateIndicator(indicator.id) ? periodCopy.percentagePoints : periodCopy.difference} ({pointUnit})</th><th>{periodCopy.percent}</th></tr></thead><tbody>{periodRows.map((row) => <tr key={row.code}><th scope="row">{countryName(row.code, locale)}</th><td>{row.start == null ? "—" : number.format(row.start)}</td><td>{row.end == null ? "—" : number.format(row.end)}</td><td>{row.change == null ? "—" : number.format(row.change.absolute)}</td><td>{row.change?.percent == null ? "—" : `${number.format(row.change.percent)}%`}</td></tr>)}</tbody></table></div></section> : null}
     <div className="country-comparison-heading"><div><span className="platform-eyebrow">{indicator.code} · {unitFor(locale, indicator)}</span><h2>{indicator.label[locale] ?? indicator.label.en}</h2></div><span>{copy.latestByCountry}</span></div>
     <div className="country-comparison-chart"><CountryTrendChart locale={locale} title={indicator.label[locale] ?? indicator.label.en} unit={unitFor(locale, indicator)} series={series}/></div>
     <section className="platform-table-section country-latest-table"><div className="platform-section-heading"><h2>{copy.latestByCountry}</h2><span>{platform.referenceYear}</span></div><div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{platform.country}</th><th>{platform.referenceYear}</th><th>{platform.value} · {unitFor(locale, indicator)}</th></tr></thead><tbody>{latest.map(({ code, observation }) => <tr key={code}><th scope="row"><Link href={`/${locale}/countries/${code}`}>{countryName(code, locale)}</Link></th><td>{observation?.year ?? "—"}</td><td>{observation ? number.format(observation.value) : "—"}</td></tr>)}</tbody></table>{latest.every((item) => !item.observation) ? <p className="platform-empty-row">{copy.noObservations}</p> : null}</div></section>

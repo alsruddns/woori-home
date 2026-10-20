@@ -8,6 +8,10 @@ import { unitFor } from "@/lib/data-platform/country-units";
 import { CountryComparisonDashboard } from "./country-comparison";
 import type { CountrySeries } from "./country-charts";
 import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-copy";
+import { rankCountryObservations } from "@/lib/data-platform/rankings";
+import { rankingCopy } from "@/lib/data-platform/ranking-copy";
+import { supportedCountries } from "@/lib/data-platform/countries";
+import { RankingControls } from "./ranking-controls";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -24,10 +28,18 @@ function indicatorPath(locale: Locale, id: string) {
   return `/${locale}/${indicator?.category ?? "world"}/${id}`;
 }
 
-export function WorldOverview({ locale }: { locale: Locale }) {
+export function WorldOverview({ locale, requestedIndicator, requestedYear, requestedDirection }: { locale: Locale; requestedIndicator?: string; requestedYear?: string; requestedDirection?: string }) {
   const copy = platformCopy[locale];
+  const ranking = rankingCopy[locale];
   const meta = getSnapshotMetadata();
   const count = latestByCountry("SP.POP.TOTL").filter((item) => item.country !== "WLD").length;
+  const rankable = indicators.filter((item) => latestByCountry(item.code).some((row) => row.country !== "WLD"));
+  const selectedIndicator = rankable.find((item) => item.code === requestedIndicator) ?? rankable[0];
+  const yearRows = selectedIndicator ? observationsFor(selectedIndicator.code).filter((row) => row.country !== "WLD") : [];
+  const years = [...new Set(yearRows.map((row) => row.year))].sort((a, b) => b - a);
+  const year = years.includes(Number(requestedYear)) ? Number(requestedYear) : years[0];
+  const direction = requestedDirection === "asc" ? "asc" : "desc";
+  const ranked = selectedIndicator && year ? rankCountryObservations(yearRows, year, direction) : [];
   const structuredData = { "@context": "https://schema.org", "@type": "WebPage", name: copy.overview, description: copy.description, url: `${origin}/${locale}/world`, inLanguage: locale };
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
@@ -45,6 +57,11 @@ export function WorldOverview({ locale }: { locale: Locale }) {
       })}</div>
     </section>
     <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">SP.POP.TOTL</span><h2>{copy.compare}: {platformCopy[locale].categories[3]}</h2></div><span>{copy.referenceYear} · {copy.latest}</span></div><DataTable locale={locale} indicator="SP.POP.TOTL" /></section>
+    <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{ranking.included}: {supportedCountries.length}</span><h2>{ranking.title}</h2></div><span>{ranking.scope}</span></div>
+      {selectedIndicator && year ? <RankingControls locale={locale} indicators={rankable} years={years} selectedIndicator={selectedIndicator.code} selectedYear={year} selectedDirection={direction} /> : null}
+      {ranked.length ? <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{ranking.rank}</th><th>{ranking.country}</th><th>{ranking.year}</th><th>{ranking.value} ({selectedIndicator ? unitFor(locale, selectedIndicator) : ""})</th></tr></thead><tbody>{ranked.map((row) => { const code = countryCodeForIso3(row.country); return <tr key={row.country}><td>{row.rank}</td><th scope="row">{code ? <Link href={`/${locale}/countries/${code}`}>{localizedCountryName(row.country, row.countryName, locale)}</Link> : localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>; })}</tbody></table></div> : <p className="platform-empty-row">{ranking.noData}</p>}
+      <p className="platform-data-note">{ranking.included}: {ranked.length} · {ranking.missing}: {Math.max(supportedCountries.length - ranked.length, 0)}. Tied values share the same rank; missing values are omitted.</p>
+    </section>
     <p className="platform-data-note">{copy.sourceNote} <a href="https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json">World Bank API</a></p>
   </>;
 }

@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const description = category === "stocks" ? stockCopy[locale].description : category === "about" ? portalContent[locale].about : category === "science" ? scienceCopy[locale].description : category === "energy" ? energyPageCopy[locale].intro : copy.overviewBody;
   const path = `/${category}`; const url = `${origin}/${locale}${path}`;
   const index = category === "about" || category === "economy" || category === "population" || category === "energy" || category === "science";
-  return { title: `${title} | WOORI.TODAY`, description, robots: { index, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${title} | WOORI.TODAY`, description } };
+  return { title: `${title}`, description, robots: { index, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title}`, description, url }, twitter: { card: "summary", title: `${title}`, description } };
 }
 
 export default async function CategoryPage({ params, searchParams }: { params: Promise<{ locale: string; category: string }>; searchParams: Promise<{ date?: string }> }) {

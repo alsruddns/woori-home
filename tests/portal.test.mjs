@@ -189,7 +189,7 @@ test("the new localized data home keeps the portal guide at about and preserves 
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
   assert.match(categoryRoute, /const index = category === "about" \|\| category === "economy" \|\| category === "population"/);
   assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
-  assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/energy", "\/science", "\/about"\]/);
+  assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/energy", "\/science", "\/papers", "\/about"\]/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
 });
 

@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const description = indicator.definition[locale] ?? indicator.definition.en;
   const path = `/${indicator.category}/${slug}`;
   const url = `${origin}/${locale}${path}`;
-  return { title: `${label} | WOORI.TODAY`, description, robots: { index: locale === "ko" || locale === "en", follow: true }, alternates: { canonical: url, languages: { ko: `${origin}/ko${path}`, en: `${origin}/en${path}`, "x-default": `${origin}/en${path}` } }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${label} | WOORI.TODAY`, description } };
+  return { title: `${label}`, description, robots: { index: locale === "ko" || locale === "en", follow: true }, alternates: { canonical: url, languages: { ko: `${origin}/ko${path}`, en: `${origin}/en${path}`, "x-default": `${origin}/en${path}` } }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label}`, description, url }, twitter: { card: "summary", title: `${label}`, description } };
 }
 
 export default async function IndicatorDetailPage({ params }: { params: Promise<{ locale: string; slug: string }> }) {

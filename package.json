@@ -6,6 +6,7 @@
     "dev": "next dev -p 3003",
     "data:update:world-bank": "node scripts/data/update-world-bank.mjs",
     "data:update:nasa-neows": "node scripts/data/update-nasa-neows.mjs",
+    "data:update:research-papers": "node scripts/data/update-papers.mjs",
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",

@@ -11,6 +11,8 @@ export const dataCategories = [
   { id: "countries", label: "Country comparison", path: "/countries" },
   { id: "science", label: "Science & space", path: "/science" },
   { id: "about", label: "About this service", path: "/about" },
+  { id: "papers", label: "Research papers", path: "/papers" },
+  { id: "commodities", label: "Commodities", path: "/commodities" },
 ] as const;
 
 export const indicators: IndicatorDefinition[] = [

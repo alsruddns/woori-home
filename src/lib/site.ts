@@ -40,7 +40,7 @@ export const sectionLabels: Record<Locale, { calculator: string; tools: string }
 export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
 export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;
 export const publicPortalPaths = ["", "/privacy", "/terms"] as const;
-export const publicDataPaths = ["/world", "/economy", "/countries", "/population", "/energy", "/science", "/about"] as const;
+export const publicDataPaths = ["/world", "/economy", "/countries", "/population", "/energy", "/science", "/papers", "/about"] as const;
 export const localizedDataPaths = ["/economy/gdp", "/economy/gdp-per-capita", "/economy/unemployment", "/population/fertility", "/population/life-expectancy", "/population/population-growth"] as const;
 export function getLocalePath(pathname: string, locale: Locale) {
   const segments = pathname.split("/").filter(Boolean);

@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const description = indicator.definition[locale] ?? platformCopy[locale].sourceNote;
   const path = `/${category}/${slug}`; const url = `${origin}/${locale}${path}`;
   const localized = Boolean(indicator.definition[locale] && indicator.interpretation[locale]);
-  return { title: `${label} | WOORI.TODAY`, description, robots: { index: localized, follow: true }, alternates: { canonical: url, languages: indicator.id === "electricity-access" ? alternates(path).languages : { ko: `${origin}/ko${path}`, en: `${origin}/en${path}`, "x-default": `${origin}/en${path}` } }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label} | WOORI.TODAY`, description, url }, twitter: { card: "summary", title: `${label} | WOORI.TODAY`, description } };
+  return { title: `${label}`, description, robots: { index: localized, follow: true }, alternates: { canonical: url, languages: indicator.id === "electricity-access" ? alternates(path).languages : { ko: `${origin}/ko${path}`, en: `${origin}/en${path}`, "x-default": `${origin}/en${path}` } }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label}`, description, url }, twitter: { card: "summary", title: `${label}`, description } };
 }
 
 export default async function IndicatorByCategoryPage({ params }: { params: Promise<{ locale: string; category: string; slug: string }> }) {

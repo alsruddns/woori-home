@@ -9,11 +9,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   if (!isLocale(locale)) notFound();
   const copy = platformCopy[locale];
   const url = `${origin}/${locale}/world`;
-  return { title: `${copy.overview} | WOORI.TODAY`, description: copy.description, alternates: { canonical: url, languages: alternates("/world").languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${copy.overview} | WOORI.TODAY`, description: copy.description, url }, twitter: { card: "summary", title: `${copy.overview} | WOORI.TODAY`, description: copy.description } };
+  return { title: `${copy.overview}`, description: copy.description, alternates: { canonical: url, languages: alternates("/world").languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${copy.overview}`, description: copy.description, url }, twitter: { card: "summary", title: `${copy.overview}`, description: copy.description } };
 }
 
-export default async function WorldPage({ params }: { params: Promise<{ locale: string }> }) {
+export default async function WorldPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ indicator?: string; year?: string; direction?: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  return <WorldOverview locale={locale} />;
+  const filters = await searchParams;
+  return <WorldOverview locale={locale} requestedIndicator={filters.indicator} requestedYear={filters.year} requestedDirection={filters.direction} />;
 }

@@ -118,6 +118,33 @@ Only the ILO modeled unemployment series was added after confirming ILOSTAT's CC
 - APOD image and video embedding remains deferred pending item-specific rights checks. The Science page links source material only for the NEO records.
 - Further urbanization, elderly population, inflation, trade, and emissions candidates were not added in this phase because their WDI provider notes identify upstream sources whose individual terms were not yet reconciled. No unverified license strings were inferred.
 
+## Research metadata and commodity prices review — 2026-10-21
+
+### Crossref REST API
+
+- Official endpoint: `https://api.crossref.org/works`; query requests are batched in one daily workflow, not issued by visitor pages.
+- Crossref states that almost all bibliographic metadata is not subject to copyright and can be reused for any purpose. It specifically warns that abstracts can be copyrighted by publishers or authors.
+- The local snapshot therefore stores only DOI, title, author names, publication/index dates, journal/source title, publisher URL, registered citation count, item-level license URLs when supplied, and a conservative retraction/update flag when Crossref provides one. Abstracts, full text, PDFs, and generated summaries are excluded.
+- “Popular” is not claimed. Sorting is by Crossref's registered citation count or recent index date; citations can be incomplete and are not a measure of research quality.
+- Crossref may incorporate data from trusted third parties (including retraction status records). A detected update is not automatically labeled a retraction unless the record's update type explicitly says retraction/withdrawal.
+- API access is public and no signup is required. Requests are sequential and retry rate-limit/transient errors. The current schedule is daily; the checked-in output remains usable offline.
+- Rights status: bibliographic metadata reuse is permitted per Crossref guidance. Individual article text and abstracts remain excluded. Item license metadata is displayed as source metadata, not as a blanket license for the article.
+- Source guidance: https://www.crossref.org/documentation/retrieve-metadata/rest-api/ and https://www.crossref.org/services/metadata-retrieval/.
+
+### World Bank Commodity Price Data (Pink Sheet)
+
+- Official source: https://www.worldbank.org/en/research/commodity-markets. The Pink Sheet provides monthly commodity price workbooks and explains series units/source definitions; monthly series are nominal US dollars, not live spot closes.
+- A World Bank reproducibility catalog entry for the Pink Sheet reports CC BY 4.0 “with additional terms of use specified in the license URL.” The World Bank dataset terms also warn that some data have third-party ownership/reuse conditions and direct users to check the restricted-data list. The underlying workbook attributes many series to market-data publishers and other external sources.
+- Because the exact public commercial republication permission for each gold, silver, copper, and other price series was not established, no Pink Sheet values are copied into the platform snapshot and no price chart is presented. The localized commodities page currently provides the official source link and an explicit rights-status explanation and is `noindex`.
+- Reassessment required: verify each candidate series' primary source, restrictions, attribution, and commercial public-display permission. Monthly frequency must remain explicit; daily market data would need a separately licensed provider.
+
+### Scheduled workflow branch behavior
+
+- GitHub Actions `schedule` is evaluated from the repository's default branch; a workflow file that exists only on `develop` is not an active scheduled job yet. `workflow_dispatch` can be run against `develop` for manual verification.
+- The research metadata workflow checks out and writes only `develop`, has `contents: write`, and commits only `src/data/research-papers.json` when its validated contents change. It does not merge or publish.
+- The existing `publish.yml` is triggered by pushes to `main` only. Data workflow pushes to `develop` do not start that production image/deploy workflow.
+- After a future, separately authorized main integration, scheduled behavior and a production data-delivery path must be reviewed. A commit to a source JSON file on `develop` is not a data delivery to a running production container. No production refresh or deployment is configured or run here.
+
 ### Phase 5 references
 
 - [World Bank electricity access indicator and CC BY 4.0 label](https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS)

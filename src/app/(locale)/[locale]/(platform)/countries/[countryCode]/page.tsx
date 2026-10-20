@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     : copy.noObservations;
   const description = `${copy.intro} ${name} · ${populationSummary}.`;
   const url = `${origin}/${locale}${path}`;
-  return { title: `${title} | WOORI.TODAY`, description, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "article", siteName: "WOORI.TODAY", title, description, url }, twitter: { card: "summary", title, description } };
+  return { title: `${title}`, description, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "article", siteName: "WOORI.TODAY", title, description, url }, twitter: { card: "summary", title, description } };
 }
 
 export default async function CountryDetailPage({ params }: { params: Promise<{ locale: string; countryCode: string }> }) {

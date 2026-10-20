@@ -28,6 +28,9 @@ Useful pages:
 - <http://localhost:3003/ko/energy> — Energy dashboard with World Bank electricity-access data
 - <http://localhost:3003/ko/energy/electricity-access> — Electricity-access indicator detail
 - <http://localhost:3003/ko/science> — NASA/JPL near-Earth object snapshot
+- <http://localhost:3003/ko/papers> — daily Crossref bibliographic discovery (no abstracts or generated summaries)
+- <http://localhost:3003/en/papers> — English research discovery
+- <http://localhost:3003/ko/commodities> — monthly commodity source and rights status (price republication is withheld)
 - <http://localhost:3003/ko/science?date=2026-10-20> — Select an available UTC approach date
 
 Useful stock and introduction pages:
@@ -45,6 +48,10 @@ The snapshot stores common source/provider metadata once per indicator and keeps
 The stock market screen is a clearly disclosed interface example using synthetic sample entries. It is not live or historical market data, and no redistribution rights have been verified. Only dates present in each market's local sample snapshot show a treemap.
 
 The energy dashboard uses the checked-in World Bank electricity-access series and does not call an external API while visitors browse. The science page uses a separate checked-in NASA/JPL NeoWs snapshot; the optional `NASA_API_KEY` is only used by the daily GitHub Actions refresh. Local development does not need the key or network access. NASA APOD imagery is not copied or displayed because rights vary by item.
+
+Research discovery uses a small, checked-in Crossref metadata snapshot. The refresh requests bibliographic fields only; it does not collect abstracts or full text. The workflow targets `develop` and only commits the normalized JSON when it changes. GitHub scheduled workflows run from the repository's default branch, so this daily schedule will not become active until that workflow exists on the default branch. Until then, run it manually from the `develop` branch or use `pnpm data:update:research-papers`. The production publish workflow is triggered only by `main` pushes and is not invoked by these data commits.
+
+The commodities page links to the World Bank Pink Sheet source but does not copy its prices yet. Although a World Bank reproducibility catalog entry describes the dataset as CC BY 4.0 subject to additional terms, the workbook identifies third-party source series and the applicable series-level commercial republication conditions have not been reconciled. See `docs/data-source-audit.md`.
 
 ## Checks
 

@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   if (!isLocale(locale)) notFound();
   const copy = platformCopy[locale];
   const canonical = `${origin}/${locale}`;
-  const title = `${copy.overview} | WOORI.TODAY`;
+  const title = `${copy.overview}`;
   const description = copy.overviewBody;
   return {
     title,

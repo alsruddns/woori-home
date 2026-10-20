@@ -10,6 +10,8 @@ import { mockStockSnapshots } from "@/lib/data-platform/mock-stocks";
 import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-copy";
 import { scienceCopy } from "@/lib/data-platform/science-copy";
 import neoSnapshot from "@/data/nasa-neows.json";
+import paperSnapshot from "@/data/research-papers.json";
+import { researchCopy } from "@/lib/data-platform/research-copy";
 
 const viewLabels: Record<Locale, string> = {
   ko:"데이터 보기", en:"Explore data", ja:"データを見る", zh:"查看数据", es:"Ver datos", "pt-br":"Ver dados", de:"Daten ansehen", fr:"Voir les données", vi:"Xem dữ liệu", id:"Lihat data", th:"ดูข้อมูล", "zh-tw":"查看資料", it:"Visualizza i dati", nl:"Bekijk gegevens", hi:"डेटा देखें",
@@ -20,6 +22,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   const stocks = stockCopy[locale];
   const countries = countryCopy[locale];
   const familyCopy = familySitesCopy[locale];
+  const research = researchCopy[locale];
   const population = latestForCountry("SP.POP.TOTL", "WLD");
   const gdp = latestForCountry("NY.GDP.MKTP.CD", "WLD");
   const electricityAccess = latestForCountry("EG.ELC.ACCS.ZS", "WLD");
@@ -35,6 +38,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   ];
   const scienceDate = neoSnapshot.dates[0];
   const scienceCount = neoSnapshot.objects.filter((item) => item.closeApproachDate === scienceDate).length;
+  const recentPapers = [...paperSnapshot.records].filter((item) => !item.retracted).sort((a, b) => b.indexedAt.localeCompare(a.indexedAt) || b.publishedAt.localeCompare(a.publishedAt)).slice(0, 3);
   const familyKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
   const jsonLd = {
     "@context": "https://schema.org",
@@ -54,6 +58,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
     <header className="platform-page-heading platform-home-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank</span><h1>{copy.overview}</h1><p>{copy.overviewBody}</p></header>
+    <section className="platform-briefing"><div className="platform-section-heading"><div><span className="platform-eyebrow">{research.paperSource}</span><h2>{research.papers}</h2></div><Link href={`/${locale}/papers`}>{viewLabels[locale]} →</Link></div><p>{research.papersDescription}</p><div className="briefing-items">{recentPapers.map((paper) => <article key={paper.id}><span>{research.topics[paper.topic as keyof typeof research.topics]} · {research.recentIndex} {new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${paper.indexedAt}T00:00:00Z`))}</span><h3><Link href={`/${locale}/papers/${paper.id}`}>{paper.title}</Link></h3><small>{paper.journal ?? research.journal}</small></article>)}</div></section>
     <section className="platform-home-summary" aria-label={copy.latest}>
       <article><span>{populationIndicator.label[locale]}</span><strong>{population ? format(population.value) : copy.missing}</strong><small>{population ? `${copy.referenceYear}: ${population.year}` : copy.notAvailable}</small></article>
       <article><span>{gdpIndicator.label[locale]}</span><strong>{gdp ? new Intl.NumberFormat(locale, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(gdp.value) : copy.missing}</strong><small>{gdp ? `${copy.referenceYear}: ${gdp.year}` : copy.notAvailable}</small></article>
@@ -64,6 +69,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
         {card.sample ? <div className="platform-home-sample"><strong>{stocks.statusLabel} · {date(latestSample)}</strong><span>{stocks.mockLabel}</span><p>{stocks.mockDisclosure}</p></div> : null}
       </article>)}</div>
     </section>
+    <section className="platform-home-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{research.monthlyData}</span><h2>{research.commodities}</h2></div></div><article className="platform-home-card"><Link href={`/${locale}/commodities`}><h3>{research.commodities}</h3><p>{research.rightsPending}</p><span className="platform-home-link">{viewLabels[locale]} →</span></Link></article></section>
     <section className="platform-home-section platform-home-extensions"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{extensions.map((item) => item.title).join(" · ")}</h2></div></div>
       <div className="platform-home-grid">{extensions.map((item) => <article className="platform-home-card" key={item.href}><Link href={item.href}><h3>{item.title}</h3><p>{item.detail}</p><strong>{item.value}</strong><span className="platform-card-meta">{item.meta}</span><span className="platform-home-link">{viewLabels[locale]} →</span></Link></article>)}</div>
     </section>
