@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "node scripts/db/migrate.mjs",
     "db:status": "node scripts/db/status.mjs",
+    "db:migrate:test": "node scripts/db/migrate-test-database.mjs",
     "db:status:production": "node scripts/db/status-production.mjs",
     "db:migrate:production": "node scripts/db/migrate-production.mjs",
     "data:worldbank:import": "node scripts/data/import-world-bank.mjs",
