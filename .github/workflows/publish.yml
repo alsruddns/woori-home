@@ -113,7 +113,13 @@ jobs:
             printf '%s' "$PORTAL_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
             printf '%s' "$TOOLS_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
 
-            compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
+            if [ -r .env.portal ]; then
+              compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
+            else
+              command -v sudo >/dev/null 2>&1
+              sudo -n true
+              compose() { sudo -n docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
+            fi
             override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
             approval_file=""
             deploy_started=0
