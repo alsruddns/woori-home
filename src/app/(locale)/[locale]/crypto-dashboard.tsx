@@ -39,7 +39,7 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
     <nav className="platform-breadcrumb" aria-label={copy.nav}><Link href={`/${locale}`}>{copy.nav}</Link><span>/</span><span>{copy.title}</span></nav>
     <header className="platform-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1><p>{copy.intro}</p></header>
     <section className="crypto-market-controls" aria-label={copy.title}>
-      <label><span>{copy.date}</span><DatePicker locale={locale} label={copy.date} value={validDate ? date : ""} max={today} onChange={chooseDate} /></label>
+      <label><span>{copy.date}</span><DatePicker locale={locale} label={copy.date} value={validDate ? date : ""} today={today} max={today} availableDates={dates} onChange={chooseDate} /></label>
       <button type="button" disabled={!neighbors.previous} onClick={() => neighbors.previous && chooseDate(neighbors.previous)}>{copy.previous}</button>
       <button type="button" disabled={!neighbors.next} onClick={() => neighbors.next && chooseDate(neighbors.next)}>{copy.next}</button>
       <button type="button" disabled={!dates.length || date === dates.at(-1)} onClick={() => chooseDate(dates.at(-1) ?? "")}>{copy.latest}</button>

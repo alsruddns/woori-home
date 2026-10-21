@@ -15,5 +15,5 @@ export function GoldUnavailableDate({ locale, label, emptyText }: { locale: Loca
     else query.delete("date");
     router.push(`/${locale}/gold${query.size ? `?${query.toString()}` : ""}`, { scroll: false });
   }
-  return <div className="gold-unavailable-date"><label>{label}<DatePicker locale={locale} label={label} value={selectedDate} max={today} onChange={chooseDate} /></label>{selectedDate ? <p>{selectedDate} · {emptyText}</p> : null}</div>;
+  return <div className="gold-unavailable-date"><label>{label}<DatePicker locale={locale} label={label} value={selectedDate} today={today} max={today} onChange={chooseDate} /></label>{selectedDate ? <p>{selectedDate} · {emptyText}</p> : null}</div>;
 }

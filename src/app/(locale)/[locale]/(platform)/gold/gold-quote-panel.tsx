@@ -44,7 +44,7 @@ export function GoldQuotePanel({ locale, section, quotes, copy }: { locale: Loca
   return <section className="gold-live-quotes" aria-label={copy.title}>
     <div className="gold-quote-controls">
       <label>{copy.unit}<select value={unit} onChange={(event) => setUnit(event.target.value as "gram" | "don")}><option value="gram">{copy.unitGram}</option><option value="don">{copy.unitDon}</option></select></label>
-      <label>{copy.dateLabel}<DatePicker locale={locale} label={copy.dateLabel} value={date} max={today} onChange={chooseDate} /></label>
+      <label>{copy.dateLabel}<DatePicker locale={locale} label={copy.dateLabel} value={date} today={today} max={today} availableDates={dates} onChange={chooseDate} /></label>
       <div className="gold-date-buttons"><button type="button" disabled={!earlierDate} onClick={() => earlierDate && chooseDate(earlierDate)}>{copy.previousDay}</button><button type="button" disabled={!laterDate} onClick={() => laterDate && chooseDate(laterDate)}>{copy.nextDay}</button></div>
       <label>{copy.marketReference}<select value={kind} onChange={(event) => setKind(event.target.value as GoldQuote["priceKind"])}>{kinds.map((item) => <option key={item} value={item}>{item === "market-reference" ? copy.marketReference : item === "customer-buy" ? copy.customerBuy : copy.customerSell}</option>)}</select></label>
     </div>
