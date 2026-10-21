@@ -12,6 +12,7 @@ import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-cop
 import { scienceCopy } from "@/lib/data-platform/science-copy";
 import neoSnapshot from "@/data/nasa-neows.json";
 import { goldCopy } from "@/lib/data-platform/gold-copy";
+import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 
 const viewLabels: Record<Locale, string> = {
   ko:"데이터 보기", en:"Explore data", ja:"データを見る", zh:"查看数据", es:"Ver datos", "pt-br":"Ver dados", de:"Daten ansehen", fr:"Voir les données", vi:"Xem dữ liệu", id:"Lihat data", th:"ดูข้อมูล", "zh-tw":"查看資料", it:"Visualizza i dati", nl:"Bekijk gegevens", hi:"डेटा देखें",
@@ -34,6 +35,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
     { href: `/${locale}/world/population`, title: copy.categories[3], detail: populationIndicator.definition?.[locale] ?? copy.overviewBody },
     { href: `/${locale}/countries`, title: copy.categories[5], detail: countries.dataGapNote },
     { href: `/${locale}/gold`, title: goldCopy[locale].title, detail: goldCopy[locale].description },
+    { href: `/${locale}/crypto`, title: cryptoCopy[locale].nav, detail: cryptoCopy[locale].unavailableBody },
     { href: `/${locale}/stocks`, title: copy.categories[2], detail: stocks.description, sample: true },
   ];
   const scienceDate = neoSnapshot.dates[0];

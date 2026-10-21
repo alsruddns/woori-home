@@ -6,6 +6,7 @@ export const dataCategories = [
   { id: "world", label: "World overview", path: "/world" },
   { id: "economy", label: "Economy & finance", path: "/economy" },
   { id: "stocks", label: "Stock markets", path: "/stocks" },
+  { id: "crypto", label: "Crypto assets", path: "/crypto" },
   { id: "population", label: "Population", path: "/population" },
   { id: "energy", label: "Energy", path: "/energy" },
   { id: "countries", label: "Country comparison", path: "/countries" },

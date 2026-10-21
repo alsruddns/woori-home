@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "crypto-market-provider-pending",
+  "datasetId": "crypto-daily-prices",
+  "lastAttemptAt": null,
+  "lastSuccessAt": null,
+  "latestReferenceDate": null,
+  "snapshotVersion": null,
+  "checksum": null,
+  "recordCount": 0,
+  "status": "disabled",
+  "errorCategory": "display-rights-unverified"
+}

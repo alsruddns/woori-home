@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "sourceId": "stock-issues-provider-pending",
+  "datasetId": "stock-market-issues",
+  "lastAttemptAt": null,
+  "lastSuccessAt": null,
+  "latestReferenceDate": null,
+  "snapshotVersion": null,
+  "checksum": null,
+  "recordCount": 0,
+  "status": "disabled",
+  "errorCategory": "publisher-rights-unverified"
+}

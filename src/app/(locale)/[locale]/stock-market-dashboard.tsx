@@ -8,6 +8,7 @@ import { stockMarkets } from "@/lib/data-platform/registry";
 import { snapshotDatesForMarket, stockSnapshotForDate } from "@/lib/data-platform/mock-stocks";
 import { stockCopy, weekdayNoSnapshot } from "@/lib/data-platform/stock-copy";
 import { adjacentAvailableDates, classifyStockDate, isValidStockDate } from "@/lib/data-platform/stock-selection";
+import { stockIssueCopy } from "@/lib/data-platform/market-issue-copy";
 
 export function StockMarketDashboard({ locale }: { locale: Locale }) {
   const search = useSearchParams();
@@ -52,6 +53,7 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
   return <>
     <nav className="platform-breadcrumb" aria-label={copy.title}><Link href={`/${locale}`}>{platform.categories[0]}</Link><span>/</span><span>{platform.categories[2]}</span></nav>
     <header className="platform-page-heading stock-page-heading"><span className="platform-eyebrow">{platform.categories[2]}</span><h1>{platform.categories[2]}</h1><p>{copy.intro}</p></header>
+    <p className="market-issues-shortcut"><Link href={`/${locale}/stocks/issues`}>{stockIssueCopy[locale].title} →</Link></p>
     <aside className="stock-example-notice" role="note"><strong>{copy.mockLabel}</strong><p>{copy.mockDisclosure}</p></aside>
 
     <section className="stock-controls" aria-label={copy.title}>

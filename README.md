@@ -44,6 +44,9 @@ Useful stock and introduction pages:
 - <http://localhost:3003/en/stocks>
 - <http://localhost:3003/ja/stocks>
 - <http://localhost:3003/ko/about>
+- <http://localhost:3003/ko/crypto> — crypto daily-close dashboard; prices are withheld until display and storage rights are approved
+- <http://localhost:3003/ko/crypto/issues> — dated crypto issue feed, currently empty pending source review
+- <http://localhost:3003/ko/stocks/issues> — dated stock issue feed, currently empty pending source review
 
 Country dashboards and charts use `src/data/world-bank.json`; the browser does not call World Bank. The comparison selector requests only the chosen series from the local `/api/data-compare` route. The monthly GitHub Actions workflow is only needed to refresh the committed snapshot.
 
