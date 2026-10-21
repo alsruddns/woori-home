@@ -180,11 +180,19 @@ jobs:
               exit "$check_status"
             fi
 
-            stage="Validate Portal runtime database credentials"
+            stage="Validate Portal runtime database URL source"
             printf '[DEPLOY 3.3] %s\n' "$stage"
-            if printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ((($env.DATABASE_URL | type) == "string") or ((.services.portal.env_file // []) | map(if type == "string" then . else .path end) | any(endswith(".env.portal")))) and (["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null))' >/dev/null; then :; else
+            if printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | (($env.DATABASE_URL | type) == "string") or ((.services.portal.env_file // []) | map(if type == "string" then . else .path end) | any(endswith(".env.portal")))' >/dev/null; then :; else
               check_status=$?
-              printf '[DEPLOY CHECK FAILED] Portal runtime DB configuration is incomplete or contains a privileged DB variable.\n' >&2
+              printf '[DEPLOY CHECK FAILED] Portal has no DATABASE_URL environment value or .env.portal env_file.\n' >&2
+              exit "$check_status"
+            fi
+
+            stage="Block privileged database variables in Portal runtime"
+            printf '[DEPLOY 3.4] %s\n' "$stage"
+            if printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null)' >/dev/null; then :; else
+              check_status=$?
+              printf '[DEPLOY CHECK FAILED] Privileged DB variables remain in Portal runtime environment.\n' >&2
               exit "$check_status"
             fi
 
