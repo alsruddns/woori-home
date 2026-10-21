@@ -8,6 +8,7 @@ import cryptoIssues from "@/data/crypto-issues.json";
 import stockIssues from "@/data/stock-issues.json";
 import { validUtcDate } from "@/lib/data-platform/crypto-market.mjs";
 import type { MarketIssue } from "@/lib/data-platform/crypto-market.mjs";
+import { useTodayQueryDate } from "./use-today-query-date";
 
 const translatedPending: Record<Locale, string> = {
   ko:"자료 제공처 검토 중", en:"Source review in progress", ja:"情報源を確認中", zh:"正在审核数据来源", es:"Fuente en revisión", "pt-br":"Fonte em análise", de:"Quelle wird geprüft", fr:"Source en cours de vérification", vi:"Đang xem xét nguồn", id:"Sumber sedang ditinjau", th:"อยู่ระหว่างตรวจสอบแหล่งข้อมูล", "zh-tw":"正在審核資料來源", it:"Fonte in verifica", nl:"Bron wordt gecontroleerd", hi:"स्रोत की समीक्षा जारी है",
@@ -19,8 +20,8 @@ const originalTitleLabels: Record<Locale, string> = {
 export function MarketIssueExplorer({ locale, market }: { locale: Locale; market: "crypto" | "stocks" }) {
   const router = useRouter();
   const search = useSearchParams();
-  const date = search.get("date") ?? "";
-  const today = new Date().toISOString().slice(0, 10);
+  const { selectedDate, today } = useTodayQueryDate();
+  const date = search.get("date") ?? selectedDate;
   const crypto = market === "crypto";
   const copy = crypto ? cryptoCopy[locale] : null;
   const stock = crypto ? null : stockIssueCopy[locale];
@@ -29,6 +30,7 @@ export function MarketIssueExplorer({ locale, market }: { locale: Locale; market
   const title = copy?.issueTitle ?? stock!.title;
   const description = copy?.issueDescription ?? stock!.description;
   const empty = copy?.emptyIssues ?? stock!.empty;
+  const filteredRows = rows.filter((item) => !date || item.publishedAt.slice(0, 10) === date);
 
   function setDate(value: string) {
     if (value && (!validUtcDate(value) || value > today)) return;
@@ -42,7 +44,7 @@ export function MarketIssueExplorer({ locale, market }: { locale: Locale; market
   return <>
     <header className="platform-page-heading"><span className="platform-eyebrow">{crypto ? copy!.nav : stock!.title}</span><h1>{title}</h1><p>{description}</p></header>
     <section className="market-issue-controls"><label><span>{copy?.issueDate ?? stock!.published}</span><input type="date" max={today} value={date && validUtcDate(date) && date <= today ? date : ""} onChange={(event) => setDate(event.target.value)} /></label></section>
-    {rows.length ? <div className="market-issue-list">{rows.filter((item) => !date || item.publishedAt.slice(0, 10) === date).map((item) => {
+    {filteredRows.length ? <div className="market-issue-list">{filteredRows.map((item) => {
       const localized = item.localizedTitles?.[locale];
       return <article key={`${item.sourceId}:${item.externalId ?? item.url}`}>
         <p>{localeDate(item.publishedAt.slice(0, 10))} · {item.sourceId}</p>

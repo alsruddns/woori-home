@@ -253,7 +253,8 @@ test("stock markets have translated names and every visible control in all 15 lo
   assert.match(stockPage, /search\.get\("market"\)/);
   assert.match(stockPage, /search\.get\("date"\)/);
   assert.match(stockPage, /router\.push\(`\/\$\{locale\}\/stocks\?/);
-  assert.match(stockPage, /snapshotDatesForMarket\(nextMarket\.id\)\.at\(-1\)/);
+  assert.match(stockPage, /setSelection\(nextMarket\.id, today\)/);
+  assert.match(stockPage, /useTodayQueryDate/);
   assert.match(stockPage, /classifyStockDate/);
   assert.match(stockPage, /max=\{today\}/);
   assert.match(categoryRoute, /<Suspense fallback=\{<StockMarketLoading locale=\{locale\} \/>\}>/);

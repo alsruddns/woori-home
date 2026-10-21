@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { goldCopy, goldSectionTitle, goldSourceTermsLabel, type GoldPageSection } from "@/lib/data-platform/gold-copy";
 import { isLocale, origin } from "@/lib/site";
 import snapshot from "@/data/gold-prices.json";
@@ -43,7 +44,7 @@ export function GoldPage({ localeValue, section }: { localeValue: string; sectio
       {(["overview", "buy-sell", "history"] as GoldPageSection[]).map((item) => <Link key={item} href={routeFor(item).startsWith("/") ? `/${locale}${routeFor(item)}` : url} aria-current={item === section ? "page" : undefined}>{goldSectionTitle(locale, item)}</Link>)}
     </nav>
     {quoteCount === 0 ? <section className="gold-unavailable" aria-live="polite"><span className="platform-eyebrow">{copy.pendingTitle}</span><h2>{copy.unavailableTitle}</h2><p>{copy.unavailable}</p><p>{copy.noQuote}</p></section> : null}
-    {quoteCount > 0 ? <GoldQuotePanel locale={locale} section={section} quotes={quotes as GoldQuote[]} copy={copy} /> : null}
+    {quoteCount > 0 ? <Suspense fallback={<p className="platform-empty-state">{copy.noQuote}</p>}><GoldQuotePanel locale={locale} section={section} quotes={quotes as GoldQuote[]} copy={copy} /></Suspense> : null}
     <section className="platform-explainer gold-explainers">
       {section !== "buy-sell" ? <article><h2>{copy.marketReference}</h2><p>{copy.sourceNote}</p></article> : null}
       {section !== "history" ? <article><h2>{copy.customerBuy} / {copy.customerSell}</h2><p>{copy.distinction}</p><p>{copy.conditions}</p></article> : null}

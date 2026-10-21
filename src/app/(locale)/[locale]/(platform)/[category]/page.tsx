@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: `${title}`, description, robots: { index, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title}`, description, url }, twitter: { card: "summary", title: `${title}`, description } };
 }
 
-export default async function CategoryPage({ params, searchParams }: { params: Promise<{ locale: string; category: string }>; searchParams: Promise<{ date?: string }> }) {
+export default async function CategoryPage({ params }: { params: Promise<{ locale: string; category: string }> }) {
   const { locale, category } = await params;
   if (!isLocale(locale) || !valid.has(category)) notFound();
   if (category === "stocks") return <Suspense fallback={<StockMarketLoading locale={locale} />}><StockMarketDashboard locale={locale} /></Suspense>;
@@ -39,6 +39,6 @@ export default async function CategoryPage({ params, searchParams }: { params: P
   if (category === "about") return <PortalIntroduction locale={locale} />;
   if (category === "economy" || category === "population") return <IndicatorCategory locale={locale} category={category} title={platformCopy[locale].categories[categoryIndex[category]]} />;
   if (category === "energy") return <IndicatorCategory locale={locale} category="energy" title={platformCopy[locale].categories[categoryIndex.energy]} />;
-  if (category === "science") return <ScienceDashboard locale={locale} requestedDate={(await searchParams).date} />;
+  if (category === "science") return <ScienceDashboard locale={locale} />;
   return <EmptyCategory locale={locale} title={platformCopy[locale].categories[categoryIndex[category]]} />;
 }

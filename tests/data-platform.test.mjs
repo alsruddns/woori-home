@@ -44,9 +44,10 @@ test("only source-reviewed WDI additions are shipped and their upstream attribut
 
 test("NASA NeoWs snapshot is validated, date-scoped, and kept independent of visitor API calls", async () => {
   const data = JSON.parse(await read("src/data/nasa-neows.json"));
-  const [adapter, workflow, category, page, audit] = await Promise.all([
+  const [adapter, workflow, category, page, explorer, audit] = await Promise.all([
     read("scripts/data/update-nasa-neows.mjs"), read(".github/workflows/update-nasa-neows.yml"),
     read("src/app/(locale)/[locale]/(platform)/[category]/page.tsx"), read("src/app/(locale)/[locale]/science-dashboard.tsx"),
+    read("src/app/(locale)/[locale]/science-date-explorer.tsx"),
     read("docs/data-source-audit.md"),
   ]);
   assert.equal(data.schemaVersion, 1);
@@ -58,9 +59,10 @@ test("NASA NeoWs snapshot is validated, date-scoped, and kept independent of vis
   assert.match(adapter, /typeof asteroid\.is_potentially_hazardous_asteroid !== "boolean"/);
   assert.match(workflow, /ref: develop/);
   assert.match(workflow, /git push origin develop/);
-  assert.match(category, /ScienceDashboard locale=\{locale\} requestedDate=\{\(await searchParams\)\.date\}/);
-  assert.match(page, /requestedDate && dates\.includes\(requestedDate\) \? requestedDate : requestedDate \? null/);
-  assert.match(page, /objects\.filter\(\(object\) => object\.closeApproachDate === selected\)/);
+  assert.match(category, /ScienceDashboard locale=\{locale\}/);
+  assert.match(page, /ScienceDateExplorer locale=\{locale\} dates=\{snapshot\.dates\}/);
+  assert.match(explorer, /objects\.filter\(\(object\) => object\.closeApproachDate === selected\)/);
+  assert.match(explorer, /useTodayQueryDate/);
   assert.match(audit, /APOD image and video embedding remains deferred/);
 });
 

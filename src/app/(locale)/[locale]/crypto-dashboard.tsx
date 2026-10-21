@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/site";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 import { adjacentCryptoDates, cryptoDates, cryptoTreemapLayout, dailyCloseChange, isPublishableCryptoSnapshot, validUtcDate } from "@/lib/data-platform/crypto-market.mjs";
 import type { CryptoSnapshot } from "@/lib/data-platform/crypto-market.mjs";
+import { useTodayQueryDate } from "./use-today-query-date";
 
 const snapshot = cryptoPriceSnapshot as unknown as CryptoSnapshot;
 
@@ -14,16 +15,16 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
   const copy = cryptoCopy[locale];
   const router = useRouter();
   const search = useSearchParams();
+  const { today, selectedDate } = useTodayQueryDate();
   const dates = cryptoDates(snapshot);
-  const requestedDate = search.get("date") ?? "";
-  const selectedDate = requestedDate || dates.at(-1) || "";
-  const today = new Date().toISOString().slice(0, 10);
-  const validDate = !selectedDate || validUtcDate(selectedDate);
-  const available = snapshot.snapshots.find((item) => item.referenceDate === selectedDate);
-  const priorSnapshot = dates.filter((date) => date < selectedDate).at(-1);
+  const requestedDate = search.get("date");
+  const date = requestedDate ?? selectedDate;
+  const validDate = !date || validUtcDate(date);
+  const available = snapshot.snapshots.find((item) => item.referenceDate === date);
+  const priorSnapshot = dates.filter((item) => item < date).at(-1);
   const previous = snapshot.snapshots.find((item) => item.referenceDate === priorSnapshot);
   const heatmap = available ? cryptoTreemapLayout(available.coins) : null;
-  const neighbors = adjacentCryptoDates(dates, selectedDate);
+  const neighbors = adjacentCryptoDates(dates, date);
   const validSnapshot = isPublishableCryptoSnapshot(snapshot);
 
   function chooseDate(date: string) {
@@ -37,11 +38,11 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
     <nav className="platform-breadcrumb" aria-label={copy.nav}><Link href={`/${locale}`}>{copy.nav}</Link><span>/</span><span>{copy.title}</span></nav>
     <header className="platform-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1><p>{copy.intro}</p></header>
     <section className="crypto-market-controls" aria-label={copy.title}>
-      <label><span>{copy.date}</span><input type="date" value={validDate ? selectedDate : ""} max={today} list="crypto-available-dates" onChange={(event) => chooseDate(event.target.value)} /></label>
+      <label><span>{copy.date}</span><input type="date" value={validDate ? date : ""} max={today} list="crypto-available-dates" onChange={(event) => chooseDate(event.target.value)} /></label>
       <datalist id="crypto-available-dates">{dates.map((date) => <option key={date} value={date} />)}</datalist>
       <button type="button" disabled={!neighbors.previous} onClick={() => neighbors.previous && chooseDate(neighbors.previous)}>{copy.previous}</button>
       <button type="button" disabled={!neighbors.next} onClick={() => neighbors.next && chooseDate(neighbors.next)}>{copy.next}</button>
-      <button type="button" disabled={!dates.length || selectedDate === dates.at(-1)} onClick={() => chooseDate(dates.at(-1) ?? "")}>{copy.latest}</button>
+      <button type="button" disabled={!dates.length || date === dates.at(-1)} onClick={() => chooseDate(dates.at(-1) ?? "")}>{copy.latest}</button>
     </section>
     <p className="crypto-utc-note">{copy.utcNote}</p>
     {validSnapshot && available ? <section className="crypto-market-data" aria-label={copy.title}>
@@ -59,7 +60,7 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
         const change = move ? new Intl.NumberFormat(locale, { style: "percent", signDisplay: "always", maximumFractionDigits: 2 }).format(move.percent / 100) : "—";
         return <tr key={coin.id}><th scope="row">{coin.name} ({coin.symbol})</th><td>{new Intl.NumberFormat(locale, { style: "currency", currency: coin.currency, maximumFractionDigits: 8 }).format(coin.close)}</td><td className={move ? move.amount > 0 ? "is-up" : move.amount < 0 ? "is-down" : "is-flat" : "is-flat"}>{change}</td><td>{coin.marketCap == null ? "—" : new Intl.NumberFormat(locale, { style: "currency", currency: coin.currency, maximumFractionDigits: 0 }).format(coin.marketCap)}</td><td>{coin.volume == null ? "—" : new Intl.NumberFormat(locale, { style: "currency", currency: coin.currency, maximumFractionDigits: 0 }).format(coin.volume)}</td></tr>;
       })}</tbody></table></div>
-    </section> : <section className="crypto-empty-state" role="status"><h2>{!validDate ? copy.unavailableTitle : requestedDate && requestedDate > today ? copy.unavailableTitle : requestedDate && !dates.includes(requestedDate) ? copy.unavailableTitle : copy.unavailableTitle}</h2><p>{copy.unavailableBody}</p><p>{copy.source}: {copy.sourcePending}</p>{requestedDate && validDate && requestedDate <= today && !dates.includes(requestedDate) ? <p>{copy.date}: {requestedDate} · {copy.unavailableBody}</p> : null}</section>}
+    </section> : <section className="crypto-empty-state" role="status"><h2>{copy.unavailableTitle}</h2><p>{copy.unavailableBody}</p><p>{copy.source}: {copy.sourcePending}</p>{date && validDate ? <p>{copy.date}: {date} · {copy.unavailableBody}</p> : null}</section>}
     <section className="crypto-issue-link"><h2>{copy.issues}</h2><p>{copy.issueDescription}</p><Link href={`/${locale}/crypto/issues`}>{copy.issueTitle}</Link></section>
   </>;
 }

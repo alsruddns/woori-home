@@ -66,6 +66,12 @@ The update workflows check out and push `develop`. GitHub scheduled workflows ru
 
 The mineral page describes the official USGS Mineral Commodity Summaries 2026 release and links to its data catalog. The USGS release is marked CC0, but the attached numeric CSV files could not be retrieved in this development environment, so production, reserve, and price values are not reproduced. World Bank Pink Sheet prices also remain withheld because series-level third-party republication terms have not been reconciled. See `docs/data-source-audit.md`.
 
+## PostgreSQL development foundation
+
+PostgreSQL schema and SQL migration sources are managed with Drizzle ORM/Kit. Viewing the portal and building it still use checked-in snapshots and do not require PostgreSQL. To use the local development database, copy `.env.example` to `.env.local`, set local credentials for `woori_today_portal_dev`, then run `pnpm db:status` and `pnpm db:migrate`. See [docs/database-migrations.md](docs/database-migrations.md) for the connection safety rules and future production procedure. The current machine's PostgreSQL service is running, but its local role credentials were unavailable, so no database was created or changed in this setup.
+
+Date-based dashboards now default to the visitor's local calendar day after hydration. A valid `?date=YYYY-MM-DD` remains the selected date. If no snapshot exists for that day, the page shows the existing unavailable state instead of substituting another date.
+
 ## Checks
 
 ```powershell
