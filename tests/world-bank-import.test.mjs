@@ -77,7 +77,8 @@ test("World Bank DB screen mode defaults to JSON, guards production, stays allow
   assert.match(mode, /WORLD_BANK_DB_PRODUCTION_ENABLED !== "true"/);
   assert.match(mode, /PRODUCTION_DB_ALLOWED_HOSTS/);
   assert.match(route, /resolveWorldBankDataSource/);
-  assert.match(route, /This indicator is not approved for World Bank DB mode/);
+  assert.match(route, /worldBankIndicatorSource\(mode\.source, indicator\.code\)/);
+  assert.match(route, /source: "json"/);
   assert.match(route, /World Bank database comparison is unavailable/);
   assert.match(repository, /"SL\.UEM\.TOTL\.ZS", "EG\.ELC\.ACCS\.ZS"/);
   assert.match(repository, /\.limit\(countryIso3\.length \* 401\)/);

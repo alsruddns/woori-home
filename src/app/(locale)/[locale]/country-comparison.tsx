@@ -29,7 +29,7 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   const [startYear, setStartYear] = useState<number | null>(null);
   const [endYear, setEndYear] = useState<number | null>(null);
   const indicator = indicators.find((item) => item.id === indicatorId)!;
-  const availableIndicators = dataSource === "db" ? indicators.filter((item) => ["unemployment", "electricity-access"].includes(item.id)) : indicators;
+  const availableIndicators = indicators;
   const hasChanges = indicatorId !== draftIndicator || countries.join(",") !== draftCountries.join(",");
 
   function toggleCountry(code: string) {
