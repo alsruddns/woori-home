@@ -45,41 +45,48 @@ jobs:
 
             stage="Validate the isolated Portal API route target"
             printf '[NGINX APPLY 1] %s\n' "$stage"
-            if [ "$mount_rw" != true ]; then
-              printf '[NGINX APPLY BLOCKED] Nginx configuration mount is read-only; no file was changed.\n' >&2
-              exit 2
-            fi
-            config_candidates="$(docker exec "$nginx_container" sh -c 'grep -lF "proxy_pass http://moneybook-backend:8080;" /etc/nginx/conf.d/*.conf')"
+            host_config_dir=/opt/services/nginx/conf.d
+            backup_dir=/opt/backups/woori-portal
+            config_candidates="$(grep -lF 'proxy_pass http://moneybook-backend:8080;' "$host_config_dir"/*.conf)"
             candidate_count="$(printf '%s\n' "$config_candidates" | wc -l | tr -d ' ')"
             printf '[NGINX APPLY CHECK] Matching configuration files=%s\n' "$candidate_count"
             if [ "$candidate_count" != 1 ]; then
               printf '[NGINX APPLY BLOCKED] Expected exactly one config file with the existing MoneyBook API route.\n' >&2
               exit 2
             fi
-            target="$config_candidates"
-            api_location_count="$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target")"
+            target_host="$config_candidates"
+            test -f "$target_host"
+            test ! -L "$target_host"
+            if [ ! -w "$target_host" ] || [ ! -d "$backup_dir" ] || [ ! -w "$backup_dir" ]; then
+              printf '[NGINX APPLY BLOCKED] The deploy account cannot safely write the active config and existing backup directory.\n' >&2
+              exit 2
+            fi
+            target_container="/etc/nginx/conf.d/$(basename "$target_host")"
+            api_location_count="$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target_container")"
             printf '[NGINX APPLY CHECK] Existing /api location count=%s\n' "$api_location_count"
             if [ "$api_location_count" != 1 ]; then
               printf '[NGINX APPLY BLOCKED] Expected exactly one /api location in the selected config.\n' >&2
               exit 2
             fi
-            if docker exec "$nginx_container" grep -Fq 'location ^~ /portal-api/' "$target"; then
+            if docker exec "$nginx_container" grep -Fq 'location ^~ /portal-api/' "$target_container"; then
               printf '[NGINX APPLY ERROR] A /portal-api/ location already exists; refusing to change it.\n' >&2
               exit 1
             fi
 
             timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
-            backup="${target}.portal-api-${timestamp}.bak"
-            docker exec "$nginx_container" test ! -e "$backup"
-            docker exec "$nginx_container" cp -p "$target" "$backup"
-            before_sha="$(docker exec "$nginx_container" sha256sum "$target" | awk '{print $1}')"
+            backup="$backup_dir/nginx-$(basename "$target_host").portal-api-${timestamp}.bak"
+            test ! -e "$backup"
+            cp -p "$target_host" "$backup"
+            before_sha="$(sha256sum "$target_host" | awk '{print $1}')"
+            container_sha="$(docker exec "$nginx_container" sha256sum "$target_container" | awk '{print $1}')"
+            test "$container_sha" = "$before_sha"
             modified=0
             on_exit() {
               status=$?
               trap - EXIT
               if [ "$status" -ne 0 ] && [ "$modified" = 1 ]; then
                 printf '[NGINX ROLLBACK] Restoring the backed-up Nginx configuration.\n' >&2
-                if docker exec "$nginx_container" cp -p "$backup" "$target" && docker exec "$nginx_container" nginx -t && docker exec "$nginx_container" nginx -s reload; then
+                if cat "$backup" > "$target_host" && docker exec "$nginx_container" nginx -t && docker exec "$nginx_container" nginx -s reload; then
                   printf '[NGINX ROLLBACK] Previous configuration restored and reloaded.\n' >&2
                 else
                   printf '[NGINX ROLLBACK ERROR] Automatic restoration failed; the saved backup remains at %s.\n' "$backup" >&2
@@ -92,34 +99,36 @@ jobs:
             stage="Add Portal-only API location"
             printf '[NGINX APPLY 2] %s\n' "$stage"
             modified=1
-            docker exec -i "$nginx_container" sh -s -- "$target" "$before_sha" <<'REMOTE'
-            set -eu
-            target="$1"
-            expected_sha="$2"
-            actual_sha="$(sha256sum "$target" | awk '{print $1}')"
-            test "$actual_sha" = "$expected_sha"
-            temporary="${target}.portal-api.tmp.$$"
-            cp -p "$target" "$temporary"
-            if awk '
-              /^[[:space:]]*location[[:space:]]+\^~[[:space:]]+\/api\/[[:space:]]*\{/ {
-                print "    location ^~ /portal-api/ {"
-                print "        proxy_pass http://portal:3003;"
-                print "        proxy_set_header Host $host;"
-                print "        proxy_set_header X-Real-IP $remote_addr;"
-                print "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"
-                print "        proxy_set_header X-Forwarded-Proto $scheme;"
-                print "    }"
-                inserted++
-              }
-              { print }
-              END { if (inserted != 1) exit 42 }
-            ' "$target" > "$temporary"; then
-              mv "$temporary" "$target"
-            else
-              rm -f "$temporary"
-              exit 1
-            fi
-            REMOTE
+            python3 - "$target_host" "$before_sha" <<'REMOTE'
+            import hashlib, pathlib, re, sys
+            target = pathlib.Path(sys.argv[1])
+            expected_sha = sys.argv[2]
+            original = target.read_bytes()
+            if hashlib.sha256(original).hexdigest() != expected_sha:
+                raise SystemExit("Nginx config changed after preflight; refusing to overwrite it.")
+            text = original.decode("utf-8")
+            pattern = re.compile(r"(?m)^([ \t]*)location[ \t]+\^~[ \t]+/api/[ \t]*\{[ \t]*$")
+            matches = list(pattern.finditer(text))
+            if len(matches) != 1:
+                raise SystemExit("Expected exactly one /api location in the selected Nginx config.")
+            indent = matches[0].group(1)
+            child = indent + "    "
+            route = "\n".join([
+                indent + "location ^~ /portal-api/ {",
+                child + "proxy_pass http://portal:3003;",
+                child + "proxy_set_header Host $host;",
+                child + "proxy_set_header X-Real-IP $remote_addr;",
+                child + "proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;",
+                child + "proxy_set_header X-Forwarded-Proto $scheme;",
+                indent + "}",
+                "",
+            ])
+            offset = matches[0].start()
+            updated = text[:offset] + route + text[offset:]
+            with target.open("w", encoding="utf-8", newline="") as stream:
+                stream.write(updated)
+
+REMOTE
 
             stage="Validate Nginx configuration before reload"
             printf '[NGINX APPLY 3] %s\n' "$stage"
@@ -141,7 +150,7 @@ jobs:
             test "$legacy_status" = 401
             portal_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 'https://www.woori.today/ko')"
             test "$portal_status" = 200
-            after_sha="$(docker exec "$nginx_container" sha256sum "$target" | awk '{print $1}')"
+            after_sha="$(sha256sum "$target_host" | awk '{print $1}')"
             printf '[NGINX APPLY RESULT] Portal API 200/source=json; invalid request 400; unsupported method 405; existing /api route 401; Portal page 200.\n'
             printf '[NGINX APPLY CHANGE] backup_sha=%s active_sha=%s added_route=/portal-api/->portal:3003\n' "$before_sha" "$after_sha"
             printf '[NGINX APPLY BACKUP] %s\n' "$backup"
