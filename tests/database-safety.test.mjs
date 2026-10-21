@@ -93,6 +93,7 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /scripts\/deploy\/release-guard\.mjs/);
   assert.match(workflow, /PORTAL_DIGEST/);
   assert.match(workflow, /--env-file \.env\.moneybook --env-file \.env\.portal/);
+  assert.match(workflow, /if \[ -r \.env\.portal \]; then[\s\S]*sudo -n true[\s\S]*sudo -n docker compose/);
   assert.match(workflow, /up -d --no-deps portal/);
   assert.match(workflow, /rollback_tag/);
   assert.match(workflow, /environment: production/);
