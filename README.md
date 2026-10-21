@@ -30,7 +30,7 @@ Useful pages:
 - <http://localhost:3003/ko/science> — NASA/JPL near-Earth object snapshot
 - <http://localhost:3003/ko/papers> — daily Crossref bibliographic discovery (no abstracts or generated summaries)
 - <http://localhost:3003/en/papers> — English research discovery
-- <http://localhost:3003/ko/commodities> — monthly commodity source and rights status (price republication is withheld)
+- <http://localhost:3003/ko/commodities> — USGS annual mineral release scope, reference period, and source status; numeric tables are not yet integrated
 - <http://localhost:3003/ko/science?date=2026-10-20> — Select an available UTC approach date
 
 Useful stock and introduction pages:
@@ -53,7 +53,7 @@ Research discovery uses a small, checked-in Crossref metadata snapshot. The refr
 
 The update workflows check out and push `develop`. GitHub scheduled workflows run from the repository's default branch; since these three workflow files exist only on `develop`, neither schedule nor GitHub Actions manual dispatch is active yet. Locally, run the commands above while on `develop`. The only workflow currently listed by GitHub is `publish.yml` on `main`, which remains separate. A data commit to `develop` is not a production data delivery; a future approved integration still needs an atomic path from the validated snapshot to the running application and a separate publication-success record.
 
-The commodities page links to the World Bank Pink Sheet source but does not copy its prices yet. Although a World Bank reproducibility catalog entry describes the dataset as CC BY 4.0 subject to additional terms, the workbook identifies third-party source series and the applicable series-level commercial republication conditions have not been reconciled. See `docs/data-source-audit.md`.
+The mineral page describes the official USGS Mineral Commodity Summaries 2026 release and links to its data catalog. The USGS release is marked CC0, but the attached numeric CSV files could not be retrieved in this development environment, so production, reserve, and price values are not reproduced. World Bank Pink Sheet prices also remain withheld because series-level third-party republication terms have not been reconciled. See `docs/data-source-audit.md`.
 
 ## Checks
 

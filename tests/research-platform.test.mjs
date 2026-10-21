@@ -13,6 +13,8 @@ require.extensions[".ts"] = (module, filename) => {
 };
 const { rankCountryObservations, periodChange } = require("../src/lib/data-platform/rankings.ts");
 const { researchCopy, localizedNewCategories, researchFilterCopy } = require("../src/lib/data-platform/research-copy.ts");
+const { homeBriefingCopy } = require("../src/lib/data-platform/home-briefing-copy.ts");
+const { mineralCopy } = require("../src/lib/data-platform/mineral-copy.ts");
 const { comparePeriodCopy, isRateIndicator } = require("../src/lib/data-platform/compare-period-copy.ts");
 
 test("country rankings use exact-year country values, exclude aggregates, sort both ways, and share ties", () => {
@@ -55,6 +57,27 @@ test("research and commodity navigation copy is complete in every supported loca
   }
 });
 
+test("global home briefing and mineral source status are localized across all supported locales", async () => {
+  const [briefing, mineralPage, mineralSource] = await Promise.all([
+    read("src/app/(locale)/[locale]/global-data-briefing.tsx"),
+    read("src/app/(locale)/[locale]/(platform)/commodities/page.tsx"),
+    read("src/lib/data-platform/mineral-copy.ts"),
+  ]);
+  const locales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+  for (const locale of locales) {
+    const home = homeBriefingCopy[locale];
+    assert.ok(home.briefing && home.population && home.gdp && home.electricityAccess && home.latestResearch && home.researchMetadataOnly, `${locale}: home briefing copy`);
+    assert.ok(home.spaceData && home.closeApproaches && home.distance && home.diameter && home.mineralsPending, `${locale}: space/mineral copy`);
+    assert.ok(mineralCopy[locale].description && mineralCopy[locale].scope && mineralCopy[locale].status && mineralCopy[locale].unitsNote, `${locale}: mineral source status`);
+  }
+  assert.match(briefing, /latestForCountry\("SP\.POP\.TOTL", "WLD"\)/);
+  assert.match(briefing, /paperSnapshot\.records/);
+  assert.match(briefing, /nearEarthSnapshot\.objects/);
+  assert.match(mineralPage, /index: false/);
+  assert.match(mineralPage, /P1WKQ63T/);
+  assert.match(mineralSource, /90 nonfuel mineral commodities/);
+});
+
 test("country comparison uses exact observed endpoints and keeps percentage points separate from relative change", async () => {
   const page = await read("src/app/(locale)/[locale]/country-comparison.tsx");
   assert.match(page, /periodChange\(start\?\.value, end\?\.value\)/);
@@ -86,7 +109,8 @@ test("papers are daily Crossref metadata, article detail remains noindex, and co
   assert.match(sitemap, /publicDataPaths/);
   assert.doesNotMatch(sitemap, /commodities/);
   assert.match(commodityPage, /index: false/);
-  assert.match(commodityPage, /rightsPending/);
-  assert.doesNotMatch(commodityPage, /records|priceSnapshot|commoditySnapshot/i);
+  assert.match(commodityPage, /mineralCopy/);
+  assert.match(commodityPage, /index: false/);
+  assert.doesNotMatch(commodityPage, /records|priceSnapshot|commoditySnapshot|productionValues/i);
   assert.ok(appPages.every((page) => !page.includes(" | WOORI.TODAY")), "page titles have no site-name suffix");
 });
