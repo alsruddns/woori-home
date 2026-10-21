@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { assertNoDestructiveMigration, resolveDatabaseTarget } from "../scripts/db/connection-safety.mjs";
@@ -93,7 +94,19 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /scripts\/deploy\/release-guard\.mjs/);
   assert.match(workflow, /PORTAL_DIGEST/);
   assert.match(workflow, /--env-file \.env\.moneybook --env-file \.env\.portal/);
-  assert.match(workflow, /if \[ -r \.env\.portal \]; then[\s\S]*sudo -n true[\s\S]*sudo -n docker compose/);
+  assert.match(workflow, /test -r \.env\.portal/);
+  assert.match(workflow, /\[DEPLOY 1\] %s/);
+  assert.ok(workflow.includes('stage="Validate release references and server inputs"'));
+  for (const stage of ["Validate Compose configuration", "Validate Portal networks and runtime environment", "Verify current Portal and create a database backup", "Validate GHCR image access", "Preserve rollback image", "Deploy Portal image", "Wait for Portal Healthcheck", "HTTP smoke test"]) {
+    assert.ok(workflow.includes(stage), `missing deployment stage: ${stage}`);
+  }
+  assert.match(workflow, /\[DEPLOY ERROR\] Stage: %s, Exit code: %s/);
+  assert.match(workflow, /trap on_exit EXIT/);
+  assert.match(workflow, /sort -nr \| sed -n '1p'/);
+  assert.doesNotMatch(workflow, /sort -nr \| head/);
+  assert.match(workflow, /DEPLOY ROLLBACK ERROR/);
+  assert.doesNotMatch(workflow, /^\s*(?:printenv|env)(?:\s|$)/m);
+  assert.doesNotMatch(workflow, /^\s*echo\s+.*(?:DATABASE_URL|DB_IMPORT_URL|DB_MIGRATION_URL)/m);
   assert.match(workflow, /up -d --no-deps portal/);
   assert.match(workflow, /rollback_tag/);
   assert.match(workflow, /environment: production/);
@@ -109,6 +122,43 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.ok(workflow.indexOf("db_tools_run scripts/db/status-production.mjs") < workflow.indexOf("db_tools_run scripts/db/migrate-production.mjs"));
   assert.doesNotMatch(workflow, /docker compose down|compose down/);
   assert.doesNotMatch(workflow, /cp .*\.env\.portal|tee .*\.env\.portal/);
+});
+
+test("publish workflow rollback trap restores only Portal and preserves the original failure code", async (t) => {
+  const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+  const functionStart = workflow.indexOf("            on_exit() {");
+  const functionEnd = workflow.indexOf("            trap on_exit EXIT", functionStart);
+  assert.ok(functionStart >= 0 && functionEnd > functionStart, "deployment exit trap must exist");
+  const functionSource = workflow.slice(functionStart, functionEnd).split(/\r?\n/).map((line) => line.replace(/^ {12}/, "")).join("\n");
+  const bashPath = process.platform === "win32"
+    ? `${process.env.ProgramFiles ?? "C:\\Program Files"}\\Git\\bin\\bash.exe`
+    : "bash";
+  if (process.platform === "win32" && !existsSync(bashPath)) t.skip("Git Bash is unavailable for the rollback trap check");
+
+  const harness = `${functionSource}
+tmpdir="$(mktemp -d)"
+override="$tmpdir/override.yml"
+marker="$tmpdir/rollback-called"
+(
+  stage="HTTP smoke test"
+  deploy_started=1
+  rollback_tag="ghcr.io/alsruddns/woori-home:rollback-test"
+  approval_file=""
+  override="$override"
+  compose() { printf 'called' > "$marker"; }
+  docker() { printf 'healthy\\n'; }
+  : > "$override"
+  trap on_exit EXIT
+  exit 23
+)
+status=$?
+test "$status" -eq 23
+test -s "$marker"
+test ! -e "$override"
+rm -rf "$tmpdir"
+`;
+  const result = spawnSync(bashPath, ["-s"], { input: harness, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
 test("destructive SQL is blocked before an unapplied migration runs", () => {

@@ -104,37 +104,86 @@ jobs:
           script: |
             set -Eeuo pipefail
             umask 077
+            stage="Initialize deployment"
+            deploy_started=0
+            rollback_tag=""
+            override=""
+            approval_file=""
+
+            on_exit() {
+              status=$?
+              trap - EXIT
+              if [ "$status" -ne 0 ]; then
+                printf '[DEPLOY ERROR] Stage: %s, Exit code: %s\n' "$stage" "$status" >&2
+                if [ "$deploy_started" = "1" ]; then
+                  printf '[DEPLOY ROLLBACK] Restoring the previous Portal image.\n' >&2
+                  printf 'services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' "$rollback_tag" > "$override"
+                  if ! compose -f "$override" up -d --no-deps portal; then
+                    printf '[DEPLOY ROLLBACK ERROR] Could not restore the previous Portal image.\n' >&2
+                  else
+                    rollback_healthy=false
+                    for n in $(seq 1 24); do
+                      if [ "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy ]; then rollback_healthy=true; break; fi
+                      sleep 5
+                    done
+                    if [ "$rollback_healthy" != true ]; then
+                      printf '[DEPLOY ROLLBACK ERROR] Previous Portal image did not become healthy.\n' >&2
+                    fi
+                  fi
+                fi
+              fi
+              if [ -n "$override" ] && ! rm -f "$override"; then
+                printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary Compose override.\n' >&2
+              fi
+              if [ -n "$approval_file" ] && ! rm -f "$approval_file"; then
+                printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary approval file.\n' >&2
+              fi
+              exit "$status"
+            }
+            trap on_exit EXIT
+
+            stage="Validate release references and server inputs"
+            printf '[DEPLOY 1] %s\n' "$stage"
             cd /opt/services/compose
             test -f .env.moneybook
+            test -r .env.moneybook
             test -f .env.portal
+            test -r .env.portal
             test -f docker-compose.yml
+            test -r docker-compose.yml
             test -n "${PORTAL_HEALTH_URL:-}"
             printf '%s' "$RELEASE_SHA" | grep -Eq '^[a-f0-9]{40}$'
             printf '%s' "$PORTAL_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
             printf '%s' "$TOOLS_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
-
-            if [ -r .env.portal ]; then
-              compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
-            else
-              command -v sudo >/dev/null 2>&1
-              sudo -n true
-              compose() { sudo -n docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
-            fi
+            compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
             override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
-            approval_file=""
-            deploy_started=0
-            rollback_tag=""
-            trap 'status=$?; if [ "$status" -ne 0 ] && [ "$deploy_started" = "1" ]; then printf "services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n" "$rollback_tag" > "$override"; compose -f "$override" up -d --no-deps portal || true; for n in $(seq 1 24); do [ "$(docker inspect --format="{{.State.Health.Status}}" portal 2>/dev/null || true)" = healthy ] && break; sleep 5; done; fi; rm -f "$override"; if [ -n "$approval_file" ]; then rm -f "$approval_file"; fi; exit "$status"' EXIT
+
+            stage="Validate Compose configuration"
+            printf '[DEPLOY 2] %s\n' "$stage"
             printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' > "$override"
             compose -f "$override" config --quiet
             config_json="$(compose -f "$override" config --format json)"
+
+            stage="Validate Portal networks and runtime environment"
+            printf '[DEPLOY 3] %s\n' "$stage"
             printf '%s' "$config_json" | jq -e '.services.portal.networks | (keys | sort) == ["database","default"]' >/dev/null
             printf '%s' "$config_json" | jq -e '.services.portal.image | type == "string"' >/dev/null
             printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ((($env.DATABASE_URL | type) == "string") or ((.services.portal.env_file // []) | map(if type == "string" then . else .path end) | any(endswith(".env.portal")))) and (["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null))' >/dev/null
 
-            before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 || true)"
-            /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1
-            after_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | head -1)"
+            stage="Verify current Portal and create a database backup"
+            printf '[DEPLOY 4] %s\n' "$stage"
+            current_health="$(docker inspect --format='{{.State.Health.Status}}' portal)"
+            test "$current_health" = healthy
+            curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
+            before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
+            if /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1; then
+              :
+            else
+              backup_status=$?
+              printf '[DEPLOY ERROR] Backup command failed with exit code: %s\n' "$backup_status" >&2
+              exit "$backup_status"
+            fi
+            after_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
             after="${after_entry#* }"
             after_time="${after_entry%% *}"
             test -n "$after" && test -s "$after"
@@ -157,37 +206,57 @@ jobs:
                   -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
                   "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env "$@"
               }
+              stage="Preflight approved production database operation"
+              printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/preflight-production.mjs
+              stage="Check production database migration status"
+              printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/status-production.mjs
+              stage="Dry-run approved World Bank import"
+              printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/data/import-world-bank-production.mjs --dry-run
+              stage="Apply production database migrations"
+              printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/migrate-production.mjs --apply --backup-reference="$backup_reference"
+              stage="Verify production database migration status"
+              printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/status-production.mjs
+              stage="Import approved World Bank observations"
+              printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/data/import-world-bank-production.mjs --apply --backup-reference="$backup_reference"
+              stage="Verify production World Bank import"
+              printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/data/verify-world-bank-production.mjs
             fi
 
-            for n in $(seq 1 24); do
-              if [ "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy ]; then break; fi
-              sleep 5
-            done
-            test "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy
-            curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
+            stage="Validate GHCR image access"
+            printf '[DEPLOY 5] %s\n' "$stage"
+            docker pull "ghcr.io/alsruddns/woori-home@${PORTAL_DIGEST}"
 
+            stage="Preserve rollback image"
+            printf '[DEPLOY 6] %s\n' "$stage"
             old_image_id="$(docker inspect --format='{{.Image}}' portal)"
             rollback_tag="ghcr.io/alsruddns/woori-home:rollback-${old_image_id#sha256:}"
             docker tag "$old_image_id" "$rollback_tag"
             printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' "$PORTAL_DIGEST" > "$override"
             compose -f "$override" config --quiet
-            docker pull "ghcr.io/alsruddns/woori-home@${PORTAL_DIGEST}"
+
+            stage="Deploy Portal image"
+            printf '[DEPLOY 7] %s\n' "$stage"
             deploy_started=1
             compose -f "$override" up -d --no-deps portal
 
+            stage="Wait for Portal Healthcheck"
+            printf '[DEPLOY 8] %s\n' "$stage"
             healthy=false
             for n in $(seq 1 24); do
               if [ "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy ]; then healthy=true; break; fi
               sleep 5
             done
             test "$healthy" = true
+
+            stage="HTTP smoke test"
+            printf '[DEPLOY 9] %s\n' "$stage"
             curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
             deploy_started=0
             echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained."
