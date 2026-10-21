@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792547153047,
+      "tag": "0000_init_data_catalog",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792556890666,
+      "tag": "0001_worldbank_collection_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792557184725,
+      "tag": "0002_worldbank_country_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792558376174,
+      "tag": "0003_financial_market_data",
+      "breakpoints": true
+    }
+  ]
+}

@@ -4,85 +4,184 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      apply_database_changes:
+        description: Apply production migrations and the reviewed World Bank import after backup
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  image:
+  release-guard:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
+      - name: Require main release ref
+        env:
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/deploy/release-guard.mjs
 
+  image:
+    needs: release-guard
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      portal_digest: ${{ steps.portal.outputs.digest }}
+      tools_digest: ${{ steps.tools.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
-      - uses: docker/metadata-action@v5
-        id: meta
-        with:
-          images: ghcr.io/alsruddns/woori-home
-          tags: |
-            type=raw,value=latest
-            type=sha,prefix=
-
-      - uses: docker/build-push-action@v6
+      - name: Build and publish portal image
+        id: portal
+        uses: docker/build-push-action@v6
         with:
           context: .
+          target: runner
           push: true
-          build-args: |
-            NEXT_PUBLIC_GA_ID=G-ZJSJW06SCX
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          build-args: NEXT_PUBLIC_GA_ID=G-ZJSJW06SCX
+          tags: ghcr.io/alsruddns/woori-home:sha-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Build and publish one-off DB tools image
+        id: tools
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: db-tools
+          push: true
+          tags: ghcr.io/alsruddns/woori-home:db-tools-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          labels: org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
 
   deploy:
     needs: image
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-
+    environment: production
+    concurrency:
+      group: woori-home-production
+      cancel-in-progress: false
     steps:
-      - name: Deploy portal
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Validate immutable release references
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
+          TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
+        run: |
+          node scripts/deploy/release-guard.mjs
+          node --input-type=module -e 'import {assertCommitDigest,assertCommitShaTag} from "./scripts/deploy/release-guard.mjs"; assertCommitShaTag(process.env.RELEASE_SHA); assertCommitDigest(process.env.PORTAL_DIGEST); assertCommitDigest(process.env.TOOLS_DIGEST);'
+      - name: Deploy only the portal service
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
+          TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
+          APPLY_DATABASE_CHANGES: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes || 'false' }}
+          PRODUCTION_OPERATION_APPROVAL: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
+          PRODUCTION_DB_ALLOWED_HOSTS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes && secrets.PRODUCTION_DB_ALLOWED_HOSTS || '' }}
+          PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,APPLY_DATABASE_CHANGES,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL
           script: |
-            set -e
-
+            set -Eeuo pipefail
+            umask 077
             cd /opt/services/compose
+            test -f .env.moneybook
+            test -f .env.portal
+            test -f docker-compose.yml
+            test -n "${PORTAL_HEALTH_URL:-}"
+            printf '%s' "$RELEASE_SHA" | grep -Eq '^[a-f0-9]{40}$'
+            printf '%s' "$PORTAL_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
+            printf '%s' "$TOOLS_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
 
-            docker compose --env-file .env.moneybook pull portal
-            docker compose --env-file .env.moneybook up -d portal
+            compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
+            override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
+            approval_file=""
+            deploy_started=0
+            rollback_tag=""
+            trap 'status=$?; if [ "$status" -ne 0 ] && [ "$deploy_started" = "1" ]; then printf "services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n" "$rollback_tag" > "$override"; compose -f "$override" up -d --no-deps portal || true; for n in $(seq 1 24); do [ "$(docker inspect --format="{{.State.Health.Status}}" portal 2>/dev/null || true)" = healthy ] && break; sleep 5; done; fi; rm -f "$override"; if [ -n "$approval_file" ]; then rm -f "$approval_file"; fi; exit "$status"' EXIT
+            printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' > "$override"
+            compose -f "$override" config --quiet
+            config_json="$(compose -f "$override" config --format json)"
+            printf '%s' "$config_json" | jq -e '.services.portal.networks | (keys | sort) == ["database","default"]' >/dev/null
+            printf '%s' "$config_json" | jq -e '.services.portal.image | type == "string"' >/dev/null
+            printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ((($env.DATABASE_URL | type) == "string") or ((.services.portal.env_file // []) | map(if type == "string" then . else .path end) | any(endswith(".env.portal")))) and (["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null))' >/dev/null
 
-            echo "Waiting for portal health..."
+            before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 || true)"
+            /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1
+            after_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | head -1)"
+            after="${after_entry#* }"
+            after_time="${after_entry%% *}"
+            test -n "$after" && test -s "$after"
+            if [ "$after" = "${before_entry#* }" ] && [ "$after_time" = "${before_entry%% *}" ]; then echo "Backup file did not change." >&2; exit 1; fi
+            backup_reference="$(basename "$after")"
 
-            for i in $(seq 1 24); do
-              STATUS=$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)
+            if [ "$APPLY_DATABASE_CHANGES" = "true" ]; then
+              test -n "${PRODUCTION_OPERATION_APPROVAL:-}"
+              test -n "${PRODUCTION_DB_ALLOWED_HOSTS:-}"
+              approval_file="$(mktemp /tmp/woori-db-approval.XXXXXX)"
+              printf '%s' "$PRODUCTION_OPERATION_APPROVAL" > "$approval_file"
+              unset PRODUCTION_OPERATION_APPROVAL
+              docker pull "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}"
+              db_tools_run() {
+                docker run --rm --network compose_database \
+                  --mount type=bind,src=/opt/services/compose/.env.portal,dst=/app/.portal.env,readonly \
+                  --mount "type=bind,src=$approval_file,dst=/app/.production-approval,readonly" \
+                  -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
+                  -e PRODUCTION_OPERATION_APPROVAL_FILE=/app/.production-approval -e PRODUCTION_DB_ALLOWED_HOSTS \
+                  -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
+                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env "$@"
+              }
+              db_tools_run scripts/db/preflight-production.mjs
+              db_tools_run scripts/db/status-production.mjs
+              db_tools_run scripts/data/import-world-bank-production.mjs --dry-run
+              db_tools_run scripts/db/migrate-production.mjs --apply --backup-reference="$backup_reference"
+              db_tools_run scripts/db/status-production.mjs
+              db_tools_run scripts/data/import-world-bank-production.mjs --apply --backup-reference="$backup_reference"
+              db_tools_run scripts/data/verify-world-bank-production.mjs
+            fi
 
-              if [ "$STATUS" = "healthy" ]; then
-                echo "Portal is healthy"
-                docker ps --filter name=portal
-                exit 0
-              fi
-
-              if [ "$STATUS" = "unhealthy" ]; then
-                echo "Portal is unhealthy"
-                docker logs --tail 100 portal
-                exit 1
-              fi
-
-              echo "Current health: ${STATUS:-starting} ($i/24)"
+            for n in $(seq 1 24); do
+              if [ "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy ]; then break; fi
               sleep 5
             done
+            test "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy
+            curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
 
-            echo "Portal health check timed out"
-            docker logs --tail 100 portal
-            exit 1
+            old_image_id="$(docker inspect --format='{{.Image}}' portal)"
+            rollback_tag="ghcr.io/alsruddns/woori-home:rollback-${old_image_id#sha256:}"
+            docker tag "$old_image_id" "$rollback_tag"
+            printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' "$PORTAL_DIGEST" > "$override"
+            compose -f "$override" config --quiet
+            docker pull "ghcr.io/alsruddns/woori-home@${PORTAL_DIGEST}"
+            deploy_started=1
+            compose -f "$override" up -d --no-deps portal
+
+            healthy=false
+            for n in $(seq 1 24); do
+              if [ "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy ]; then healthy=true; break; fi
+              sleep 5
+            done
+            test "$healthy" = true
+            curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
+            deploy_started=0
+            echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained."

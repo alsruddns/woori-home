@@ -1,0 +1,23 @@
+export type CryptoCoinQuote = {
+  id: string;
+  symbol: string;
+  name: string;
+  currency: string;
+  close: number;
+  marketCap?: number | null;
+  volume?: number | null;
+  previousUtcClose?: number | null;
+  change24hPercent?: number | null;
+};
+export type CryptoDailySnapshot = { referenceDate: string; asOf: string; coins: CryptoCoinQuote[] };
+export type CryptoSnapshot = { schemaVersion: 1; sourceId: string; providerName: string; licenseStatus: "approved" | "pending" | "unverified"; generatedAt: string | null; lastCheckedAt: string | null; snapshots: CryptoDailySnapshot[] };
+export type MarketIssue = { sourceId: string; externalId?: string; originalTitle: string; originalLanguage: string; localizedTitles?: Partial<Record<string, string>>; category: string; publishedAt: string; collectedAt: string; url: string; assetIds?: string[]; marketIds?: string[] };
+export function validateCryptoSnapshot(snapshot: CryptoSnapshot): boolean;
+export function isPublishableCryptoSnapshot(snapshot: CryptoSnapshot): boolean;
+export function cryptoDates(snapshot: CryptoSnapshot): string[];
+export function adjacentCryptoDates(dates: readonly string[], selectedDate: string): { previous?: string; next?: string };
+export function dailyCloseChange(current: CryptoCoinQuote | undefined, previous: CryptoCoinQuote | undefined): { amount: number; percent: number } | null;
+export function cryptoHeatmapWeights(coins: CryptoCoinQuote[]): Record<string, number> | null;
+export function cryptoTreemapLayout(coins: CryptoCoinQuote[]): Record<string, { x: number; y: number; width: number; height: number }> | null;
+export function deduplicateMarketIssues<T extends MarketIssue>(issues: T[]): T[];
+export function validUtcDate(value: string): boolean;

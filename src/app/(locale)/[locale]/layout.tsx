@@ -66,8 +66,11 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <html lang={localeConfig.find((item) => item.route === locale)!.hreflang}>
-      <body>{children}<Analytics /></body>
+    <html lang={localeConfig.find((item) => item.route === locale)!.hreflang} data-theme="dark" suppressHydrationWarning>
+      <body>
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('woori-platform-theme');document.documentElement.dataset.theme=t==='light'?'light':'dark'}catch(e){document.documentElement.dataset.theme='dark'}" }} />
+        {children}<Analytics />
+      </body>
     </html>
   );
 }
