@@ -1,0 +1,36 @@
+# Financial data source review
+
+Reviewed 2026-10-21 against each provider's official pages. This is a product-use review, not a legal opinion or a substitute for an executed data agreement. “Commercial display” does not automatically grant bulk redistribution, downloadable datasets, an API, white-label use, or indefinite database retention.
+
+| Area / provider | Status | Public display | DB storage / history | Cost and limits | Decision |
+|---|---|---|---|---|---|
+| US/global equities, Twelve Data Business | PENDING | Business plans are sold for commercial/external display; US real-time and global EOD are described. Exchange-specific entitlements still apply. | Historical series are available; persistence, derived distribution, markets and symbols must be covered by the selected agreement. | Business page lists Venture from $149/month and Enterprise from $1,099/month; Basic is free for internal non-display only. | Best documented paid candidate for external stock display; no subscription or account created. Require written exchange coverage and storage/derived-data confirmation. |
+| Korea equities, KRX | PENDING | KRX describes market-data distribution as a commercial business. | Historical prices are sold/licensed; redistribution terms and prices depend on product. | Quote required. | No scraping or public-market-data reuse until KRX grants the required use. |
+| US equities, Alpha Vantage | REJECTED for public commercial display | The official terms grant personal, non-commercial use unless agreed otherwise in writing. | No commercial storage/display right established by free API access. | Free access exists; paid pricing does not by itself establish exchange redistribution rights. | Do not use without a separate written agreement. |
+| Crypto, CoinGecko | RESTRICTED | Paid Basic and higher plans permit commercial integration with prominent “Data provided by CoinGecko” attribution and link. | Standard license forbids API/data redistribution or syndication; retention for our DB and any user export/API require plan-specific confirmation. Daily history: Demo 1 year, Basic 2 years; paid plan shown from $35/month monthly ($29/month annual billing). | Demo is attribution-required; paid call credits and historical coverage vary by tier. | Technically suitable for attributed integrated display subject to plan terms; not enabled because no subscription/key and DB retention scope needs confirmation. |
+| Crypto, CoinMarketCap | RESTRICTED | Official pricing says Basic and paid plans include commercial use; the plan page limits use to data integrated in a larger product for end users' personal, non-commercial use. | It prohibits standalone redistribution/resale. Public downloads/API and retention are not assumed. | Basic free: 15,000 credits/month, 50 req/min, 1 year daily history; paid Builder $29/month, Startup $79/month, Growth $299/month at review. | Possible integrated widget/display subject to exact current Commercial Terms and account key; not approved for our persistent DB pipeline without specific retention confirmation. |
+| Crypto, Upbit public quotation API | PENDING | Official docs specify public quotation endpoints, but the reviewed API reference does not itself grant commercial republication rights. | Market data endpoints/rates documented; no license for persistent republication established in the reviewed source. | Public endpoints; quotation limits are documented per endpoint and can change. | Represents Upbit KRW-market prices only, never global prices. Obtain written reuse approval before ingestion/display. |
+| Gold, LBMA benchmarks | PENDING (licensed) | LBMA says a license from ICE Benchmark Administration is required to obtain/use/redistribute real-time or historical benchmark prices. | Requires a license. | Commercial quote. | Do not reuse its public chart/scrape or import benchmark prices pending IBA terms. |
+| Gold/metals, Twelve Data Business | PENDING | External display is offered on Business plans; commodity-market coverage is advertised. | Metal spot/futures identity, history, cache, currency conversion and derived display need plan/exchange confirmation. | Venture from $149/month, Enterprise from $1,099/month. | Candidate only; no subscription or import. |
+| Energy/commodities, US EIA API | APPROVED for API search/display/analysis with attribution | Terms expressly allow a service to search, display, analyze, retrieve and view EIA data. Must identify EIA; do not imply endorsement and do not modify or misrepresent data as EIA data. | API data can be retrieved and displayed under the API terms; use series-specific metadata and third-party notices. | API key registration is free; limits can apply and terms may change. No operational integration in this phase. | Approved future adapter candidate for EIA-sourced series only; not a stock, crypto or gold proxy. Derived calculations must be labeled as our calculations and preserve the source observation. |
+| Foreign exchange, ECB / public rates | PENDING | Not assessed to a complete series-specific license suitable for the intended website. | No source selected. | Varies. | No KRW gold conversion until both quote and FX rights and matching reference dates are verified. |
+| Financial/news issues | PENDING | SEC company filings are primary disclosures, not general news; source-specific API policies and metadata attribution require a separate review. | No article text will be copied. | SEC APIs are publicly documented. | Existing noindex/empty states remain. No issue collection added. |
+
+## Official references
+
+- Twelve Data Business pricing and usage categories: https://twelvedata.com/pricing-business
+- Twelve Data API docs: https://twelvedata.com/docs
+- KRX market-data business: https://global.krx.co.kr/contents/GLB/01/0103/0103020800/GLB0103020800.jsp
+- Alpha Vantage terms: https://www.alphavantage.co/terms_of_service/
+- CoinGecko pricing: https://www.coingecko.com/en/api/pricing
+- CoinGecko API terms: https://www.coingecko.com/en/api_terms
+- CoinGecko commercial / custom license guidance: https://support.coingecko.com/articles/4405351015-commercial-api-license-and-custom-licensing
+- CoinMarketCap API pricing and commercial restrictions: https://coinmarketcap.com/api/pricing/
+- Upbit quotation API and rate limits: https://docs.upbit.com/kr/reference and https://docs.upbit.com/kr/reference/rate-limits
+- LBMA benchmark licensing notice: https://www.lbma.org.uk/
+- EIA API terms: https://www.eia.gov/opendata/terms-of-service.php
+- World Bank terms (existing pipeline): https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+
+## Decision boundary
+
+The repository currently contains no commercial provider key or executed market-data agreement. We did not create accounts, accept paid subscriptions, scrape provider sites, or fetch financial quotes. The approved status in this table applies only to EIA's described API operations, not to unrelated providers or data series. Provider rights are recorded in source documentation; data becomes publicly queryable through the repository only when its `data_sources.license_status` is `verified` and the source-specific `rights_note`, attribution, and license URL have been reviewed.
