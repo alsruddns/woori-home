@@ -35,6 +35,8 @@ jobs:
             docker exec "$nginx_container" nginx -t
             printf '[NGINX INSPECT] Nginx configuration mounts:\n'
             docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$nginx_container"
+            mount_rw="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/etc/nginx/conf.d"}}{{.RW}}{{end}}{{end}}' "$nginx_container")"
+            printf '[NGINX INSPECT] Configuration mount writable=%s\n' "$mount_rw"
 
             if [ "${APPLY_PORTAL_API_ROUTE:-false}" != true ]; then
               printf '[NGINX INSPECT] Read-only inspection complete; no configuration changed.\n'
@@ -43,12 +45,24 @@ jobs:
 
             stage="Validate the isolated Portal API route target"
             printf '[NGINX APPLY 1] %s\n' "$stage"
-            mount_rw="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/etc/nginx/conf.d"}}{{.RW}}{{end}}{{end}}' "$nginx_container")"
-            test "$mount_rw" = true
+            if [ "$mount_rw" != true ]; then
+              printf '[NGINX APPLY BLOCKED] Nginx configuration mount is read-only; no file was changed.\n' >&2
+              exit 2
+            fi
             config_candidates="$(docker exec "$nginx_container" sh -c 'grep -lF "proxy_pass http://moneybook-backend:8080;" /etc/nginx/conf.d/*.conf')"
-            test "$(printf '%s\n' "$config_candidates" | wc -l | tr -d ' ')" = 1
+            candidate_count="$(printf '%s\n' "$config_candidates" | wc -l | tr -d ' ')"
+            printf '[NGINX APPLY CHECK] Matching configuration files=%s\n' "$candidate_count"
+            if [ "$candidate_count" != 1 ]; then
+              printf '[NGINX APPLY BLOCKED] Expected exactly one config file with the existing MoneyBook API route.\n' >&2
+              exit 2
+            fi
             target="$config_candidates"
-            test "$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target")" = 1
+            api_location_count="$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target")"
+            printf '[NGINX APPLY CHECK] Existing /api location count=%s\n' "$api_location_count"
+            if [ "$api_location_count" != 1 ]; then
+              printf '[NGINX APPLY BLOCKED] Expected exactly one /api location in the selected config.\n' >&2
+              exit 2
+            fi
             if docker exec "$nginx_container" grep -Fq 'location ^~ /portal-api/' "$target"; then
               printf '[NGINX APPLY ERROR] A /portal-api/ location already exists; refusing to change it.\n' >&2
               exit 1
