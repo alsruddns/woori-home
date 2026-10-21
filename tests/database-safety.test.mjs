@@ -97,9 +97,10 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /test -r \.env\.portal/);
   assert.match(workflow, /\[DEPLOY 1\] %s/);
   assert.ok(workflow.includes('stage="Validate release references and server inputs"'));
-  for (const stage of ["Validate Compose configuration", "Validate Portal networks and runtime environment", "Verify current Portal and create a database backup", "Validate GHCR image access", "Preserve rollback image", "Deploy Portal image", "Wait for Portal Healthcheck", "HTTP smoke test"]) {
+  for (const stage of ["Validate Compose configuration", "Validate Portal network assignments", "Validate configured Portal image", "Validate Portal runtime database credentials", "Verify current Portal and create a database backup", "Validate GHCR image access", "Preserve rollback image", "Deploy Portal image", "Wait for Portal Healthcheck", "HTTP smoke test"]) {
     assert.ok(workflow.includes(stage), `missing deployment stage: ${stage}`);
   }
+  assert.match(workflow, /DEPLOY CHECK FAILED/);
   assert.match(workflow, /\[DEPLOY ERROR\] Stage: %s, Exit code: %s/);
   assert.match(workflow, /trap on_exit EXIT/);
   assert.match(workflow, /sort -nr \| sed -n '1p'/);
