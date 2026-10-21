@@ -114,10 +114,17 @@ jobs:
             printf '%s' "$TOOLS_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
 
             compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
-            compose config --quiet
-            config_json="$(compose config --format json)"
+            override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
+            approval_file=""
+            deploy_started=0
+            rollback_tag=""
+            trap 'status=$?; if [ "$status" -ne 0 ] && [ "$deploy_started" = "1" ]; then printf "services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n" "$rollback_tag" > "$override"; compose -f "$override" up -d --no-deps portal || true; for n in $(seq 1 24); do [ "$(docker inspect --format="{{.State.Health.Status}}" portal 2>/dev/null || true)" = healthy ] && break; sleep 5; done; fi; rm -f "$override"; if [ -n "$approval_file" ]; then rm -f "$approval_file"; fi; exit "$status"' EXIT
+            printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' > "$override"
+            compose -f "$override" config --quiet
+            config_json="$(compose -f "$override" config --format json)"
             printf '%s' "$config_json" | jq -e '.services.portal.networks | (keys | sort) == ["database","default"]' >/dev/null
             printf '%s' "$config_json" | jq -e '.services.portal.image | type == "string"' >/dev/null
+            printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ((($env.DATABASE_URL | type) == "string") or ((.services.portal.env_file // []) | map(if type == "string" then . else .path end) | any(endswith(".env.portal")))) and (["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null))' >/dev/null
 
             before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -1 || true)"
             /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1
@@ -131,43 +138,39 @@ jobs:
             if [ "$APPLY_DATABASE_CHANGES" = "true" ]; then
               test -n "${PRODUCTION_OPERATION_APPROVAL:-}"
               test -n "${PRODUCTION_DB_ALLOWED_HOSTS:-}"
+              approval_file="$(mktemp /tmp/woori-db-approval.XXXXXX)"
+              printf '%s' "$PRODUCTION_OPERATION_APPROVAL" > "$approval_file"
+              unset PRODUCTION_OPERATION_APPROVAL
               docker pull "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}"
-              docker run --rm --network compose_database --env-file .env.portal \
-                -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
-                -e PRODUCTION_OPERATION_APPROVAL -e PRODUCTION_DB_ALLOWED_HOSTS \
-                -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
-                "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/db/status-production.mjs
-              docker run --rm --network compose_database --env-file .env.portal \
-                -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
-                -e PRODUCTION_OPERATION_APPROVAL -e PRODUCTION_DB_ALLOWED_HOSTS \
-                "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/data/import-world-bank-production.mjs --dry-run
-              docker run --rm --network compose_database --env-file .env.portal \
-                -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
-                -e PRODUCTION_OPERATION_APPROVAL -e PRODUCTION_DB_ALLOWED_HOSTS \
-                -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
-                "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/db/migrate-production.mjs --apply --backup-reference="$backup_reference"
-              docker run --rm --network compose_database --env-file .env.portal \
-                -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
-                -e PRODUCTION_OPERATION_APPROVAL -e PRODUCTION_DB_ALLOWED_HOSTS \
-                -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
-                "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/db/status-production.mjs
-              docker run --rm --network compose_database --env-file .env.portal \
-                -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
-                -e PRODUCTION_OPERATION_APPROVAL -e PRODUCTION_DB_ALLOWED_HOSTS \
-                -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
-                "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/data/import-world-bank-production.mjs --apply --backup-reference="$backup_reference"
-              docker run --rm --network compose_database --env-file .env.portal \
-                -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
-                -e PRODUCTION_OPERATION_APPROVAL -e PRODUCTION_DB_ALLOWED_HOSTS \
-                "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/data/verify-world-bank-production.mjs
+              db_tools_run() {
+                docker run --rm --network compose_database \
+                  --mount type=bind,src=/opt/services/compose/.env.portal,dst=/app/.portal.env,readonly \
+                  --mount "type=bind,src=$approval_file,dst=/app/.production-approval,readonly" \
+                  -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
+                  -e PRODUCTION_OPERATION_APPROVAL_FILE=/app/.production-approval -e PRODUCTION_DB_ALLOWED_HOSTS \
+                  -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
+                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env "$@"
+              }
+              db_tools_run scripts/db/preflight-production.mjs
+              db_tools_run scripts/db/status-production.mjs
+              db_tools_run scripts/data/import-world-bank-production.mjs --dry-run
+              db_tools_run scripts/db/migrate-production.mjs --apply --backup-reference="$backup_reference"
+              db_tools_run scripts/db/status-production.mjs
+              db_tools_run scripts/data/import-world-bank-production.mjs --apply --backup-reference="$backup_reference"
+              db_tools_run scripts/data/verify-world-bank-production.mjs
             fi
+
+            for n in $(seq 1 24); do
+              if [ "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy ]; then break; fi
+              sleep 5
+            done
+            test "$(docker inspect --format='{{.State.Health.Status}}' portal 2>/dev/null || true)" = healthy
+            curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
 
             old_image_id="$(docker inspect --format='{{.Image}}' portal)"
             rollback_tag="ghcr.io/alsruddns/woori-home:rollback-${old_image_id#sha256:}"
             docker tag "$old_image_id" "$rollback_tag"
-            override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
-            trap 'status=$?; if [ "$status" -ne 0 ] && [ "${deploy_started:-0}" = "1" ]; then printf "services:\n  portal:\n    image: %s\n" "$rollback_tag" > "$override"; compose -f "$override" up -d --no-deps portal || true; for n in $(seq 1 24); do [ "$(docker inspect --format="{{.State.Health.Status}}" portal 2>/dev/null || true)" = healthy ] && break; sleep 5; done; fi; rm -f "$override"; exit "$status"' EXIT
-            printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n' "$PORTAL_DIGEST" > "$override"
+            printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' "$PORTAL_DIGEST" > "$override"
             compose -f "$override" config --quiet
             docker pull "ghcr.io/alsruddns/woori-home@${PORTAL_DIGEST}"
             deploy_started=1

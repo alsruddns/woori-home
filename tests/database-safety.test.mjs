@@ -8,6 +8,7 @@ import { pendingMigrations } from "../scripts/db/migration-status.mjs";
 import { assertDatabaseRolesShareTarget, assertProductionOperation, parseProductionApprovalArgs } from "../scripts/db/production-operation.mjs";
 import { assertCommitDigest, assertCommitShaTag, isMainProductionRelease } from "../scripts/deploy/release-guard.mjs";
 import { resolveWorldBankDataSource } from "../src/lib/db/world-bank-mode.mjs";
+import { parseDatabaseRoleEnv } from "../scripts/deploy/database-env.mjs";
 import { isCalendarDate, localCalendarDate } from "../src/lib/date-query.mjs";
 
 test("development migrations require the exact local development database", () => {
@@ -41,11 +42,23 @@ test("production DB operations require main Actions context, explicit approval, 
   assert.equal(assertProductionOperation({ env, databaseUrl: "postgres://u:p@db.example/woori_today_portal", backupReference: "backup-20261021", requireBackup: true }).database, "woori_today_portal");
   assert.throws(() => assertProductionOperation({ env: { ...env, GITHUB_REF: "refs/heads/develop" }, databaseUrl: "postgres://u:p@db.example/woori_today_portal" }), /restricted/);
   assert.throws(() => assertProductionOperation({ env: { ...env, PRODUCTION_BACKUP_CONFIRMED: "false" }, databaseUrl: "postgres://u:p@db.example/woori_today_portal", backupReference: "backup-20261021", requireBackup: true }), /backup/);
+  assert.throws(() => assertProductionOperation({ env: { ...env, PRODUCTION_OPERATION_APPROVAL: "" }, databaseUrl: "postgres://u:p@db.example/woori_today_portal" }), /approval secret/);
   assert.deepEqual(parseProductionApprovalArgs(["--dry-run"]), { apply: false, dryRun: true, backupReference: undefined });
   assert.throws(() => parseProductionApprovalArgs(["--apply"], { requireBackup: true }), /backup-reference/);
   assert.throws(() => parseProductionApprovalArgs(["--apply", "--dry-run"]), /Choose either/);
   assert.doesNotThrow(() => assertDatabaseRolesShareTarget(["postgres://runtime@db.example/woori_today_portal", "postgres://writer@db.example/woori_today_portal"]));
   assert.throws(() => assertDatabaseRolesShareTarget(["postgres://runtime@db.example/woori_today_portal", "postgres://writer@localhost/woori_today_portal"]), /same approved/);
+  assert.throws(() => assertDatabaseRolesShareTarget(["postgres://runtime@db.example/woori_today_portal", "postgres://writer@db.example/other_db"]), /same approved/);
+});
+
+test("dotenv role URL parsing removes quotes and preserves URL-encoded special password characters", () => {
+  const runtime = "postgresql://portal:p%40ss%23%24%26%3D%2B%2F%3A%25%27@postgres:5432/woori_today_portal";
+  const importer = "postgresql://importer:imp%40ss%23@postgres:5432/woori_today_portal";
+  const migration = "postgresql://migrator:mig%24ss%26@postgres:5432/woori_today_portal";
+  const parsed = parseDatabaseRoleEnv(`DATABASE_URL='${runtime}'\nDB_IMPORT_URL="${importer}"\nDB_MIGRATION_URL=${migration}\nPRODUCTION_OPERATION_APPROVAL=must-not-forward\n`);
+  assert.deepEqual(parsed, { DATABASE_URL: runtime, DB_IMPORT_URL: importer, DB_MIGRATION_URL: migration });
+  assert.throws(() => parseDatabaseRoleEnv("DATABASE_URL='not a URL'\nDB_IMPORT_URL=x\nDB_MIGRATION_URL=x\n"), /valid PostgreSQL URL/);
+  assert.throws(() => parseDatabaseRoleEnv("DATABASE_URL=postgres://only/woori_today_portal"), /DB_IMPORT_URL is missing/);
 });
 
 test("production publishing and immutable image references are restricted to main", () => {
@@ -82,6 +95,17 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /--env-file \.env\.moneybook --env-file \.env\.portal/);
   assert.match(workflow, /up -d --no-deps portal/);
   assert.match(workflow, /rollback_tag/);
+  assert.match(workflow, /environment: production/);
+  assert.match(workflow, /--mount type=bind,src=\/opt\/services\/compose\/\.env\.portal,dst=\/app\/\.portal\.env,readonly/);
+  assert.match(workflow, /\/app\/\.production-approval,readonly/);
+  assert.match(workflow, /PRODUCTION_OPERATION_APPROVAL_FILE=\/app\/\.production-approval/);
+  assert.doesNotMatch(workflow, /-e PRODUCTION_OPERATION_APPROVAL(?:\s|\\)/);
+  assert.match(workflow, /unset PRODUCTION_OPERATION_APPROVAL/);
+  assert.doesNotMatch(workflow, /docker run[^\n]*--env-file \.env\.portal/);
+  assert.match(workflow, /DB_IMPORT_URL:\\n/);
+  assert.match(workflow, /DB_MIGRATION_URL:\\n/);
+  assert.ok(workflow.indexOf("db_tools_run scripts/db/preflight-production.mjs") < workflow.indexOf("db_tools_run scripts/db/status-production.mjs"));
+  assert.ok(workflow.indexOf("db_tools_run scripts/db/status-production.mjs") < workflow.indexOf("db_tools_run scripts/db/migrate-production.mjs"));
   assert.doesNotMatch(workflow, /docker compose down|compose down/);
   assert.doesNotMatch(workflow, /cp .*\.env\.portal|tee .*\.env\.portal/);
 });
