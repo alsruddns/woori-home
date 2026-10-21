@@ -2,9 +2,9 @@ import { indicators } from "@/lib/data-platform/registry";
 import { countryByCode } from "@/lib/data-platform/countries";
 import { observationsFor } from "@/lib/data-platform/snapshot";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
-import { resolveWorldBankDataSource, worldBankIndicatorSource } from "../../../lib/db/world-bank-mode.mjs";
+import { resolveWorldBankDataSource, worldBankIndicatorSource } from "./world-bank-mode.mjs";
 
-export async function GET(request: Request) {
+export async function handleWorldBankComparison(request: Request) {
   const url = new URL(request.url);
   const codes = [...new Set((url.searchParams.get("countries") ?? "").split(",").map((value) => value.toLowerCase()).filter(Boolean))];
   const indicator = indicators.find((item) => item.id === url.searchParams.get("indicator"));

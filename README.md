@@ -48,7 +48,7 @@ Useful stock and introduction pages:
 - <http://localhost:3003/ko/crypto/issues> — dated crypto issue feed, currently empty pending source review
 - <http://localhost:3003/ko/stocks/issues> — dated stock issue feed, currently empty pending source review
 
-Country dashboards and charts use `src/data/world-bank.json` by default; the browser does not call World Bank. The comparison selector requests only the chosen series from the local `/api/data-compare` route. A reviewed, local-development-only PostgreSQL comparison mode and JSON/DB verifier are documented in [`docs/data-pipeline.md`](docs/data-pipeline.md). The monthly GitHub Actions workflow is only needed to refresh the committed snapshot.
+Country dashboards and charts use `src/data/world-bank.json` by default; the browser does not call World Bank. The comparison selector requests only the chosen series from the Portal-owned `/portal-api/world-bank/compare` route. A reviewed PostgreSQL comparison mode and JSON/DB verifier are documented in [`docs/data-pipeline.md`](docs/data-pipeline.md). The monthly GitHub Actions workflow is only needed to refresh the committed snapshot.
 
 The snapshot stores common source/provider metadata once per indicator and keeps observations compact. Source-specific reuse decisions and deferred data candidates are documented in `docs/data-source-audit.md`.
 

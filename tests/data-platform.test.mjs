@@ -121,14 +121,16 @@ test("country route codes map one-to-one to all 15 countries present in the snap
 });
 
 test("country comparison enforces 2–5 countries and reads the local snapshot only", async () => {
-  const [client, api, copy] = await Promise.all([
+  const [client, api, route, copy] = await Promise.all([
     read("src/app/(locale)/[locale]/country-comparison.tsx"),
-    read("src/app/api/data-compare/route.ts"),
+    read("src/lib/db/world-bank-comparison-handler.ts"),
+    read("src/app/portal-api/world-bank/compare/route.ts"),
     read("src/lib/data-platform/country-copy.ts"),
   ]);
   assert.match(client, /draftCountries\.length < 2/);
   assert.match(client, /draftCountries\.length > 5/);
-  assert.match(client, /fetch\(`\/api\/data-compare\?/);
+  assert.match(client, /fetch\(`\/portal-api\/world-bank\/compare\?/);
+  assert.match(route, /handleWorldBankComparison/);
   assert.match(api, /observationsFor\(indicator\.code, country\.iso3\)/);
   assert.doesNotMatch(api, /fetch\(/);
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
