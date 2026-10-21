@@ -200,7 +200,7 @@ test("the new localized data home keeps the portal guide at about and preserves 
 test("about remains available by URL and in the footer but is omitted from category menus", () => {
   assert.match(platformControls, /categoryNavigation\(locale\)/);
   assert.match(platformSidebar, /categoryNavigation\(locale\)/);
-  assert.match(categoryNavigation, /"stocks", "crypto", "gold", "commodities", "economy", "world", "science"/);
+  assert.match(categoryNavigation, /"stocks", "crypto", "gold", "commodities", "economy", "science", "world"/);
   assert.doesNotMatch(categoryNavigation, /"about"/);
   assert.match(platformLayout, /href=\{`\/\$\{locale\}\/about`\}>\{copy\.categories\[7\]\}/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
@@ -305,7 +305,7 @@ test("shared calendar opens from both controls, uses localized Intl dates, and a
   assert.match(rootProxy, /woori-locale/);
   assert.match(rootProxy, /crawler/);
   assert.match(stockPage, /rawDate \?\? selectedDate/);
-  const order = ["stocks", "crypto", "gold", "commodities", "economy", "world", "science"];
+  const order = ["stocks", "crypto", "gold", "commodities", "economy", "science", "world"];
   for (const locale of siteData.locales) {
     const entries = getCategoryNavigation(locale);
     assert.deepEqual(entries.slice(0, order.length).map((entry) => entry.id), order);

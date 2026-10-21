@@ -5,7 +5,7 @@ import { goldCopy } from "./gold-copy";
 import { cryptoCopy } from "./crypto-copy";
 import { localizedNewCategories } from "./research-copy";
 
-export const categoryNavigationOrder = ["stocks", "crypto", "gold", "commodities", "economy", "world", "science", "population", "countries", "energy", "papers"] as const;
+export const categoryNavigationOrder = ["stocks", "crypto", "gold", "commodities", "economy", "science", "world", "population", "countries", "energy", "papers"] as const;
 
 const localizedLabels: Record<Locale, { insights: string; worldStats: string }> = {
   ko: { insights: "데이터·인사이트", worldStats: "세계 경제·통계" }, en: { insights: "Data & insights", worldStats: "World economy & statistics" }, ja: { insights: "データ・インサイト", worldStats: "世界経済・統計" }, zh: { insights: "数据与洞察", worldStats: "世界经济与统计" },
