@@ -21,8 +21,10 @@ jobs:
           script: |
             set -Eeuo pipefail
             printf '[NGINX INSPECT] Reading active configuration without changes.\n'
-            sudo nginx -t
-            sudo nginx -T 2>/dev/null | python3 -c '
+            nginx_container="$(docker ps --format "{{.Names}}" | awk "tolower(\$0) ~ /nginx/ { print; exit }")"
+            test -n "$nginx_container"
+            docker exec "$nginx_container" nginx -t
+            docker exec "$nginx_container" nginx -T 2>/dev/null | python3 -c '
             import re, sys
             lines = sys.stdin.readlines()
             in_server = False
