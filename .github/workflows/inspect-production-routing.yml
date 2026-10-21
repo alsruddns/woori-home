@@ -128,7 +128,7 @@ jobs:
             with target.open("w", encoding="utf-8", newline="") as stream:
                 stream.write(updated)
 
-REMOTE
+            REMOTE
 
             stage="Validate Nginx configuration before reload"
             printf '[NGINX APPLY 3] %s\n' "$stage"
