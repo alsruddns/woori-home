@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { localeConfig, type Locale } from "@/lib/site";
 import { platformCopy } from "@/lib/data-platform/locales";
 import { familySiteHref, familySitesCopy } from "@/lib/family-sites";
+import { categoryNavigation } from "@/lib/data-platform/category-navigation";
 
 function getTheme() { return document.documentElement.dataset.theme === "light" ? "light" : "dark"; }
 function subscribeTheme(callback: () => void) {
@@ -20,7 +21,7 @@ export function PlatformControls({ locale }: { locale: Locale }) {
   const family = familySitesCopy[locale];
   const pathname = usePathname();
   const familyKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
-  const categoryPaths = ["/world", "/economy", "/stocks", "/population", "/energy", "/countries", "/science"] as const;
+  const categories = categoryNavigation(locale);
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -37,6 +38,7 @@ export function PlatformControls({ locale }: { locale: Locale }) {
     <label className="platform-locale-label"><span className="platform-sr-only">{localeConfig.find((item) => item.route === locale)?.nativeName}</span>
       <select aria-label={localeConfig.find((item) => item.route === locale)?.nativeName} value={locale} onChange={(event) => {
         const current = window.location.pathname.split("/").slice(2).join("/");
+        document.cookie = `woori-locale=${event.target.value}; Path=/; Max-Age=31536000; SameSite=Lax`;
         router.push(`/${event.target.value}${current ? `/${current}` : ""}`);
       }}>
         {localeConfig.map((item) => <option key={item.route} value={item.route}>{item.nativeName}</option>)}
@@ -48,7 +50,7 @@ export function PlatformControls({ locale }: { locale: Locale }) {
       <strong>{copy.siteLabel}</strong>
       {familyKeys.map((key) => <a key={key} href={familySiteHref(locale, key)} aria-current={key === "portal" && pathname === `/${locale}` ? "page" : undefined} onClick={() => setOpen(false)}>{family.sites[key]}</a>)}
       <strong>{copy.menu}</strong>
-      {categoryPaths.map((path, index) => { const href = `/${locale}${path}`; const active = pathname === href || pathname.startsWith(`${href}/`) || (index === 0 && pathname === `/${locale}`); return <a key={path} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined} onClick={() => setOpen(false)}>{copy.categories[index]}</a>; })}
+      {categories.map(({ id, path, label }) => { const href = `/${locale}${path}`; const active = pathname === href || pathname.startsWith(`${href}/`) || (id === "world" && pathname === `/${locale}`); return <a key={id} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined} onClick={() => setOpen(false)}>{label}</a>; })}
     </nav> : null}
   </div>;
 }

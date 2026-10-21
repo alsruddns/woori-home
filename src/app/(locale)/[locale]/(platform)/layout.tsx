@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { isLocale } from "@/lib/site";
 import { PlatformLayout } from "../platform-layout";
 import "../platform.css";
+import "../date-picker.css";
 
 export default async function DataPlatformLayout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
   const { locale } = await params;

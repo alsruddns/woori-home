@@ -5,7 +5,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Locale } from "@/lib/site";
 import { calculateGoldMove, findPreviousComparableQuote, pricePerGoldUnit, type GoldQuote } from "@/lib/data-platform/gold-market";
 import type { GoldCopy, GoldPageSection } from "@/lib/data-platform/gold-copy";
-import { useTodayQueryDate } from "../../use-today-query-date";
+import { DatePicker } from "../../date-picker";
+import { useSnapshotQueryDate } from "../../use-snapshot-query-date";
 
 export function GoldQuotePanel({ locale, section, quotes, copy }: { locale: Locale; section: GoldPageSection; quotes: GoldQuote[]; copy: GoldCopy }) {
   const kinds = [...new Set(quotes.map((quote) => quote.priceKind))];
@@ -14,9 +15,9 @@ export function GoldQuotePanel({ locale, section, quotes, copy }: { locale: Loca
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
-  const { selectedDate, today } = useTodayQueryDate();
   const matching = useMemo(() => quotes.filter((quote) => quote.priceKind === kind).sort((a, b) => b.observedAt.localeCompare(a.observedAt)), [quotes, kind]);
   const dates = [...new Set(matching.map((quote) => quote.observedAt))];
+  const { selectedDate, today } = useSnapshotQueryDate("Asia/Seoul", dates);
   const date = selectedDate;
   const current = matching.find((quote) => quote.observedAt === date) ?? null;
   const previous = current ? findPreviousComparableQuote(quotes, current) : null;
@@ -43,7 +44,7 @@ export function GoldQuotePanel({ locale, section, quotes, copy }: { locale: Loca
   return <section className="gold-live-quotes" aria-label={copy.title}>
     <div className="gold-quote-controls">
       <label>{copy.unit}<select value={unit} onChange={(event) => setUnit(event.target.value as "gram" | "don")}><option value="gram">{copy.unitGram}</option><option value="don">{copy.unitDon}</option></select></label>
-      <label>{copy.dateLabel}<input type="date" value={date} max={today} list="gold-available-dates" onChange={(event) => chooseDate(event.target.value)} /><datalist id="gold-available-dates">{dates.map((item) => <option key={item} value={item} />)}</datalist></label>
+      <label>{copy.dateLabel}<DatePicker locale={locale} label={copy.dateLabel} value={date} max={today} onChange={chooseDate} /></label>
       <div className="gold-date-buttons"><button type="button" disabled={!earlierDate} onClick={() => earlierDate && chooseDate(earlierDate)}>{copy.previousDay}</button><button type="button" disabled={!laterDate} onClick={() => laterDate && chooseDate(laterDate)}>{copy.nextDay}</button></div>
       <label>{copy.marketReference}<select value={kind} onChange={(event) => setKind(event.target.value as GoldQuote["priceKind"])}>{kinds.map((item) => <option key={item} value={item}>{item === "market-reference" ? copy.marketReference : item === "customer-buy" ? copy.customerBuy : copy.customerSell}</option>)}</select></label>
     </div>

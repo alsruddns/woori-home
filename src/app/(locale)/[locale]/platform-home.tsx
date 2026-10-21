@@ -7,12 +7,13 @@ import { indicators } from "@/lib/data-platform/registry";
 import { latestForCountry } from "@/lib/data-platform/snapshot";
 import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { countryCopy } from "@/lib/data-platform/country-copy";
-import { mockStockSnapshots } from "@/lib/data-platform/mock-stocks";
 import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-copy";
 import { scienceCopy } from "@/lib/data-platform/science-copy";
 import neoSnapshot from "@/data/nasa-neows.json";
 import { goldCopy } from "@/lib/data-platform/gold-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
+import { categoryNavigation } from "@/lib/data-platform/category-navigation";
+import { mineralCopy } from "@/lib/data-platform/mineral-copy";
 
 const viewLabels: Record<Locale, string> = {
   ko:"데이터 보기", en:"Explore data", ja:"データを見る", zh:"查看数据", es:"Ver datos", "pt-br":"Ver dados", de:"Daten ansehen", fr:"Voir les données", vi:"Xem dữ liệu", id:"Lihat data", th:"ดูข้อมูล", "zh-tw":"查看資料", it:"Visualizza i dati", nl:"Bekijk gegevens", hi:"डेटा देखें",
@@ -28,15 +29,16 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   const electricityAccess = latestForCountry("EG.ELC.ACCS.ZS", "WLD");
   const populationIndicator = indicators.find((item) => item.id === "population")!;
   const gdpIndicator = indicators.find((item) => item.id === "gdp")!;
-  const latestSample = Object.values(mockStockSnapshots).filter(Boolean).map((snapshot) => snapshot!.asOf).sort().at(-1);
+  const navLabel = (id: string) => categoryNavigation(locale).find((item) => item.id === id)?.label ?? "";
   const cards = [
-    { href: `/${locale}/world`, title: copy.categories[0], detail: copy.overviewBody },
-    { href: `/${locale}/economy/gdp`, title: copy.categories[1], detail: gdpIndicator.definition?.[locale] ?? copy.overviewBody },
+    { href: `/${locale}/stocks`, title: copy.categories[2], detail: stocks.noMarketSnapshots },
+    { href: `/${locale}/crypto`, title: cryptoCopy[locale].nav, detail: cryptoCopy[locale].unavailableBody },
+    { href: `/${locale}/gold`, title: goldCopy[locale].title, detail: goldCopy[locale].description },
+    { href: `/${locale}/commodities`, title: mineralCopy[locale].title, detail: mineralCopy[locale].description },
+    { href: `/${locale}/economy/gdp`, title: navLabel("economy"), detail: gdpIndicator.definition?.[locale] ?? copy.overviewBody },
+    { href: `/${locale}/world`, title: navLabel("world"), detail: copy.overviewBody },
     { href: `/${locale}/world/population`, title: copy.categories[3], detail: populationIndicator.definition?.[locale] ?? copy.overviewBody },
     { href: `/${locale}/countries`, title: copy.categories[5], detail: countries.dataGapNote },
-    { href: `/${locale}/gold`, title: goldCopy[locale].title, detail: goldCopy[locale].description },
-    { href: `/${locale}/crypto`, title: cryptoCopy[locale].nav, detail: cryptoCopy[locale].unavailableBody },
-    { href: `/${locale}/stocks`, title: copy.categories[2], detail: stocks.description, sample: true },
   ];
   const scienceDate = neoSnapshot.dates[0];
   const scienceCount = neoSnapshot.objects.filter((item) => item.closeApproachDate === scienceDate).length;
@@ -67,7 +69,6 @@ export function PlatformHome({ locale }: { locale: Locale }) {
     <section className="platform-home-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{copy.overview}</h2></div></div>
       <div className="platform-home-grid">{cards.map((card) => <article className="platform-home-card" key={card.href}>
         <Link href={card.href}><h3>{card.title}</h3><p>{card.detail}</p><span className="platform-home-link">{viewLabels[locale]} →</span></Link>
-        {card.sample ? <div className="platform-home-sample"><strong>{stocks.statusLabel} · {date(latestSample)}</strong><span>{stocks.mockLabel}</span><p>{stocks.mockDisclosure}</p></div> : null}
       </article>)}</div>
     </section>
     <section className="platform-home-section platform-home-extensions"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{extensions.map((item) => item.title).join(" · ")}</h2></div></div>
