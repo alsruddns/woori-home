@@ -164,11 +164,29 @@ jobs:
             compose -f "$override" config --quiet
             config_json="$(compose -f "$override" config --format json)"
 
-            stage="Validate Portal networks and runtime environment"
-            printf '[DEPLOY 3] %s\n' "$stage"
-            printf '%s' "$config_json" | jq -e '.services.portal.networks | (keys | sort) == ["database","default"]' >/dev/null
-            printf '%s' "$config_json" | jq -e '.services.portal.image | type == "string"' >/dev/null
-            printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ((($env.DATABASE_URL | type) == "string") or ((.services.portal.env_file // []) | map(if type == "string" then . else .path end) | any(endswith(".env.portal")))) and (["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null))' >/dev/null
+            stage="Validate Portal network assignments"
+            printf '[DEPLOY 3.1] %s\n' "$stage"
+            if printf '%s' "$config_json" | jq -e '.services.portal.networks | (keys | sort) == ["database","default"]' >/dev/null; then :; else
+              check_status=$?
+              printf '[DEPLOY CHECK FAILED] Portal networks must be exactly database and default.\n' >&2
+              exit "$check_status"
+            fi
+
+            stage="Validate configured Portal image"
+            printf '[DEPLOY 3.2] %s\n' "$stage"
+            if printf '%s' "$config_json" | jq -e '.services.portal.image | type == "string"' >/dev/null; then :; else
+              check_status=$?
+              printf '[DEPLOY CHECK FAILED] Portal image is not configured as a string.\n' >&2
+              exit "$check_status"
+            fi
+
+            stage="Validate Portal runtime database credentials"
+            printf '[DEPLOY 3.3] %s\n' "$stage"
+            if printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ((($env.DATABASE_URL | type) == "string") or ((.services.portal.env_file // []) | map(if type == "string" then . else .path end) | any(endswith(".env.portal")))) and (["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null))' >/dev/null; then :; else
+              check_status=$?
+              printf '[DEPLOY CHECK FAILED] Portal runtime DB configuration is incomplete or contains a privileged DB variable.\n' >&2
+              exit "$check_status"
+            fi
 
             stage="Verify current Portal and create a database backup"
             printf '[DEPLOY 4] %s\n' "$stage"
