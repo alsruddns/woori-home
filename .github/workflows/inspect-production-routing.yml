@@ -2,6 +2,12 @@ name: Inspect production portal routing
 
 on:
   workflow_dispatch:
+    inputs:
+      apply_portal_api_route:
+        description: Back up Nginx config, route only /portal-api/ to Portal, validate, and reload Nginx
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
@@ -14,10 +20,13 @@ jobs:
     steps:
       - name: Read Portal API routing from Nginx
         uses: appleboy/ssh-action@v1.2.0
+        env:
+          APPLY_PORTAL_API_ROUTE: ${{ inputs.apply_portal_api_route }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: APPLY_PORTAL_API_ROUTE
           script: |
             set -Eeuo pipefail
             printf '[NGINX INSPECT] Reading active configuration without changes.\n'
@@ -26,6 +35,103 @@ jobs:
             docker exec "$nginx_container" nginx -t
             printf '[NGINX INSPECT] Nginx configuration mounts:\n'
             docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$nginx_container"
+
+            if [ "${APPLY_PORTAL_API_ROUTE:-false}" != true ]; then
+              printf '[NGINX INSPECT] Read-only inspection complete; no configuration changed.\n'
+              exit 0
+            fi
+
+            stage="Validate the isolated Portal API route target"
+            printf '[NGINX APPLY 1] %s\n' "$stage"
+            mount_rw="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/etc/nginx/conf.d"}}{{.RW}}{{end}}{{end}}' "$nginx_container")"
+            test "$mount_rw" = true
+            config_candidates="$(docker exec "$nginx_container" sh -c 'grep -lF "proxy_pass http://moneybook-backend:8080;" /etc/nginx/conf.d/*.conf')"
+            test "$(printf '%s\n' "$config_candidates" | wc -l | tr -d ' ')" = 1
+            target="$config_candidates"
+            test "$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target")" = 1
+            if docker exec "$nginx_container" grep -Fq 'location ^~ /portal-api/' "$target"; then
+              printf '[NGINX APPLY ERROR] A /portal-api/ location already exists; refusing to change it.\n' >&2
+              exit 1
+            fi
+
+            timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+            backup="${target}.portal-api-${timestamp}.bak"
+            docker exec "$nginx_container" test ! -e "$backup"
+            docker exec "$nginx_container" cp -p "$target" "$backup"
+            before_sha="$(docker exec "$nginx_container" sha256sum "$target" | awk '{print $1}')"
+            modified=0
+            on_exit() {
+              status=$?
+              trap - EXIT
+              if [ "$status" -ne 0 ] && [ "$modified" = 1 ]; then
+                printf '[NGINX ROLLBACK] Restoring the backed-up Nginx configuration.\n' >&2
+                if docker exec "$nginx_container" cp -p "$backup" "$target" && docker exec "$nginx_container" nginx -t && docker exec "$nginx_container" nginx -s reload; then
+                  printf '[NGINX ROLLBACK] Previous configuration restored and reloaded.\n' >&2
+                else
+                  printf '[NGINX ROLLBACK ERROR] Automatic restoration failed; the saved backup remains at %s.\n' "$backup" >&2
+                fi
+              fi
+              exit "$status"
+            }
+            trap on_exit EXIT
+
+            stage="Add Portal-only API location"
+            printf '[NGINX APPLY 2] %s\n' "$stage"
+            modified=1
+            docker exec -i "$nginx_container" sh -s -- "$target" "$before_sha" <<'REMOTE'
+            set -eu
+            target="$1"
+            expected_sha="$2"
+            actual_sha="$(sha256sum "$target" | awk '{print $1}')"
+            test "$actual_sha" = "$expected_sha"
+            temporary="${target}.portal-api.tmp.$$"
+            cp -p "$target" "$temporary"
+            if awk '
+              /^[[:space:]]*location[[:space:]]+\^~[[:space:]]+\/api\/[[:space:]]*\{/ {
+                print "    location ^~ /portal-api/ {"
+                print "        proxy_pass http://portal:3003;"
+                print "        proxy_set_header Host $host;"
+                print "        proxy_set_header X-Real-IP $remote_addr;"
+                print "        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;"
+                print "        proxy_set_header X-Forwarded-Proto $scheme;"
+                print "    }"
+                inserted++
+              }
+              { print }
+              END { if (inserted != 1) exit 42 }
+            ' "$target" > "$temporary"; then
+              mv "$temporary" "$target"
+            else
+              rm -f "$temporary"
+              exit 1
+            fi
+            REMOTE
+
+            stage="Validate Nginx configuration before reload"
+            printf '[NGINX APPLY 3] %s\n' "$stage"
+            docker exec "$nginx_container" nginx -t
+
+            stage="Reload Nginx without restarting other services"
+            printf '[NGINX APPLY 4] %s\n' "$stage"
+            docker exec "$nginx_container" nginx -s reload
+
+            stage="Verify Portal API and preserve existing routes"
+            printf '[NGINX APPLY 5] %s\n' "$stage"
+            valid_body="$(curl --fail --silent --show-error --max-time 20 -H 'Accept: application/json' 'https://www.woori.today/portal-api/world-bank/compare?countries=kr%2Cus&indicator=unemployment')"
+            case "$valid_body" in *'"source":"json"'*) ;; *) printf '[NGINX APPLY ERROR] The valid Portal API response did not confirm JSON mode.\n' >&2; exit 1 ;; esac
+            invalid_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 -H 'Accept: application/json' 'https://www.woori.today/portal-api/world-bank/compare?countries=kr&indicator=unemployment')"
+            test "$invalid_status" = 400
+            method_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 -X POST -H 'Accept: application/json' -H 'Content-Type: application/json' --data '{}' 'https://www.woori.today/portal-api/world-bank/compare')"
+            test "$method_status" = 405
+            legacy_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 -H 'Accept: application/json' 'https://www.woori.today/api/data-compare?countries=kr%2Cus&indicator=unemployment')"
+            test "$legacy_status" = 401
+            portal_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 20 'https://www.woori.today/ko')"
+            test "$portal_status" = 200
+            after_sha="$(docker exec "$nginx_container" sha256sum "$target" | awk '{print $1}')"
+            printf '[NGINX APPLY RESULT] Portal API 200/source=json; invalid request 400; unsupported method 405; existing /api route 401; Portal page 200.\n'
+            printf '[NGINX APPLY CHANGE] backup_sha=%s active_sha=%s added_route=/portal-api/->portal:3003\n' "$before_sha" "$after_sha"
+            printf '[NGINX APPLY BACKUP] %s\n' "$backup"
+            modified=0
             docker exec "$nginx_container" nginx -T 2>/dev/null | python3 -c '
             import re, sys
             lines = sys.stdin.readlines()
