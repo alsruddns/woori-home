@@ -16,7 +16,7 @@ Reviewed: 2026-10-21. This audit records the conditions checked for the current 
 | Missing values | Null observations are omitted. No interpolation or forward filling |
 | Collection | Monthly GitHub Actions batch; checked-in snapshot remains available if a refresh fails |
 
-The existing six indicators and candidate series below were queried from the official API for WLD plus the 15 countries in the snapshot, 1990–2026. Counts include only non-null numeric observations and can change as WDI is revised. The snapshot now has 3,984 observations across seven indicators; it adds modeled ILO unemployment (560 observations, latest 2025). Provider strings are stored once per indicator in the normalized snapshot and shown on detail pages.
+The reviewed snapshot contains 4,514 non-null observations across eight indicators for WLD plus 15 countries, 1990–2025. Counts can change as WDI is revised. It includes modeled ILO unemployment (560 observations, latest 2025) and electricity access (530 observations, latest 2024). Provider strings are stored once per indicator in the normalized snapshot and shown on detail pages.
 
 | Indicator | Definition / unit | Values | Latest year | Decision |
 | --- | --- | ---: | ---: | --- |
@@ -31,7 +31,7 @@ The existing six indicators and candidate series below were queried from the off
 | `SP.POP.TOTL.FE.IN` / `SP.POP.TOTL.MA.IN` | Female / male population, people | 576 each | 2025 | Available; do not infer gender identity from these binary source series |
 | `SP.DYN.IMRT.IN` | Infant mortality, deaths per 1,000 live births | 560 | 2024 | Withheld pending rights checks across UNICEF, WHO, World Bank and UN source records |
 | `EG.FEC.RNEW.ZS` | Renewable energy consumption, % of total final energy consumption | 511 | 2021 | Withheld: underlying source is IEA; IEA terms for non-CC material require additional permission/licensing for some recurring or revenue-generating display uses |
-| `EG.ELC.ACCS.ZS` | Population with access to electricity, % | 530 | 2024 | Withheld pending review of the specific ESMAP/Tracking SDG 7 dataset terms; access is not consumption |
+| `EG.ELC.ACCS.ZS` | Population with access to electricity, % | 530 | 2024 | Included after World Bank DataBank series metadata was confirmed as CC BY 4.0; provider metadata names SE4ALL / Global Tracking Framework. Access is not consumption |
 | `EG.USE.PCAP.KG.OE` | Energy use per capita, kg of oil equivalent | 560 | 2024 | Withheld: underlying source is IEA; per-capita measure, not total consumption |
 | `EG.USE.ELEC.KH.PC` | Electric power consumption, kWh per capita | 570 | 2025 | Withheld: underlying source is IEA; distinct from access and total energy use |
 | `SP.POP.1524.TO.ZS` | Youth population share | 0 | — | Excluded: indicator unavailable for the queried range |

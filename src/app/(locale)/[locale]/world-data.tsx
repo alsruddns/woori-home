@@ -12,6 +12,8 @@ import { rankCountryObservations } from "@/lib/data-platform/rankings";
 import { rankingCopy } from "@/lib/data-platform/ranking-copy";
 import { supportedCountries } from "@/lib/data-platform/countries";
 import { RankingControls } from "./ranking-controls";
+import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
+import { resolveDatabaseTarget } from "../../../../scripts/db/connection-safety.mjs";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -119,15 +121,33 @@ export function IndicatorCategory({ locale, category, title }: { locale: Locale;
   </>;
 }
 
-export function CountryComparison({ locale, requestedCountries }: { locale: Locale; requestedCountries?: string[] }) {
+export async function CountryComparison({ locale, requestedCountries }: { locale: Locale; requestedCountries?: string[] }) {
   const copy = platformCopy[locale];
   const validSelection = [...new Set(requestedCountries?.map((code) => code.toLowerCase()).filter((code) => countryByCode(code)) ?? [])];
   const initialCountries = validSelection && validSelection.length >= 2 && validSelection.length <= 5 ? [...new Set(validSelection)] : ["kr", "us", "jp"];
-  const initialSeries: CountrySeries[] = initialCountries.map((code) => {
+  const selectedSource = process.env.WORLD_BANK_DATA_SOURCE ?? "json";
+  if (selectedSource !== "json" && selectedSource !== "db") throw new Error("WORLD_BANK_DATA_SOURCE must be json or db");
+  let initialIndicatorId = "population";
+  let sourceInfo: Awaited<ReturnType<typeof getReviewedWorldBankSourceInfo>> = null;
+  let initialSeries: CountrySeries[] = initialCountries.map((code) => {
     const country = countryByCode(code)!;
     return { code: country.code, iso3: country.iso3, observations: observationsFor("SP.POP.TOTL", country.iso3).map(({ year, value, unit }) => ({ year, value, unit })) };
   });
-  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header><CountryComparisonDashboard locale={locale} initialCountries={initialCountries} initialSeries={initialSeries} /></>;
+  if (selectedSource === "db") {
+    if (process.env.DB_TARGET !== "development") throw new Error("World Bank DB mode is restricted to the local development database");
+    resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DATABASE_URL });
+    initialIndicatorId = "unemployment";
+    const [rows, selectedSourceInfo] = await Promise.all([
+      compareWorldBankCountries("SL.UEM.TOTL.ZS", initialCountries.map((code) => countryByCode(code)!.iso3)),
+      getReviewedWorldBankSourceInfo("SL.UEM.TOTL.ZS"),
+    ]);
+    sourceInfo = selectedSourceInfo;
+    initialSeries = initialCountries.map((code) => {
+      const country = countryByCode(code)!;
+      return { code: country.code, iso3: country.iso3, observations: rows.filter((row) => row.countryIso3 === country.iso3).map((row) => ({ year: row.year, value: Number(row.value), unit: row.unit })) };
+    });
+  }
+  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header><CountryComparisonDashboard locale={locale} initialCountries={initialCountries} initialSeries={initialSeries} initialIndicatorId={initialIndicatorId} dataSource={selectedSource} initialSourceInfo={sourceInfo} /></>;
 }
 
 export function EmptyCategory({ locale, title }: { locale: Locale; title: string }) {

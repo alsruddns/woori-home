@@ -4,7 +4,7 @@
 
 Portal pages continue to read the checked-in JSON snapshots. The database foundation is additive and is not required by `next build`, `next dev`, or application startup. This keeps local builds and the current production service independent of database availability.
 
-The first migration creates a normalized catalog for sources, datasets, countries, indicators, annual observations, and collection-run history. It does not import the current WDI snapshot: some older WDI series still need upstream rights review, and a schema rollout should not silently change the existing public data path. Stock and crypto quote tables are intentionally absent while public redistribution rights remain unresolved.
+The first migration creates a normalized catalog for sources, datasets, countries, indicators, annual observations, and collection-run history. Data is imported separately by the World Bank pipeline; only indicators with a reviewed reuse basis are stored. The JSON snapshot remains the default public data path. Stock and crypto quote tables are intentionally absent while public redistribution rights remain unresolved.
 
 ## Local Windows development
 
@@ -25,7 +25,7 @@ CREATE ROLE woori_portal_dev LOGIN PASSWORD '<LOCAL_SECRET>';
 CREATE DATABASE woori_today_portal_dev OWNER woori_portal_dev;
 ```
 
-The local PostgreSQL Windows service was found running during this change, but the available local `postgres` role authentication was rejected. No connection settings were present in the process environment. Therefore the development database was not created or modified, and no migration was applied in this workspace. Supply the local role/password in `.env.local` before running the commands above. The connection test never targeted a remote or production host.
+This workspace has a local `woori_today_portal_dev` database owned by `woori_portal_dev`. Its application and migration URLs are stored in the ignored `.env.local`; neither the password nor URL belongs in version control. The administrator role is used only for local database provisioning. The current database has the checked-in Drizzle migrations applied; see `docs/data-pipeline.md` for World Bank import and verification procedures. No production host or database is configured in this workspace.
 
 ## Database protections
 

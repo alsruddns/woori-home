@@ -8,6 +8,20 @@
       "when": 1792547153047,
       "tag": "0000_init_data_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792556890666,
+      "tag": "0001_worldbank_collection_counts",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792557184725,
+      "tag": "0002_worldbank_country_metadata",
+      "breakpoints": true
     }
   ]
 }
