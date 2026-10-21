@@ -24,6 +24,8 @@ jobs:
             nginx_container="$(docker ps --format "{{.Names}}" | awk "tolower(\$0) ~ /nginx/ { print; exit }")"
             test -n "$nginx_container"
             docker exec "$nginx_container" nginx -t
+            printf '[NGINX INSPECT] Nginx configuration mounts:\n'
+            docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$nginx_container"
             docker exec "$nginx_container" nginx -T 2>/dev/null | python3 -c '
             import re, sys
             lines = sys.stdin.readlines()
@@ -55,9 +57,9 @@ jobs:
                         location_depth += line.count("{") - line.count("}")
                         if location_depth <= 0:
                             block = "".join(location_lines)
-                            if selected_server and re.search(r"^\s*location\s+(?:=|\^~|~\*?)?\s*/?(?:api|portal-api)(?:/|\s)", block):
+                            if selected_server:
                                 route_count += 1
-                                print("[NGINX ROUTE] server_name=woori.today")
+                                print("[NGINX LOCATION] server_name=woori.today")
                                 for item in location_lines:
                                     item = item.strip()
                                     if re.match(r"location\b", item) or re.match(r"(?:proxy_pass|fastcgi_pass|auth_request|return|try_files)\b", item):
@@ -68,5 +70,5 @@ jobs:
                         in_server = False
                         in_location = False
             if route_count == 0:
-                print("[NGINX INSPECT] No matching /api or /portal-api location was found in the woori.today server block.")
+                print("[NGINX INSPECT] No location blocks were found in the woori.today server block.")
             '
