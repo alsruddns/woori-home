@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import { isLocale, origin } from "@/lib/site";
 import { paperLicenseLabel, researchCopy } from "@/lib/data-platform/research-copy";
 import paperSnapshot from "@/data/research-papers.json";
+import { hasPaperTitleTranslation, paperLocalizedTitle, type PaperTitleRecord } from "@/lib/data-platform/paper-title-localizations";
+import { paperTitleCopy } from "@/lib/data-platform/paper-title-copy";
 
-type Paper = (typeof paperSnapshot.records)[number];
+type Paper = (typeof paperSnapshot.records)[number] & PaperTitleRecord;
 const papers = paperSnapshot.records as Paper[];
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; paperId: string }> }): Promise<Metadata> {
   const { locale, paperId } = await params;
@@ -14,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   if (!paper) notFound();
   const copy = researchCopy[locale];
   const url = `${origin}/${locale}/papers/${paper.id}`;
-  return { title: paper.title, description: copy.metadataNotice, robots: { index: false, follow: true }, alternates: { canonical: url } };
+  return { title: paperLocalizedTitle(paper, locale), description: copy.metadataNotice, robots: { index: false, follow: true }, alternates: { canonical: url } };
 }
 
 export default async function ResearchPaperPage({ params }: { params: Promise<{ locale: string; paperId: string }> }) {
@@ -23,10 +25,12 @@ export default async function ResearchPaperPage({ params }: { params: Promise<{ 
   const paper = papers.find((item) => item.id === paperId);
   if (!paper) notFound();
   const copy = researchCopy[locale];
+  const titleCopy = paperTitleCopy[locale];
   const date = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: "long", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
   return <>
     <nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/papers`}>{copy.papers}</Link><span>/</span><span>{paper.doi}</span></nav>
-    <header className="platform-page-heading"><span className="platform-eyebrow">{copy.paperSource} · {copy.topics[paper.topic as keyof typeof copy.topics]}</span><h1>{paper.title}</h1><p>{copy.metadataNotice}</p></header>
+    <header className="platform-page-heading"><span className="platform-eyebrow">{copy.paperSource} · {copy.topics[paper.topic as keyof typeof copy.topics]}</span><h1>{paperLocalizedTitle(paper, locale)}</h1><p>{copy.metadataNotice}</p><p className="paper-title-translation-status">{hasPaperTitleTranslation(paper, locale) ? titleCopy.translationDraft : titleCopy.translationPending}</p></header>
+    {paper.originalTitle && paper.originalTitle !== paperLocalizedTitle(paper, locale) ? <p className="paper-original-title"><strong>{titleCopy.originalTitle}:</strong> {paper.originalTitle}</p> : null}
     <section className="paper-detail">
       <dl><div><dt>{copy.authors}</dt><dd>{paper.authors.join(", ") || copy.unknown}</dd></div><div><dt>{copy.published}</dt><dd>{date(paper.publishedAt)}</dd></div><div><dt>{copy.journal}</dt><dd>{paper.journal ?? copy.unknown}</dd></div><div><dt>{copy.doi}</dt><dd><a href={`https://doi.org/${encodeURIComponent(paper.doi)}`} target="_blank" rel="noreferrer">{paper.doi}</a></dd></div></dl>
       <p>{paper.licenseUrls.length ? `${paperLicenseLabel[locale]}: ${paper.licenseUrls.join(", ")}` : copy.accessUnknown}</p>

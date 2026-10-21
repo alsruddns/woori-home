@@ -5,9 +5,11 @@ import { alternates, isLocale, origin } from "@/lib/site";
 import { researchApplyLabel, researchCopy, researchFilterCopy } from "@/lib/data-platform/research-copy";
 import { filterResearchPapers } from "@/lib/data-platform/research-search";
 import paperSnapshot from "@/data/research-papers.json";
+import { hasPaperTitleTranslation, paperLocalizedTitle, type PaperTitleRecord } from "@/lib/data-platform/paper-title-localizations";
+import { paperTitleCopy } from "@/lib/data-platform/paper-title-copy";
 
 type Topic = keyof typeof researchCopy.en.topics;
-type Paper = (typeof paperSnapshot.records)[number];
+type Paper = (typeof paperSnapshot.records)[number] & PaperTitleRecord;
 const topics: Topic[] = ["ai", "medicine", "physics", "energy"];
 
 export async function generateMetadata({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ topic?: string; sort?: string; q?: string; from?: string; to?: string }> }): Promise<Metadata> {
@@ -38,6 +40,7 @@ export default async function ResearchPapersPage({ params, searchParams }: {
   const sort = requested.sort === "citations" ? "citations" : "recent";
   const copy = researchCopy[locale];
   const filterCopy = researchFilterCopy[locale];
+  const titleCopy = paperTitleCopy[locale];
   const filtered = filterResearchPapers(paperSnapshot.records as Paper[], { topic, sort, query: requested.q, from: requested.from, to: requested.to, locale });
   const records = filtered.records;
   return <>
@@ -56,7 +59,8 @@ export default async function ResearchPapersPage({ params, searchParams }: {
     <section className="paper-list" aria-label={copy.papers}>
       {records.map((paper) => <article className="paper-card" key={paper.id}>
         <div className="paper-card-meta"><span>{copy.topics[paper.topic as Topic]}</span><time dateTime={paper.publishedAt}>{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${paper.publishedAt}T00:00:00Z`))}</time></div>
-        <h2><Link href={`/${locale}/papers/${paper.id}`}>{paper.title}</Link></h2>
+        <h2><Link href={`/${locale}/papers/${paper.id}`}>{paperLocalizedTitle(paper, locale)}</Link></h2>
+        <p className="paper-title-translation-status">{hasPaperTitleTranslation(paper, locale) ? titleCopy.translationDraft : titleCopy.translationPending}</p>
         <p>{paper.authors.slice(0, 4).join(", ")}{paper.authors.length > 4 ? " et al." : ""}</p>
         <div className="paper-card-meta"><span>{paper.journal ?? copy.journal}</span><span>{copy.recentIndex}: {new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${paper.indexedAt}T00:00:00Z`))}</span>{paper.citationCount !== null ? <span>{copy.citedFirst}: {new Intl.NumberFormat(locale).format(paper.citationCount)}</span> : null}</div>
       </article>)}

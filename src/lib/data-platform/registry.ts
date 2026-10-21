@@ -12,6 +12,7 @@ export const dataCategories = [
   { id: "science", label: "Science & space", path: "/science" },
   { id: "about", label: "About this service", path: "/about" },
   { id: "papers", label: "Research papers", path: "/papers" },
+  { id: "gold", label: "Gold price", path: "/gold" },
   { id: "commodities", label: "Commodities", path: "/commodities" },
 ] as const;
 

@@ -5,6 +5,7 @@ import { recordBatchStatus, writeJsonAtomically } from "./batch-status.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const defaultOutput = resolve(root, "src/data/research-papers.json");
+const titleLocalizationPath = resolve(root, "src/data/paper-title-localizations.json");
 const topics = [
   { id: "ai", query: "artificial intelligence computing" },
   { id: "medicine", query: "medical biomedical life sciences" },
@@ -38,7 +39,7 @@ export function normalizeCrossrefItems(items, topic) {
     const updates = Array.isArray(item["update-to"]) ? item["update-to"] : [];
     const retracted = updates.some((entry) => /retract|withdraw/i.test(`${entry?.type ?? ""} ${entry?.label ?? ""}`));
     records.push({
-      id: stableId(doi), doi, title, topic,
+      id: stableId(doi), doi, title, originalTitle: title, originalLanguage: "und", localizedTitles: {}, translationStatus: "pending", translationMethod: "pending", translationUpdatedAt: null, topic,
       authors,
       publishedAt,
       indexedAt,
@@ -99,6 +100,7 @@ export async function updatePapers({ output = defaultOutput, fetchImpl = fetch, 
   const previous = previousText ? JSON.parse(previousText) : null;
   const statusPath = resolve(dirname(output), `${basename(output, ".json")}.status.json`);
   const previousStatus = await readFile(statusPath, "utf8").then(JSON.parse).catch(() => null);
+  const titleLocalizations = await readFile(titleLocalizationPath, "utf8").then(JSON.parse).catch(() => ({}));
   const utcDate = now.toISOString().slice(0, 10);
   if (!forceRefresh && previous && previousStatus && ["success", "unchanged"].includes(previousStatus.status) && previousStatus.lastAttemptAt?.slice(0, 10) === utcDate) {
     console.log(`Crossref was already checked successfully on ${utcDate}; retaining the current snapshot.`);
@@ -115,9 +117,28 @@ export async function updatePapers({ output = defaultOutput, fetchImpl = fetch, 
     const recent = new Map(previous.records
       .filter((record) => typeof record.indexedAt === "string" && record.indexedAt >= next.indexedSince)
       .map((record) => [record.doi.toLowerCase(), record]));
-    for (const record of next.records) recent.set(record.doi.toLowerCase(), record);
+    for (const record of next.records) {
+      const old = previous.records.find((item) => item.doi.toLowerCase() === record.doi.toLowerCase());
+      const localizedTitles = { ...(old?.localizedTitles ?? {}), ...(titleLocalizations[record.doi.toLowerCase()] ?? {}) };
+      const hasTranslations = Object.keys(localizedTitles).length > 0;
+      recent.set(record.doi.toLowerCase(), {
+        ...record,
+        originalTitle: old?.originalTitle ?? old?.title ?? record.title,
+        originalLanguage: old?.originalLanguage ?? "und",
+        localizedTitles,
+        translationStatus: hasTranslations ? "draft" : "pending",
+        translationMethod: hasTranslations ? "development-draft" : "pending",
+        translationUpdatedAt: hasTranslations ? old?.translationUpdatedAt ?? "2026-10-21" : null,
+      });
+    }
     next.records = [...recent.values()].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.doi.localeCompare(b.doi));
   }
+  const curated = new Map(Object.entries(titleLocalizations).map(([doi, translations]) => [doi.toLowerCase(), translations]));
+  next.records = next.records.map((record) => {
+    const translations = curated.get(record.doi.toLowerCase());
+    if (!translations || Object.keys(record.localizedTitles ?? {}).length === 15) return record;
+    return { ...record, originalTitle: record.originalTitle ?? record.title, localizedTitles: { ...(record.localizedTitles ?? {}), ...translations }, translationStatus: "draft", translationMethod: "development-draft", translationUpdatedAt: record.translationUpdatedAt ?? "2026-10-21" };
+  });
   const comparable = (snapshot) => JSON.stringify({ schemaVersion: snapshot.schemaVersion, source: snapshot.source, sourceUrl: snapshot.sourceUrl, license: snapshot.license, records: snapshot.records });
   if (previous?.schemaVersion === 1 && comparable(previous) === comparable(next)) {
     console.log(`Research paper metadata unchanged (${next.records.length} records); retaining the existing file.`);

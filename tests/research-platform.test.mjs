@@ -16,6 +16,9 @@ const { researchCopy, localizedNewCategories, researchFilterCopy } = require("..
 const { homeBriefingCopy } = require("../src/lib/data-platform/home-briefing-copy.ts");
 const { mineralCopy } = require("../src/lib/data-platform/mineral-copy.ts");
 const { comparePeriodCopy, isRateIndicator } = require("../src/lib/data-platform/compare-period-copy.ts");
+const { calculateGoldMove, findPreviousComparableQuote, normalizeLicensedGoldQuote, pricePerGoldUnit, validateGoldSnapshot } = require("../src/lib/data-platform/gold-market.ts");
+const { goldCopy, goldSourceTermsLabel } = require("../src/lib/data-platform/gold-copy.ts");
+const supportedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
 
 test("country rankings use exact-year country values, exclude aggregates, sort both ways, and share ties", () => {
   const rows = [
@@ -55,6 +58,60 @@ test("research and commodity navigation copy is complete in every supported loca
     assert.ok(localizedNewCategories[locale].papers && localizedNewCategories[locale].commodities);
     assert.ok(comparePeriodCopy[locale].from && comparePeriodCopy[locale].to && comparePeriodCopy[locale].percentagePointUnit, `${locale}: comparison-period copy`);
   }
+});
+
+test("gold quote math compares only like-for-like quotes and handles missing or invalid previous prices", () => {
+  assert.deepEqual(calculateGoldMove(103, 100), { change: 3, changePercent: 3, direction: "up" });
+  assert.deepEqual(calculateGoldMove(97, 100), { change: -3, changePercent: -3, direction: "down" });
+  assert.deepEqual(calculateGoldMove(100, 100), { change: 0, changePercent: 0, direction: "flat" });
+  assert.equal(calculateGoldMove(100, 0), null);
+  assert.equal(calculateGoldMove(100, undefined), null);
+  assert.equal(pricePerGoldUnit(120, "gram"), 120);
+  assert.equal(pricePerGoldUnit(120, "don"), 450);
+  assert.equal(pricePerGoldUnit(-2, "don"), -7.5);
+  const quote = { providerId:"p", providerName:"provider", priceKind:"market-reference", currency:"KRW", unit:"gram", price:100, observedAt:"2026-10-20", previousTradingDate:"2026-10-19", fetchedAt:"2026-10-20T08:00:00Z", sourceUrl:"https://example.com", conditions:"market" };
+  Object.assign(quote, { licenseReference:"approved agreement", rightsVerified:true });
+  const previous = { ...quote, observedAt:"2026-10-19", previousTradingDate:null, price:98 };
+  assert.equal(findPreviousComparableQuote([previous, quote], quote), previous);
+  assert.equal(findPreviousComparableQuote([{ ...previous, providerId:"other" }, quote], quote), null);
+  assert.equal(findPreviousComparableQuote([{ ...previous, priceKind:"customer-buy" }, quote], quote), null);
+  const normalized = normalizeLicensedGoldQuote({ ...quote, sourceUnit:"troy-ounce", sourcePrice:3110.34768, price:undefined });
+  assert.equal(normalized?.price, 100);
+  assert.equal(normalizeLicensedGoldQuote({ ...quote, sourceUnit:"gram", sourcePrice:100, rightsVerified:false }), null);
+});
+
+test("gold routes remain noindex without verified price records and all quote locales are complete", async () => {
+  const [goldPage, snapshotText] = await Promise.all([
+    read("src/app/(locale)/[locale]/(platform)/gold/gold-page.tsx"),
+    read("src/data/gold-prices.json"),
+  ]);
+  assert.match(goldPage, /index: false/);
+  assert.match(goldPage, /quoteCount === 0/);
+  const snapshot = JSON.parse(snapshotText);
+  assert.equal(snapshot.status, "disabled");
+  assert.deepEqual(snapshot.quotes, []);
+  assert.equal(validateGoldSnapshot(snapshot), true);
+  assert.deepEqual(Object.keys(goldCopy).sort(), [...supportedLocales].sort());
+  assert.deepEqual(Object.keys(goldSourceTermsLabel).sort(), [...supportedLocales].sort());
+  for (const locale of supportedLocales) assert.ok(goldCopy[locale].title && goldCopy[locale].unavailable && goldCopy[locale].buySell);
+});
+
+test("Crossref titles preserve source strings and expose only localized drafts that exist", async () => {
+  const [papersText, localeText] = await Promise.all([read("src/data/research-papers.json"), read("src/data/paper-title-localizations.json")]);
+  const papers = JSON.parse(papersText).records;
+  const translations = JSON.parse(localeText);
+  assert.equal(papers.length, 37);
+  assert.ok(papers.every((paper) => paper.originalTitle === paper.title && paper.originalLanguage === "und"));
+  const translated = papers.filter((paper) => Object.keys(paper.localizedTitles ?? {}).length > 0);
+  assert.equal(translated.length, 9);
+  for (const paper of translated) {
+    assert.equal(paper.translationStatus, "draft");
+    assert.equal(paper.translationMethod, "development-draft");
+    assert.deepEqual(Object.keys(paper.localizedTitles).sort(), [...supportedLocales].sort());
+    assert.deepEqual(Object.keys(translations[paper.doi.toLowerCase()]).sort(), [...supportedLocales].sort());
+    for (const locale of supportedLocales) assert.ok(paper.localizedTitles[locale].trim(), `${paper.doi}: ${locale}`);
+  }
+  assert.equal(papers.filter((paper) => paper.translationStatus === "pending").length, 28);
 });
 
 test("global home briefing and mineral source status are localized across all supported locales", async () => {

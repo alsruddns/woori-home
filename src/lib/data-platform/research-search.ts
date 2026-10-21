@@ -1,6 +1,9 @@
 type SearchablePaper = {
+  id: string;
   topic: string;
   title: string;
+  originalTitle?: string;
+  localizedTitles?: Partial<Record<string, string>>;
   doi: string;
   journal: string | null;
   authors: string[];
@@ -24,7 +27,7 @@ export function filterResearchPapers<T extends SearchablePaper>(records: T[], fi
   const to = validPaperDate(filters.to);
   const filtered = records
     .filter((paper) => {
-      const searchable = [paper.title, paper.doi, paper.journal ?? "", ...paper.authors].join(" ").toLocaleLowerCase(filters.locale);
+      const searchable = [paper.title, paper.originalTitle ?? "", paper.localizedTitles?.[filters.locale] ?? "", paper.doi, paper.journal ?? "", ...paper.authors].join(" ").toLocaleLowerCase(filters.locale);
       return !paper.retracted && (filters.topic === "all" || paper.topic === filters.topic) && (!query || searchable.includes(query)) && (!from || paper.publishedAt >= from) && (!to || paper.publishedAt <= to);
     })
     .sort((a, b) => filters.sort === "citations"
