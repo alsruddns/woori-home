@@ -1,0 +1,70 @@
+name: Inspect production portal routing
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inspect-nginx:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Read Portal API routing from Nginx
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            set -Eeuo pipefail
+            printf '[NGINX INSPECT] Reading active configuration without changes.\n'
+            sudo nginx -t
+            sudo nginx -T 2>/dev/null | python3 -c '
+            import re, sys
+            lines = sys.stdin.readlines()
+            in_server = False
+            server_depth = 0
+            in_location = False
+            location_depth = 0
+            location_lines = []
+            selected_server = False
+            route_count = 0
+            for line in lines:
+                stripped = line.strip()
+                if not in_server and re.match(r"server\s*\{", stripped):
+                    in_server = True
+                    server_depth = line.count("{") - line.count("}")
+                    selected_server = False
+                    continue
+                if in_server:
+                    server_depth += line.count("{") - line.count("}")
+                    if re.search(r"\bserver_name\b.*(?:woori\.today|www\.woori\.today)", line):
+                        selected_server = True
+                    if re.match(r"location\b.*\{", stripped):
+                        in_location = True
+                        location_depth = line.count("{") - line.count("}")
+                        location_lines = [line]
+                        continue
+                    if in_location:
+                        location_lines.append(line)
+                        location_depth += line.count("{") - line.count("}")
+                        if location_depth <= 0:
+                            block = "".join(location_lines)
+                            if selected_server and re.search(r"^\s*location\s+(?:=|\^~|~\*?)?\s*/?(?:api|portal-api)(?:/|\s)", block):
+                                route_count += 1
+                                print("[NGINX ROUTE] server_name=woori.today")
+                                for item in location_lines:
+                                    item = item.strip()
+                                    if re.match(r"location\b", item) or re.match(r"(?:proxy_pass|fastcgi_pass|auth_request|return|try_files)\b", item):
+                                        print(item)
+                            in_location = False
+                            location_lines = []
+                    if server_depth <= 0:
+                        in_server = False
+                        in_location = False
+            if route_count == 0:
+                print("[NGINX INSPECT] No matching /api or /portal-api location was found in the woori.today server block.")
+            '
