@@ -37,6 +37,27 @@ jobs:
             docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$nginx_container"
             mount_rw="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/etc/nginx/conf.d"}}{{.RW}}{{end}}{{end}}' "$nginx_container")"
             printf '[NGINX INSPECT] Configuration mount writable=%s\n' "$mount_rw"
+            host_config_dir=/opt/services/nginx/conf.d
+            backup_dir=/opt/backups/woori-portal
+            if config_candidates="$(grep -lF 'proxy_pass http://moneybook-backend:8080;' "$host_config_dir"/*.conf)"; then :; else config_candidates=""; fi
+            candidate_count="$(printf '%s\n' "$config_candidates" | awk 'NF { count++ } END { print count + 0 }')"
+            printf '[NGINX INSPECT] MoneyBook API config candidate count=%s\n' "$candidate_count"
+            if [ "$candidate_count" = 1 ]; then
+              target_host="$config_candidates"
+              file_writable=false
+              backup_writable=false
+              [ -w "$target_host" ] && file_writable=true
+              [ -d "$backup_dir" ] && [ -w "$backup_dir" ] && backup_writable=true
+              printf '[NGINX INSPECT] Active config file=%s; deploy account file writable=%s; backup directory writable=%s\n' "$(basename "$target_host")" "$file_writable" "$backup_writable"
+              target_container="/etc/nginx/conf.d/$(basename "$target_host")"
+              if api_location_count="$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target_container")"; then :; else api_location_count=0; fi
+              printf '[NGINX INSPECT] Existing MoneyBook /api location count=%s\n' "$api_location_count"
+              if docker exec "$nginx_container" grep -Fq 'location ^~ /portal-api/' "$target_container"; then
+                printf '[NGINX INSPECT] Existing Portal API location present=true\n'
+              else
+                printf '[NGINX INSPECT] Existing Portal API location present=false\n'
+              fi
+            fi
 
             if [ "${APPLY_PORTAL_API_ROUTE:-false}" != true ]; then
               printf '[NGINX INSPECT] Read-only inspection complete; no configuration changed.\n'
@@ -45,24 +66,16 @@ jobs:
 
             stage="Validate the isolated Portal API route target"
             printf '[NGINX APPLY 1] %s\n' "$stage"
-            host_config_dir=/opt/services/nginx/conf.d
-            backup_dir=/opt/backups/woori-portal
-            config_candidates="$(grep -lF 'proxy_pass http://moneybook-backend:8080;' "$host_config_dir"/*.conf)"
-            candidate_count="$(printf '%s\n' "$config_candidates" | wc -l | tr -d ' ')"
-            printf '[NGINX APPLY CHECK] Matching configuration files=%s\n' "$candidate_count"
             if [ "$candidate_count" != 1 ]; then
               printf '[NGINX APPLY BLOCKED] Expected exactly one config file with the existing MoneyBook API route.\n' >&2
               exit 2
             fi
-            target_host="$config_candidates"
             test -f "$target_host"
             test ! -L "$target_host"
-            if [ ! -w "$target_host" ] || [ ! -d "$backup_dir" ] || [ ! -w "$backup_dir" ]; then
+            if [ "$file_writable" != true ] || [ "$backup_writable" != true ]; then
               printf '[NGINX APPLY BLOCKED] The deploy account cannot safely write the active config and existing backup directory.\n' >&2
               exit 2
             fi
-            target_container="/etc/nginx/conf.d/$(basename "$target_host")"
-            api_location_count="$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target_container")"
             printf '[NGINX APPLY CHECK] Existing /api location count=%s\n' "$api_location_count"
             if [ "$api_location_count" != 1 ]; then
               printf '[NGINX APPLY BLOCKED] Expected exactly one /api location in the selected config.\n' >&2
