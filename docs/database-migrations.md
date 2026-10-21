@@ -4,7 +4,7 @@
 
 Portal pages continue to read the checked-in JSON snapshots. The database foundation is additive and is not required by `next build`, `next dev`, or application startup. This keeps local builds and the current production service independent of database availability.
 
-The first migration creates a normalized catalog for sources, datasets, countries, indicators, annual observations, and collection-run history. Data is imported separately by the World Bank pipeline; only indicators with a reviewed reuse basis are stored. The JSON snapshot remains the default public data path. Stock and crypto quote tables are intentionally absent while public redistribution rights remain unresolved.
+The first migration creates a normalized catalog for sources, datasets, countries, indicators, annual observations, and collection-run history. Data is imported separately by the World Bank pipeline; only indicators with a reviewed reuse basis are stored. Migration `0003_financial_market_data` adds reusable financial asset and daily price tables; those tables are empty unless a source is individually approved. EIA's targeted WTI, Brent, and Henry Hub daily spot series are blocked because EIA attributes them to Refinitiv/LSEG and downstream storage/display rights are unconfirmed. The JSON snapshot remains the default public data path.
 
 ## Local Windows development
 
@@ -26,6 +26,8 @@ CREATE DATABASE woori_today_portal_dev OWNER woori_portal_dev;
 ```
 
 This workspace has a local `woori_today_portal_dev` database owned by `woori_portal_dev`. Its application and migration URLs are stored in the ignored `.env.local`; neither the password nor URL belongs in version control. The administrator role is used only for local database provisioning. The current database has the checked-in Drizzle migrations applied; see `docs/data-pipeline.md` for World Bank import and verification procedures. No production host or database is configured in this workspace.
+
+As of the EIA source review, the local development database has 4 migrations applied (0000–0003), 0 pending migrations, 1,090 existing World Bank observations, and 0 financial price observations. The EIA data-access probe was read-only and did not write to PostgreSQL.
 
 ## Database protections
 
