@@ -55,7 +55,7 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
         const nextMarket = stockMarkets.find((item) => item.id === event.target.value);
         if (nextMarket) setSelection(nextMarket.id, rawDate ?? undefined);
       }}>{stockMarkets.map((item) => <option key={item.id} value={item.id}>{copy.marketNames[item.id]}{item.benchmark ? ` · ${item.benchmark}` : ""}</option>)}</select></label>
-      <label className="stock-control stock-date-control"><span>{copy.dateLabel}</span><DatePicker locale={locale} label={copy.dateLabel} value={validDate ? date : ""} max={today} onChange={(value) => { if (isValidStockDate(value) && value <= today) setSelection(market.id, value); }} /></label>
+      <label className="stock-control stock-date-control"><span>{copy.dateLabel}</span><DatePicker locale={locale} label={copy.dateLabel} value={validDate ? date : ""} today={today} max={today} availableDates={dates} onChange={(value) => { if (isValidStockDate(value) && value <= today) setSelection(market.id, value); }} /></label>
       <div className="stock-date-navigation"><button type="button" disabled={!earlierDate} onClick={() => earlierDate && setSelection(market.id, earlierDate)}>{copy.previousDate}</button><button type="button" disabled={!laterDate} onClick={() => laterDate && setSelection(market.id, laterDate)}>{copy.nextDate}</button></div>
     </section>
 

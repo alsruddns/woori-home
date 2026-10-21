@@ -68,7 +68,7 @@ test("World Bank null observations are omitted while measured zero is retained",
 test("World Bank DB screen mode defaults to JSON, guards production, stays allowlisted, and fails closed", async () => {
   const [page, route, repository, mode] = await Promise.all([
     readFile(new URL("../src/app/(locale)/[locale]/world-data.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../src/app/api/data-compare/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/db/world-bank-comparison-handler.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/lib/db/world-bank-repository.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/lib/db/world-bank-mode.mjs", import.meta.url), "utf8"),
   ]);

@@ -30,6 +30,16 @@ try {
   const { rows: [price] } = await client.query(`select close::text as close, volume::text as volume from financial_daily_prices
     where asset_id=$1 and source_id=$2 and reference_date=$3 and price_kind=$4`, key);
   if (price.close !== "123.1234567892" || price.volume !== "0.0000000000") throw new Error("NUMERIC precision or UPSERT verification failed.");
+  const stale = await client.query(`insert into financial_daily_prices
+    (asset_id,source_id,dataset_id,reference_date,reference_timezone,price_kind,close,volume,fetched_at)
+    values ($1,$2,$3,$4,'America/New_York',$5,'1','0',now() - interval '1 day')
+    on conflict (asset_id,source_id,reference_date,price_kind) do update set close=excluded.close,fetched_at=excluded.fetched_at
+    where coalesce(excluded.source_updated_at,excluded.fetched_at) >= coalesce(financial_daily_prices.source_updated_at,financial_daily_prices.fetched_at)
+    returning close::text as close`, [asset.id, sourceId, datasetId, "2026-10-20", "close"]);
+  if (stale.rowCount !== 0) throw new Error("An older provider snapshot overwrote newer stored data.");
+  const { rows: [afterStaleAttempt] } = await client.query(`select close::text as close from financial_daily_prices
+    where asset_id=$1 and source_id=$2 and reference_date=$3 and price_kind=$4`, key);
+  if (afterStaleAttempt.close !== "123.1234567892") throw new Error("A stale snapshot changed the stored financial price.");
   await client.query("savepoint financial_fk_check");
   let foreignKeyRejected = false;
   try {
@@ -42,6 +52,7 @@ try {
   }
   if (!foreignKeyRejected) throw new Error("Financial asset foreign-key constraint was not enforced.");
   console.log("Financial DB INSERT / SELECT / precision / conflict UPSERT passed inside a rollback transaction.");
+  console.log("Financial DB stale provider snapshot was rejected inside the rollback transaction.");
   console.log("Financial DB foreign-key rejection passed.");
   await client.query("rollback");
   client.release();

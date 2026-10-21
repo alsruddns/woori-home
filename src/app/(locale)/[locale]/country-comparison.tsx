@@ -45,7 +45,7 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
     setBusy(true);
     try {
       const query = new URLSearchParams({ countries: draftCountries.join(","), indicator: draftIndicator });
-      const response = await fetch(`/api/data-compare?${query}`, { headers: { Accept: "application/json" } });
+      const response = await fetch(`/portal-api/world-bank/compare?${query}`, { headers: { Accept: "application/json" } });
       if (!response.ok) throw new Error("Comparison request failed");
       const result = await response.json() as { series: CountrySeries[]; sourceInfo?: SourceInfo | null };
       if (id === requestId.current) {
