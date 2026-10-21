@@ -2,22 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { dataCategories } from "@/lib/data-platform/registry";
+import { categoryNavigation } from "@/lib/data-platform/category-navigation";
 import { platformCopy } from "@/lib/data-platform/locales";
-import { localizedNewCategories } from "@/lib/data-platform/research-copy";
 import type { Locale } from "@/lib/site";
-import { goldCopy } from "@/lib/data-platform/gold-copy";
-import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 
 export function PlatformSidebar({ locale }: { locale: Locale }) {
   const pathname = usePathname();
-  const copy = platformCopy[locale];
-  return <aside className="platform-sidebar"><p className="platform-sidebar-label">{copy.menu}</p><nav aria-label={copy.menu}>{dataCategories.filter((category) => category.id !== "about").map((category) => {
-    const index = dataCategories.indexOf(category);
+  const categories = categoryNavigation(locale);
+  const menuLabel = platformCopy[locale].menu;
+  return <aside className="platform-sidebar"><p className="platform-sidebar-label">{menuLabel}</p><nav aria-label={menuLabel}>{categories.map((category) => {
     const href = `/${locale}${category.path}`;
     const active = pathname === href || pathname.startsWith(`${href}/`) || (category.id === "world" && pathname === `/${locale}`);
-    const categoryLabelIndex = index > 2 && category.id !== "crypto" ? index - 1 : index;
-    const label = category.id === "papers" ? localizedNewCategories[locale].papers : category.id === "commodities" ? localizedNewCategories[locale].commodities : category.id === "gold" ? goldCopy[locale].title : category.id === "crypto" ? cryptoCopy[locale].nav : copy.categories[categoryLabelIndex];
-    return <Link key={category.id} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined}>{label}</Link>;
+    return <Link key={category.id} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined}>{category.label}</Link>;
   })}</nav></aside>;
 }

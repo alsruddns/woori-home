@@ -8,7 +8,7 @@ import { assertNoDestructiveMigration, resolveDatabaseTarget } from "../scripts/
 import { pendingMigrations } from "../scripts/db/migration-status.mjs";
 import { assertDatabaseRolesShareTarget, assertProductionOperation, parseProductionApprovalArgs } from "../scripts/db/production-operation.mjs";
 import { assertCommitDigest, assertCommitShaTag, isMainProductionRelease } from "../scripts/deploy/release-guard.mjs";
-import { resolveWorldBankDataSource } from "../src/lib/db/world-bank-mode.mjs";
+import { approvedWorldBankDbIndicators, resolveWorldBankDataSource, worldBankIndicatorSource } from "../src/lib/db/world-bank-mode.mjs";
 import { parseDatabaseRoleEnv } from "../scripts/deploy/database-env.mjs";
 import { isCalendarDate, localCalendarDate } from "../src/lib/date-query.mjs";
 
@@ -86,6 +86,16 @@ test("World Bank reads default to JSON and production DB mode requires an approv
   assert.throws(() => resolveWorldBankDataSource({ ...production, WORLD_BANK_DB_PRODUCTION_ENABLED: "false" }), /requires WORLD_BANK_DB_PRODUCTION_ENABLED/);
   assert.throws(() => resolveWorldBankDataSource({ ...production, PRODUCTION_DB_ALLOWED_HOSTS: "other" }), /PRODUCTION_DB_ALLOWED_HOSTS/);
   assert.throws(() => resolveWorldBankDataSource({ WORLD_BANK_DATA_SOURCE: "db", DB_TARGET: "development", DATABASE_URL: "postgres://dev:pw@postgres/woori_today_portal_dev" }), /local PostgreSQL host/);
+});
+
+test("only reviewed World Bank indicators use DB while all other indicators keep the JSON source", () => {
+  assert.deepEqual(approvedWorldBankDbIndicators, ["SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"]);
+  assert.equal(worldBankIndicatorSource("db", "SL.UEM.TOTL.ZS"), "db");
+  assert.equal(worldBankIndicatorSource("db", "EG.ELC.ACCS.ZS"), "db");
+  for (const indicator of ["SP.POP.TOTL", "NY.GDP.MKTP.CD", "unknown"]) {
+    assert.equal(worldBankIndicatorSource("db", indicator), "json");
+  }
+  assert.equal(worldBankIndicatorSource("json", "SL.UEM.TOTL.ZS"), "json");
 });
 
 test("publish workflow is digest-pinned, main guarded, and limited to portal without replacing server env files", async () => {

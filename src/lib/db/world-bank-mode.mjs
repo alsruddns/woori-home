@@ -1,5 +1,11 @@
 import { resolveDatabaseTarget } from "../../../scripts/db/connection-safety.mjs";
 
+export const approvedWorldBankDbIndicators = Object.freeze(["SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"]);
+
+export function worldBankIndicatorSource(source, indicatorCode) {
+  return source === "db" && approvedWorldBankDbIndicators.includes(indicatorCode) ? "db" : "json";
+}
+
 export function resolveWorldBankDataSource(env = process.env) {
   const source = env.WORLD_BANK_DATA_SOURCE ?? "json";
   if (source !== "json" && source !== "db") throw new Error("WORLD_BANK_DATA_SOURCE must be json or db");

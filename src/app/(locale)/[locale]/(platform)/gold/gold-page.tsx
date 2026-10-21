@@ -6,6 +6,7 @@ import { isLocale, origin } from "@/lib/site";
 import snapshot from "@/data/gold-prices.json";
 import { GoldQuotePanel } from "./gold-quote-panel";
 import { validateGoldSnapshot, type GoldQuote, type GoldSnapshot } from "@/lib/data-platform/gold-market";
+import { GoldUnavailableDate } from "./gold-unavailable-date";
 
 const routeFor = (section: GoldPageSection) => section === "overview" ? "/gold" : `/gold/${section}`;
 
@@ -43,7 +44,7 @@ export function GoldPage({ localeValue, section }: { localeValue: string; sectio
     <nav className="gold-tabs" aria-label={copy.navLabel}>
       {(["overview", "buy-sell", "history"] as GoldPageSection[]).map((item) => <Link key={item} href={routeFor(item).startsWith("/") ? `/${locale}${routeFor(item)}` : url} aria-current={item === section ? "page" : undefined}>{goldSectionTitle(locale, item)}</Link>)}
     </nav>
-    {quoteCount === 0 ? <section className="gold-unavailable" aria-live="polite"><span className="platform-eyebrow">{copy.pendingTitle}</span><h2>{copy.unavailableTitle}</h2><p>{copy.unavailable}</p><p>{copy.noQuote}</p></section> : null}
+    {quoteCount === 0 ? <section className="gold-unavailable" aria-live="polite"><span className="platform-eyebrow">{copy.pendingTitle}</span><h2>{copy.unavailableTitle}</h2><p>{copy.unavailable}</p><Suspense fallback={<p>{copy.noQuote}</p>}><GoldUnavailableDate locale={locale} label={copy.dateLabel} emptyText={copy.noQuote} /></Suspense></section> : null}
     {quoteCount > 0 ? <Suspense fallback={<p className="platform-empty-state">{copy.noQuote}</p>}><GoldQuotePanel locale={locale} section={section} quotes={quotes as GoldQuote[]} copy={copy} /></Suspense> : null}
     <section className="platform-explainer gold-explainers">
       {section !== "buy-sell" ? <article><h2>{copy.marketReference}</h2><p>{copy.sourceNote}</p></article> : null}

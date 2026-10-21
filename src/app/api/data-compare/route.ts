@@ -2,7 +2,7 @@ import { indicators } from "@/lib/data-platform/registry";
 import { countryByCode } from "@/lib/data-platform/countries";
 import { observationsFor } from "@/lib/data-platform/snapshot";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
-import { resolveWorldBankDataSource } from "../../../lib/db/world-bank-mode.mjs";
+import { resolveWorldBankDataSource, worldBankIndicatorSource } from "../../../lib/db/world-bank-mode.mjs";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -16,11 +16,8 @@ export async function GET(request: Request) {
   try { mode = resolveWorldBankDataSource(); } catch {
     return Response.json({ error: "Invalid World Bank data source configuration" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
-  const selectedSource = mode.source;
+  const selectedSource = worldBankIndicatorSource(mode.source, indicator.code);
   if (selectedSource === "db") {
-    if (!["SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"].includes(indicator.code)) {
-      return Response.json({ error: "This indicator is not approved for World Bank DB mode" }, { status: 400, headers: { "Cache-Control": "no-store" } });
-    }
     try {
       const [seriesRows, sourceInfo] = await Promise.all([
         compareWorldBankCountries(indicator.code, codes.map((code) => countryByCode(code)!.iso3)),
@@ -49,7 +46,7 @@ export async function GET(request: Request) {
       observations: observations.map(({ year, value, unit }) => ({ year, value, unit })),
     };
   });
-  return Response.json({ indicator: indicator.id, series }, {
+  return Response.json({ indicator: indicator.id, series, source: "json" }, {
     headers: { "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400" },
   });
 }

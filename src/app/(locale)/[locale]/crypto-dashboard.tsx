@@ -7,7 +7,8 @@ import type { Locale } from "@/lib/site";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 import { adjacentCryptoDates, cryptoDates, cryptoTreemapLayout, dailyCloseChange, isPublishableCryptoSnapshot, validUtcDate } from "@/lib/data-platform/crypto-market.mjs";
 import type { CryptoSnapshot } from "@/lib/data-platform/crypto-market.mjs";
-import { useTodayQueryDate } from "./use-today-query-date";
+import { DatePicker } from "./date-picker";
+import { useSnapshotQueryDate } from "./use-snapshot-query-date";
 
 const snapshot = cryptoPriceSnapshot as unknown as CryptoSnapshot;
 
@@ -15,8 +16,8 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
   const copy = cryptoCopy[locale];
   const router = useRouter();
   const search = useSearchParams();
-  const { today, selectedDate } = useTodayQueryDate();
   const dates = cryptoDates(snapshot);
+  const { today, selectedDate } = useSnapshotQueryDate("UTC", dates);
   const requestedDate = search.get("date");
   const date = requestedDate ?? selectedDate;
   const validDate = !date || validUtcDate(date);
@@ -38,8 +39,7 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
     <nav className="platform-breadcrumb" aria-label={copy.nav}><Link href={`/${locale}`}>{copy.nav}</Link><span>/</span><span>{copy.title}</span></nav>
     <header className="platform-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1><p>{copy.intro}</p></header>
     <section className="crypto-market-controls" aria-label={copy.title}>
-      <label><span>{copy.date}</span><input type="date" value={validDate ? date : ""} max={today} list="crypto-available-dates" onChange={(event) => chooseDate(event.target.value)} /></label>
-      <datalist id="crypto-available-dates">{dates.map((date) => <option key={date} value={date} />)}</datalist>
+      <label><span>{copy.date}</span><DatePicker locale={locale} label={copy.date} value={validDate ? date : ""} max={today} onChange={chooseDate} /></label>
       <button type="button" disabled={!neighbors.previous} onClick={() => neighbors.previous && chooseDate(neighbors.previous)}>{copy.previous}</button>
       <button type="button" disabled={!neighbors.next} onClick={() => neighbors.next && chooseDate(neighbors.next)}>{copy.next}</button>
       <button type="button" disabled={!dates.length || date === dates.at(-1)} onClick={() => chooseDate(dates.at(-1) ?? "")}>{copy.latest}</button>

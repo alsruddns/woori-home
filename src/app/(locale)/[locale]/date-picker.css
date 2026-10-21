@@ -1,0 +1,21 @@
+.shared-date-picker{position:relative;min-width:0;color:var(--platform-text)}
+.shared-date-picker-trigger{display:flex;min-height:38px;border:1px solid var(--platform-border);border-radius:6px;background:var(--platform-bg);overflow:hidden}
+.shared-date-picker-value,.shared-date-picker-icon{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.shared-date-picker-value{flex:1;min-width:0;padding:7px 10px;text-align:left;font-size:12px}
+.shared-date-picker-icon{display:grid;place-items:center;width:38px;border-left:1px solid var(--platform-border)}
+.shared-date-picker-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.shared-date-picker button:focus-visible{position:relative;z-index:1;outline:2px solid var(--platform-accent);outline-offset:-2px}
+.shared-date-picker-popover{position:absolute;z-index:30;top:calc(100% + 7px);left:0;width:min(310px,calc(100vw - 32px));padding:12px;border:1px solid var(--platform-border);border-radius:9px;background:var(--platform-surface);box-shadow:0 12px 35px #0005}
+.shared-date-picker-popover header{display:grid;grid-template-columns:36px 1fr 36px;align-items:center;margin-bottom:9px;text-align:center}
+.shared-date-picker-popover header strong{font-size:13px;font-weight:650}
+.shared-date-picker-popover header button,.shared-date-picker-popover td button,.shared-date-picker-close{min-height:34px;border:0;border-radius:5px;background:transparent;color:var(--platform-text);font:inherit;cursor:pointer}
+.shared-date-picker-popover header button{font-size:22px}.shared-date-picker-popover header button:hover,.shared-date-picker-popover td button:hover{background:var(--platform-bg)}
+.shared-date-picker-popover table{width:100%;border-collapse:collapse;table-layout:fixed;text-align:center}
+.shared-date-picker-popover th{height:29px;color:var(--platform-muted);font-size:10px;font-weight:550}
+.shared-date-picker-popover td{height:36px;padding:1px}
+.shared-date-picker-popover td button{width:100%;min-height:34px;font-size:12px;font-variant-numeric:tabular-nums}
+.shared-date-picker-popover td button[aria-pressed=true]{background:var(--platform-accent);color:#fff}
+.shared-date-picker-popover td button:disabled{opacity:.32;cursor:not-allowed}
+.shared-date-picker-close{display:block;width:100%;margin-top:5px;color:var(--platform-muted);font-size:11px}
+.gold-unavailable-date{margin-top:14px}.gold-unavailable-date label{display:grid;gap:6px;max-width:320px;color:var(--platform-muted);font-size:11px}.gold-unavailable-date p{color:var(--platform-muted);font-size:11px}
+@media(max-width:600px){.shared-date-picker-trigger{min-height:42px}.shared-date-picker-icon{width:42px}.shared-date-picker-popover{position:fixed;top:auto;bottom:12px;left:50%;transform:translateX(-50%);width:min(360px,calc(100vw - 24px));padding:14px}.shared-date-picker-popover td{height:42px}.shared-date-picker-popover td button{min-height:40px}.shared-date-picker-close{min-height:40px}}
