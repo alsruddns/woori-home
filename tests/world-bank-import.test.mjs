@@ -65,15 +65,18 @@ test("World Bank null observations are omitted while measured zero is retained",
   assert.equal(result.observations[0].value, "0");
 });
 
-test("World Bank DB screen mode remains explicit, development-only, allowlisted, and fail-closed", async () => {
-  const [page, route, repository] = await Promise.all([
+test("World Bank DB screen mode defaults to JSON, guards production, stays allowlisted, and fails closed", async () => {
+  const [page, route, repository, mode] = await Promise.all([
     readFile(new URL("../src/app/(locale)/[locale]/world-data.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/api/data-compare/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/lib/db/world-bank-repository.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/db/world-bank-mode.mjs", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /process\.env\.WORLD_BANK_DATA_SOURCE \?\? "json"/);
-  assert.match(page, /DB_TARGET !== "development"/);
-  assert.match(route, /WORLD_BANK_DATA_SOURCE/);
+  assert.match(page, /resolveWorldBankDataSource/);
+  assert.match(mode, /WORLD_BANK_DATA_SOURCE \?\? "json"/);
+  assert.match(mode, /WORLD_BANK_DB_PRODUCTION_ENABLED !== "true"/);
+  assert.match(mode, /PRODUCTION_DB_ALLOWED_HOSTS/);
+  assert.match(route, /resolveWorldBankDataSource/);
   assert.match(route, /This indicator is not approved for World Bank DB mode/);
   assert.match(route, /World Bank database comparison is unavailable/);
   assert.match(repository, /"SL\.UEM\.TOTL\.ZS", "EG\.ELC\.ACCS\.ZS"/);

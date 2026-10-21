@@ -1,72 +1,97 @@
 # Production deployment preparation
 
-Status: **BLOCKED for a PostgreSQL-backed production rollout.** No production server, database, container, or workflow run was accessed; no production workflow was changed. The observations below come from the `develop` repository at `95c42caf079dc015715523379c3daebd32e18a4e`, local development PostgreSQL, and the operator-provided server notes. Recheck all server-side facts during the release window.
+Status: **READY WITH CONDITIONS for a controlled first release; production was not accessed or changed.** Work is prepared on `develop` from the operator-supplied baseline `f353863`. The deployment workflow has not been run. Server configuration and credentials remain unverified.
 
-## Verified development baseline
+## Scope and verified baseline
 
-- Branch and commit: `develop`, `95c42caf079dc015715523379c3daebd32e18a4e`.
-- Local DB: `woori_today_portal_dev`; 4 migrations applied, 0 pending. A second `pnpm db:migrate` run completed without adding a migration; status remained 4/0.
-- Physical catalog: 8 public tables and 20 indexes, including the two financial tables. Existing applied migration SQL was not edited.
-- World Bank approved scope: 16 country/aggregate records, 2 indicators, and 1,090 observations. JSON and DB keys and decimal values match exactly; 0 missing rows, unexpected rows, or mismatches. `SL.UEM.TOTL.ZS` has 560 rows through 2025; `EG.ELC.ACCS.ZS` has 530 rows through 2024.
-- Financial data: 0 financial assets and 0 daily prices. Unapproved market data remains unavailable to repositories and public pages.
-- The 15-locale production build completed. HTTP checks returned 200 for home, `/about`, `/world`, `/stocks`, `/crypto`, `/gold`, `/commodities`, `/stocks/issues`, and `/crypto/issues` in all 15 locales, plus `robots.txt` and `sitemap.xml` (137 responses total). Gold, commodities, stocks, crypto, and both issue pages returned `noindex`; `/about` retained a canonical and localized homes exposed `x-default` hreflang. A browser automation executable was not available, so viewport rendering, interaction, hydration warnings, and browser console output were not checked.
-- Final code validation: 75 tests passed; lint, TypeScript, production build, and `drizzle-kit check` passed.
+- All release operations are scoped to the `portal` Compose service. The workflow does not invoke `docker compose down`, recreate dependencies, edit either server environment file, or change MoneyBook, Calculator, Tools, Docs, Quiz, PostgreSQL, or Nginx.
+- The existing local PostgreSQL baseline supplied for this work is `woori_today_portal_dev`, 4 migrations applied / 0 pending, 1,090 reviewed World Bank observations, and zero financial prices. The previously recorded JSON comparison is exact for the two approved indicators. Re-run the local commands listed below against the current checkout before release.
+- Server facts are based only on operator notes: `/opt/services/compose/docker-compose.yml`, `.env.moneybook`, `.env.portal`, `portal`, `postgres`, `compose_database`, and `compose_default`. The remote Compose file, backup result, host, roles, healthcheck, and network are not inspected by this change.
+- No production migration, import, DB query, deployment, or rollback was executed.
 
-## Release blockers to resolve before main or server changes
+## Workflow controls
 
-1. **Image and environment selection are not aligned with the supplied operations notes.** The checked-in `.github/workflows/publish.yml` builds `latest` and a commit-SHA image tag, then runs `docker compose --env-file .env.moneybook pull portal` and `up -d portal`. The supplied portal environment file is `/opt/services/compose/.env.portal`. The workflow does not update a server image tag to the just-built SHA or digest. Until the server Compose configuration and both environment files are inspected by the operator, it is not established that the workflow selects the intended portal image, runtime variables, or database network. Do not run the workflow as a release until it is changed and reviewed to use the portal-specific configuration and immutable image reference.
-2. **Manual deployment is not branch-restricted in the workflow.** `workflow_dispatch` has no guard requiring `main`; a manual run may use the selected workflow ref. Add and review a main-only ref guard before permitting manual runs, so selecting `develop` cannot publish or deploy it.
-3. **The application is not currently allowed to read PostgreSQL in production.** `WORLD_BANK_DATA_SOURCE` defaults to `json`, which is fail-safe. Selecting `db` is explicitly rejected unless `DB_TARGET=development`; no production DB mode has been implemented or validated. Leave production on JSON until a separate production-read change is reviewed and tested.
-4. **The existing World Bank importer is development-only.** `pnpm data:worldbank:import` hard-codes the local development safety target. Do not point it at the production database or weaken that guard. A separately reviewed, explicitly gated production import procedure/tool is required before the planned 1,090-row load.
-5. **Production state is unverified.** The server, Compose file, image digest, environment files, database contents, database roles, scheduled backup result, disk capacity, Nginx routing, and restore procedure were not inspected. The operator notes say the available restore test covered an empty DB; this does not prove recovery of the planned data set.
+`.github/workflows/publish.yml` now:
 
-The current workflow is not changed by this preparation. Resolve the first blocker in an explicitly reviewed release-workflow change, then validate that it targets only the `portal` service, uses the portal environment file and a SHA or digest, avoids unrelated service recreation, and can select the previous immutable image. `docker compose up -d portal` does not itself prove that dependencies will be left alone; the release design should use a reviewed portal-only/no-dependency invocation where appropriate.
+1. Runs a release guard requiring `refs/heads/main` and event `push` or `workflow_dispatch`. A manually selected `develop` or `release/*` ref fails before image creation.
+2. Builds portal and one-off DB tools images, tags them with the full commit SHA plus the unique Actions run/attempt, and passes their registry `sha256` digests between jobs. Deployment references the portal digest, not `latest` or a mutable tag; every retry gets a distinct tag.
+3. Uses the protected GitHub Actions `production` environment. Repository administrators must configure its allowed deployment branch as `main` and required reviewers. Required environment/repository values are `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`, `PORTAL_HEALTH_URL`, `PRODUCTION_DB_ALLOWED_HOSTS`, and protected secret `PRODUCTION_OPERATION_APPROVAL`. Credentials are never written into the repository or printed by the workflow.
+4. On the server reads both `.env.moneybook` and `.env.portal` for Compose interpolation without writing or replacing either file. It validates Compose, confirms `portal` has exactly `default` and `database` networks, and requires the configured Portal image before it does anything to the running service.
+5. Runs the supplied backup script and verifies a newly created non-empty backup file before optional DB writes or Portal rollout.
+6. Creates a rollback tag from the currently running Portal image ID. It pulls the explicit image digest and runs `up -d --no-deps portal`; failures after rollout begins trigger an attempt to restore that tag and wait for container health.
+7. Waits for the Portal healthcheck and requests `PORTAL_HEALTH_URL`. A failed check fails the job and triggers image rollback. Backup, DB status, and validation output must not include environment values.
 
-## Environment and application behavior
+The release will stop safely if the live Compose format/network differs from the assumed service layout. An operator must inspect the live file and confirm the two env files and networks before enabling this workflow. The running Portal's Docker image ID must be inspectable, a healthcheck must exist, `jq` and `curl` must be installed, and the backup script must produce a new file under `/opt/backups/woori-portal`.
 
-- Runtime application connection: `DATABASE_URL`, supplied to the portal process through its protected runtime configuration. Use the restricted `woori_portal` application role, not the migration role.
-- One-off schema connection: `DB_MIGRATION_URL`, supplied only to the controlled migration process. Use a separate DDL-capable portal migration role. Never put either value in Git, an image build argument, or this document.
-- On a pre-provisioned database, the migration role needs database `CONNECT`, schema creation for the `drizzle` migration journal, and permission to create/alter portal tables, constraints, and indexes in the selected schema. The runtime application role should be limited to `CONNECT`, schema `USAGE`, and the minimum table `SELECT` grants needed by the selected read path. Import/write grants belong to a separately reviewed one-off import role; do not grant DDL to the runtime role.
-- The guarded migration runner requires `DB_TARGET=production`, the exact database name `woori_today_portal`, and `DB_MIGRATION_ALLOW_PRODUCTION=I_HAVE_APPROVAL`. It uses the migration URL and refuses destructive SQL unless a separately reviewed override is provided. Do not put the approval token in the application container.
-- `WORLD_BANK_DATA_SOURCE` is an explicit server-side switch. Its default is `json`; there is no automatic switch when a database becomes available. In the current code, `db` remains development-only and must not be enabled in production.
-- `pnpm data:worldbank:import` is restricted to local `woori_today_portal_dev`. Do not use a production URL with it. No data import runs during `next build` or app startup.
-- The lazy server pool is capped at 2 connections. The Dockerfile builds a Next.js standalone image, runs as the unprivileged `nextjs` user, and listens on port 3003. Runtime secrets must be injected by the deployment platform, not copied into the image.
-- `.dockerignore` excludes local environment files, `.git`, `.next`, and `node_modules` from Docker build context.
+### Required GitHub configuration
 
-## Migration and initial data plan (not executed in production)
+- Configure the `production` environment to allow only `main`; add a required reviewer. This is an external GitHub setting and is not created by repository code.
+- Set `PORTAL_HEALTH_URL` to an HTTP(S) endpoint that returns a successful status through the intended route. Do not use a URL containing credentials.
+- Set `PRODUCTION_DB_ALLOWED_HOSTS` to the exact production PostgreSQL hostname(s) used by the isolated DB network. It is an allowlist, not a URL.
+- Add the non-empty `PRODUCTION_OPERATION_APPROVAL` secret only to the protected environment. Database steps run only when a main-branch manual dispatch explicitly sets `apply_database_changes=true`.
+- Ensure `.env.portal` contains three distinct role URLs: read-only `DATABASE_URL`, write-limited `DB_IMPORT_URL`, and DDL-capable `DB_MIGRATION_URL`; all must point to database `woori_today_portal` on an allowlisted host. Do not give the runtime role DDL or import-write rights.
 
-The applied sequence is `0000_init_data_catalog`, `0001_worldbank_collection_counts`, `0002_worldbank_country_metadata`, and `0003_financial_market_data`. The current local schema has 8 tables and 20 indexes. Existing migrations are append-only; do not edit them.
+## Production migration and World Bank import commands
 
-Before using any production migration command:
+These are one-off, fail-closed commands in the `db-tools` image. They require GitHub Actions on `main`, `DB_TARGET=production`, the protected approval secret, exact production database and hostname allowlist, and distinct role credentials. Writes additionally require evidence of a fresh backup created in the same workflow run. No command runs from Next.js build or application startup.
 
-1. Freeze the reviewed source commit and immutable image SHA/digest. Confirm the portal Compose service, `.env.portal` runtime injection, database network, and target database name on the server.
-2. Confirm a recent successful portal backup, its file size/checksum, available disk space, and that the backup can be restored to an isolated database. Do not treat the previously tested empty-database restore as proof of recovery for production data.
-3. Read the production database migration history and inspect existing tables/rows before deciding whether this is an empty or populated database. Never initialize, truncate, or drop an existing database to make it match this release. If pre-existing tables conflict with the Drizzle history, stop and reconcile them with a DBA.
-4. Review the four migration SQL files and checksums from the release commit. Provide `DB_TARGET=production`, `DB_MIGRATION_URL`, and the production approval gate only to a one-off protected migration runner. Run `pnpm db:status`, then `pnpm db:migrate`, then `pnpm db:status` using the same controlled release context. A migration failure stops the release; do not start the new application image.
-5. Verify the applied journal and expected schema before importing. If the database is not empty, retain all existing data and reconcile each key rather than reinitializing.
-6. **Stop here until the production importer blocker is resolved.** Build and review a production-scoped import mechanism that reads the exact reviewed release artifact, retains source attribution, uses a transaction/bounded batches, and has an explicit production approval gate. The current local importer must remain development-only. For the approved scope, expect 560 unemployment and 530 electricity-access observations (1,090 total); exclude all other JSON indicators until separately reviewed.
-7. Verify counts, exact country/indicator/year keys, and numeric values against the artifact; confirm duplicate rerun counts are skipped and migration history stays unchanged. Do not change `WORLD_BANK_DATA_SOURCE=db` as part of that import; current application guards disallow production DB reads.
+```text
+node scripts/db/status-production.mjs
+node scripts/data/import-world-bank-production.mjs --dry-run
+node scripts/db/migrate-production.mjs --apply --backup-reference=<backup-file-name>
+node scripts/db/status-production.mjs
+node scripts/data/import-world-bank-production.mjs --apply --backup-reference=<backup-file-name>
+node scripts/data/verify-world-bank-production.mjs
+```
 
-Do not put migration or import commands in Next.js build, the image `CMD`, or app startup. Use a separate, audited one-off operation. A fresh DB and an existing DB require different preflight decisions; neither case permits deleting existing data.
+In the workflow the commands run inside the digest-pinned DB tools image on `compose_database`, with `.env.portal` injected only into the short-lived container. The database step is opt-in, runs status before and after Migration, performs a source-only import dry-run before migration, imports only `SL.UEM.TOTL.ZS` and `EG.ELC.ACCS.ZS`, and compares the stored approved scope to the bundled JSON snapshot after import. Six other World Bank indicators remain excluded. UPSERTs and collection-run records are handled by the existing importer. An import failure stops before Portal deployment.
 
-## Image deployment, health, and post-deploy checks
+The production wrappers cannot be exercised against production from a workstation or a non-main branch. Local tests exercise the guards without opening a DB connection. Never copy production URLs into `.env.local`; do not substitute the local development database for a production dry-run.
 
-After the blockers above are resolved and the release is separately authorized:
+## Database read mode
 
-1. Record both the currently running portal image ID/digest and the release image digest. Keep the prior image retrievable by immutable reference; `latest` alone is not a rollback record.
-2. Pull the exact reviewed SHA/digest, then recreate only `portal` using the reviewed portal Compose file and environment. Keep MoneyBook, Calculator, Tools, Docs, Quiz, PostgreSQL, and Nginx out of the operation. Do not use the current workflow until its environment-file/tag mismatch is fixed and reviewed.
-3. Wait for the existing portal healthcheck. Check container status and logs without printing environment values. Confirm the portal responds through its local health endpoint and public HTTPS routes through Nginx; inspect redirect behavior and TLS at the public origin.
-4. Check locale home and `/about` routes, canonical/hreflang, `robots.txt`, `sitemap.xml`, and noindex on financial pages without approved price data. Confirm the existing URL set and family-site links remain intact.
-5. If DB use is still JSON mode, verify the portal remains functional with DB access unavailable. If a later release separately enables production DB reads, compare the approved World Bank response to the artifact and monitor DB errors, pool connections, and response latency before broad traffic.
+- `WORLD_BANK_DATA_SOURCE` stays `json` by default. Database presence never changes this setting.
+- Local DB mode is available only with `DB_TARGET=development` and a local host plus the exact development database.
+- Production DB reads require all of `WORLD_BANK_DATA_SOURCE=db`, `DB_TARGET=production`, `WORLD_BANK_DB_PRODUCTION_ENABLED=true`, the exact database name, and a host listed in `PRODUCTION_DB_ALLOWED_HOSTS`.
+- Repository queries and the comparison API restrict DB access to the two approved indicators. Unknown indicators fail closed. The API returns an unavailable response on DB errors; it does not substitute JSON data. Server page DB failures likewise do not silently switch sources.
+- Keep production mode disabled until the production migration and import have completed, the role grants are checked, and the JSON/DB verifier reports no differences. Then enable it as a separate application configuration change, with a reviewed rollout. This workflow does not set the flag automatically.
+- The runtime pool remains capped at two connections and is lazy. Never connect the application to `woori_today_portal_dev`.
+
+## Release sequence
+
+1. Review the exact commit and confirm the workflow change is present on `main`; confirm the full SHA and built portal/tools digests.
+2. On the server, independently confirm Compose files, env files, `portal` service networks (`default` and `database`), DB hostname, healthcheck, free disk, and backup script behavior. Confirm a recent backup and an isolated restore of a non-empty database before first production data load.
+3. Start a protected main workflow with DB changes disabled for an application-only release, or explicitly enable DB changes only after role URLs and the backup path are verified. The workflow always backs up before rollout.
+4. For DB changes, inspect pre-migration status, source dry-run, reviewed Migration set, then apply and confirm status. Import approved World Bank rows and verify exact keys/values. A failure halts the workflow before image rollout.
+5. The workflow pins the portal digest, updates only Portal with `--no-deps`, checks container health and the configured HTTP endpoint, then retains the old image rollback tag.
+6. After release, verify public routes, locale URLs, SEO metadata, logs without secret values, DB read permissions, and backup monitoring. Enable production DB read mode only in a later explicit configuration change after reconciliation.
+
+`db-tools` and `portal` images are built from the same main SHA. The DB operation's production approval is deliberately separate from choosing an image. This repository cannot verify GitHub environment protection or the live environment files; those are release preconditions.
 
 ## Rollback and recovery
 
-- For an application-only failure, stop rollout and restore the previously recorded immutable portal image reference, then recreate only the portal service. Confirm health and public routes. Do not depend on `latest` moving backward.
-- Do not run reverse or automatic down-migrations. The schema may be used by newer application code and is not automatically coupled to image rollback. These migrations are additive; retain their tables and data while the old image runs.
-- For a migration failure, stop before app rollout, preserve logs and the pre-migration backup, and investigate. Never delete migration history or tables to force a rerun. Restore a backup only under a separately reviewed recovery plan, after determining whether writes occurred since backup.
-- For a data import failure, stop the release and preserve the run/error record. A production-safe retry mechanism is not yet implemented. Do not use the local import command against production.
-- Verify the backup job succeeded after release and monitor disk usage. After non-empty production data is introduced, perform and record an isolated restore test before claiming the data is recoverable.
+- If Portal health/HTTP checks fail, the workflow attempts to restore the previous local image ID through a retained rollback tag and updates only Portal. Confirm the restored health and public route. If the rollback command itself fails, stop and follow the operator's manual Compose procedure using the retained tag.
+- The database is not automatically rolled back. Existing migrations are append-only and migration history is retained. The current 0000–0003 schema changes are additive; however, every future migration must be reviewed for backward compatibility before an old app image is considered a safe rollback target.
+- If migration or import fails, halt. Preserve migration/run records and the backup; investigate before retrying. Never delete tables, rows, or migration history to force a rerun. Restore only under a separately reviewed recovery plan that accounts for writes since backup.
+- A backup file is not proof of recoverability. Verify backup success, checksum/size, disk capacity, and isolated non-empty restore before the first production load, and periodically afterward.
 
-## Release decision
+## Local verification
 
-**BLOCKED** for a PostgreSQL-backed production rollout until the workflow environment/image selection and manual branch guard are corrected and reviewed, a production-safe World Bank importer exists, and production DB-read behavior is explicitly implemented and tested. The code can be built and the local database/data integrity is verified, but no production host or DB was inspected, and these checks do not authorize main merge or deployment.
+Run in `develop` with only the local development connection configured:
+
+```text
+pnpm db:status
+pnpm data:worldbank:verify
+pnpm data:financial:status
+pnpm test
+pnpm lint
+pnpm exec tsc --noEmit
+pnpm build
+pnpm exec drizzle-kit check
+```
+
+Also exercise the release guard with main and non-main refs in unit tests. Browser automation and the remote Compose preflight require separate availability; if not run, report them as unverified. Never test the deploy job by targeting a production server during this preparation.
+
+## Remaining conditions
+
+The code-level blockers are addressed: main-only workflow gate, digest deployment, two env-file Compose reads, portal-only update/rollback attempt, guarded production migration/import, and explicit production DB-read mode. Release readiness remains conditional on external checks: configure GitHub environment protection, verify live Compose/env/role/host/health settings, verify a successful non-empty backup restore and free space, and review the final workflow from main. No production state was inspected, so do not treat this document as evidence of current server readiness.

@@ -7,6 +7,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { resolveDatabaseTarget } from "../db/connection-safety.mjs";
+import { assertDatabaseRolesShareTarget, assertProductionOperation, requireDistinctDatabaseRoles } from "../db/production-operation.mjs";
 import { IMPORTABLE_INDICATORS, LOCALES, localizedCountryNames, normalizeWorldBankSnapshot, parseImportArgs } from "./world-bank-import-core.mjs";
 
 const { Pool } = pg;
@@ -37,7 +38,14 @@ try {
 }
 let target;
 try {
-  target = resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DB_MIGRATION_URL ?? process.env.DATABASE_URL });
+  if (process.env.WORLD_BANK_IMPORT_TARGET === "production") {
+    const urls = [process.env.DATABASE_URL, process.env.DB_IMPORT_URL, process.env.DB_MIGRATION_URL];
+    requireDistinctDatabaseRoles(urls);
+    assertDatabaseRolesShareTarget(urls);
+    target = assertProductionOperation({ databaseUrl: process.env.DB_IMPORT_URL, backupReference: process.env.PRODUCTION_BACKUP_REFERENCE, requireBackup: true });
+  } else {
+    target = resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DB_MIGRATION_URL ?? process.env.DATABASE_URL });
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : "Database configuration is invalid.");
   process.exit(1);

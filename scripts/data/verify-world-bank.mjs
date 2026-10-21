@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { resolveDatabaseTarget } from "../db/connection-safety.mjs";
+import { assertDatabaseRolesShareTarget, assertProductionOperation, requireDistinctDatabaseRoles } from "../db/production-operation.mjs";
 import { IMPORTABLE_INDICATORS, normalizeWorldBankSnapshot } from "./world-bank-import-core.mjs";
 
 const { Pool } = pg;
@@ -11,7 +12,14 @@ const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const snapshot = JSON.parse(await readFile(resolve(root, "src/data/world-bank.json"), "utf8"));
 let target;
 try {
-  target = resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DATABASE_URL });
+  if (process.env.WORLD_BANK_VERIFY_TARGET === "production") {
+    const urls = [process.env.DATABASE_URL, process.env.DB_IMPORT_URL, process.env.DB_MIGRATION_URL];
+    requireDistinctDatabaseRoles(urls);
+    assertDatabaseRolesShareTarget(urls);
+    target = assertProductionOperation({ databaseUrl: process.env.DATABASE_URL });
+  } else {
+    target = resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DATABASE_URL });
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : "Database configuration is invalid.");
   process.exit(1);

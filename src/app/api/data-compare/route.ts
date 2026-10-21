@@ -2,7 +2,7 @@ import { indicators } from "@/lib/data-platform/registry";
 import { countryByCode } from "@/lib/data-platform/countries";
 import { observationsFor } from "@/lib/data-platform/snapshot";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
-import { resolveDatabaseTarget } from "../../../../scripts/db/connection-safety.mjs";
+import { resolveWorldBankDataSource } from "../../../lib/db/world-bank-mode.mjs";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -12,19 +12,16 @@ export async function GET(request: Request) {
     return Response.json({ error: "Invalid comparison selection" }, { status: 400 });
   }
 
-  const selectedSource = process.env.WORLD_BANK_DATA_SOURCE ?? "json";
-  if (selectedSource !== "json" && selectedSource !== "db") {
+  let mode;
+  try { mode = resolveWorldBankDataSource(); } catch {
     return Response.json({ error: "Invalid World Bank data source configuration" }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
+  const selectedSource = mode.source;
   if (selectedSource === "db") {
     if (!["SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"].includes(indicator.code)) {
       return Response.json({ error: "This indicator is not approved for World Bank DB mode" }, { status: 400, headers: { "Cache-Control": "no-store" } });
     }
-    if (process.env.DB_TARGET !== "development") {
-      return Response.json({ error: "World Bank DB mode is available only for the local development database" }, { status: 503, headers: { "Cache-Control": "no-store" } });
-    }
     try {
-      resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DATABASE_URL });
       const [seriesRows, sourceInfo] = await Promise.all([
         compareWorldBankCountries(indicator.code, codes.map((code) => countryByCode(code)!.iso3)),
         getReviewedWorldBankSourceInfo(indicator.code),

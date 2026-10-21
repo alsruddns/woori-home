@@ -7,6 +7,7 @@ export function resolveDatabaseTarget({
   databaseUrl = process.env.DB_MIGRATION_URL ?? (target === "development" ? process.env.DATABASE_URL : undefined),
   allowProductionMigration = process.env.DB_MIGRATION_ALLOW_PRODUCTION,
   requireProductionApproval = false,
+  allowedProductionHosts = process.env.PRODUCTION_DB_ALLOWED_HOSTS,
 } = {}) {
   if (!databaseUrl) throw new Error("DATABASE_URL is required. Copy .env.example to .env.local and configure the local development database.");
   if (target !== "development" && target !== "production") {
@@ -34,6 +35,10 @@ export function resolveDatabaseTarget({
   } else {
     if (database !== PRODUCTION_DATABASE) {
       throw new Error(`Production DB access is restricted to ${PRODUCTION_DATABASE}; no connection was opened.`);
+    }
+    const allowedHosts = String(allowedProductionHosts ?? "").split(",").map((host) => host.trim().toLowerCase()).filter(Boolean);
+    if (allowedHosts.length === 0 || !allowedHosts.includes(url.hostname.toLowerCase())) {
+      throw new Error("Production DB host is not in PRODUCTION_DB_ALLOWED_HOSTS; no connection was opened.");
     }
     if (requireProductionApproval && allowProductionMigration !== "I_HAVE_APPROVAL") {
       throw new Error("Production migration is disabled. A separately approved operation must set DB_MIGRATION_ALLOW_PRODUCTION=I_HAVE_APPROVAL.");

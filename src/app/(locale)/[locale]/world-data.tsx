@@ -13,7 +13,7 @@ import { rankingCopy } from "@/lib/data-platform/ranking-copy";
 import { supportedCountries } from "@/lib/data-platform/countries";
 import { RankingControls } from "./ranking-controls";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
-import { resolveDatabaseTarget } from "../../../../scripts/db/connection-safety.mjs";
+import { resolveWorldBankDataSource } from "../../../lib/db/world-bank-mode.mjs";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -125,8 +125,7 @@ export async function CountryComparison({ locale, requestedCountries }: { locale
   const copy = platformCopy[locale];
   const validSelection = [...new Set(requestedCountries?.map((code) => code.toLowerCase()).filter((code) => countryByCode(code)) ?? [])];
   const initialCountries = validSelection && validSelection.length >= 2 && validSelection.length <= 5 ? [...new Set(validSelection)] : ["kr", "us", "jp"];
-  const selectedSource = process.env.WORLD_BANK_DATA_SOURCE ?? "json";
-  if (selectedSource !== "json" && selectedSource !== "db") throw new Error("WORLD_BANK_DATA_SOURCE must be json or db");
+  const selectedSource = resolveWorldBankDataSource().source as "json" | "db";
   let initialIndicatorId = "population";
   let sourceInfo: Awaited<ReturnType<typeof getReviewedWorldBankSourceInfo>> = null;
   let initialSeries: CountrySeries[] = initialCountries.map((code) => {
@@ -134,8 +133,6 @@ export async function CountryComparison({ locale, requestedCountries }: { locale
     return { code: country.code, iso3: country.iso3, observations: observationsFor("SP.POP.TOTL", country.iso3).map(({ year, value, unit }) => ({ year, value, unit })) };
   });
   if (selectedSource === "db") {
-    if (process.env.DB_TARGET !== "development") throw new Error("World Bank DB mode is restricted to the local development database");
-    resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DATABASE_URL });
     initialIndicatorId = "unemployment";
     const [rows, selectedSourceInfo] = await Promise.all([
       compareWorldBankCountries("SL.UEM.TOTL.ZS", initialCountries.map((code) => countryByCode(code)!.iso3)),

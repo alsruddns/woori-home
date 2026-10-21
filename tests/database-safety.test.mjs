@@ -1,7 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { assertNoDestructiveMigration, resolveDatabaseTarget } from "../scripts/db/connection-safety.mjs";
 import { pendingMigrations } from "../scripts/db/migration-status.mjs";
+import { assertDatabaseRolesShareTarget, assertProductionOperation, parseProductionApprovalArgs } from "../scripts/db/production-operation.mjs";
+import { assertCommitDigest, assertCommitShaTag, isMainProductionRelease } from "../scripts/deploy/release-guard.mjs";
+import { resolveWorldBankDataSource } from "../src/lib/db/world-bank-mode.mjs";
 import { isCalendarDate, localCalendarDate } from "../src/lib/date-query.mjs";
 
 test("development migrations require the exact local development database", () => {
@@ -22,10 +28,62 @@ test("development refuses production names and non-local hosts", () => {
 
 test("production migration requires explicit target, exact database, and separate approval", () => {
   const url = "postgres://u:p@db.example/woori_today_portal";
-  assert.deepEqual(resolveDatabaseTarget({ target: "production", databaseUrl: url }).database, "woori_today_portal");
-  assert.throws(() => resolveDatabaseTarget({ target: "production", databaseUrl: url, requireProductionApproval: true }), /disabled/);
-  assert.deepEqual(resolveDatabaseTarget({ target: "production", databaseUrl: url, requireProductionApproval: true, allowProductionMigration: "I_HAVE_APPROVAL" }).database, "woori_today_portal");
+  assert.throws(() => resolveDatabaseTarget({ target: "production", databaseUrl: url }), /PRODUCTION_DB_ALLOWED_HOSTS/);
+  assert.deepEqual(resolveDatabaseTarget({ target: "production", databaseUrl: url, allowedProductionHosts: "db.example" }).database, "woori_today_portal");
+  assert.throws(() => resolveDatabaseTarget({ target: "production", databaseUrl: url, allowedProductionHosts: "db.example", requireProductionApproval: true }), /disabled/);
+  assert.deepEqual(resolveDatabaseTarget({ target: "production", databaseUrl: url, allowedProductionHosts: "db.example", requireProductionApproval: true, allowProductionMigration: "I_HAVE_APPROVAL" }).database, "woori_today_portal");
   assert.throws(() => resolveDatabaseTarget({ target: "production", databaseUrl: "postgres://u:p@db.example/woori_today_portal_dev", requireProductionApproval: true, allowProductionMigration: "I_HAVE_APPROVAL" }), /restricted to woori_today_portal/);
+  assert.throws(() => resolveDatabaseTarget({ target: "production", databaseUrl: url, allowedProductionHosts: "other.example" }), /PRODUCTION_DB_ALLOWED_HOSTS/);
+});
+
+test("production DB operations require main Actions context, explicit approval, and backup", () => {
+  const env = { DB_TARGET: "production", GITHUB_ACTIONS: "true", GITHUB_REF: "refs/heads/main", PRODUCTION_OPERATION_APPROVAL: "configured", PRODUCTION_DB_ALLOWED_HOSTS: "db.example", PRODUCTION_BACKUP_CONFIRMED: "true", PRODUCTION_BACKUP_REFERENCE: "backup-20261021" };
+  assert.equal(assertProductionOperation({ env, databaseUrl: "postgres://u:p@db.example/woori_today_portal", backupReference: "backup-20261021", requireBackup: true }).database, "woori_today_portal");
+  assert.throws(() => assertProductionOperation({ env: { ...env, GITHUB_REF: "refs/heads/develop" }, databaseUrl: "postgres://u:p@db.example/woori_today_portal" }), /restricted/);
+  assert.throws(() => assertProductionOperation({ env: { ...env, PRODUCTION_BACKUP_CONFIRMED: "false" }, databaseUrl: "postgres://u:p@db.example/woori_today_portal", backupReference: "backup-20261021", requireBackup: true }), /backup/);
+  assert.deepEqual(parseProductionApprovalArgs(["--dry-run"]), { apply: false, dryRun: true, backupReference: undefined });
+  assert.throws(() => parseProductionApprovalArgs(["--apply"], { requireBackup: true }), /backup-reference/);
+  assert.throws(() => parseProductionApprovalArgs(["--apply", "--dry-run"]), /Choose either/);
+  assert.doesNotThrow(() => assertDatabaseRolesShareTarget(["postgres://runtime@db.example/woori_today_portal", "postgres://writer@db.example/woori_today_portal"]));
+  assert.throws(() => assertDatabaseRolesShareTarget(["postgres://runtime@db.example/woori_today_portal", "postgres://writer@localhost/woori_today_portal"]), /same approved/);
+});
+
+test("production publishing and immutable image references are restricted to main", () => {
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/main", eventName: "workflow_dispatch" }), true);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/develop", eventName: "workflow_dispatch" }), false);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/release", eventName: "push" }), false);
+  assert.equal(assertCommitShaTag("a".repeat(40)), "a".repeat(40));
+  assert.throws(() => assertCommitShaTag("abc123"), /40-character/);
+  assert.equal(assertCommitDigest(`sha256:${"a".repeat(64)}`), `sha256:${"a".repeat(64)}`);
+  assert.throws(() => assertCommitDigest("latest"), /immutable sha256/);
+  const guard = fileURLToPath(new URL("../scripts/deploy/release-guard.mjs", import.meta.url));
+  const childBaseEnv = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot };
+  const blocked = spawnSync(process.execPath, [guard], { encoding: "utf8", env: { ...childBaseEnv, GITHUB_REF: "refs/heads/develop", GITHUB_EVENT_NAME: "workflow_dispatch" } });
+  const accepted = spawnSync(process.execPath, [guard], { encoding: "utf8", env: { ...childBaseEnv, GITHUB_REF: "refs/heads/main", GITHUB_EVENT_NAME: "workflow_dispatch" } });
+  assert.equal(blocked.status, 1);
+  assert.equal(accepted.status, 0);
+});
+
+test("World Bank reads default to JSON and production DB mode requires an approved remote host and flag", () => {
+  assert.deepEqual(resolveWorldBankDataSource({}), { source: "json", target: null });
+  assert.equal(resolveWorldBankDataSource({ WORLD_BANK_DATA_SOURCE: "db", DB_TARGET: "development", DATABASE_URL: "postgres://dev:pw@localhost/woori_today_portal_dev" }).target.database, "woori_today_portal_dev");
+  const production = { WORLD_BANK_DATA_SOURCE: "db", DB_TARGET: "production", WORLD_BANK_DB_PRODUCTION_ENABLED: "true", PRODUCTION_DB_ALLOWED_HOSTS: "postgres", DATABASE_URL: "postgres://runtime:pw@postgres/woori_today_portal" };
+  assert.equal(resolveWorldBankDataSource(production).target.database, "woori_today_portal");
+  assert.throws(() => resolveWorldBankDataSource({ ...production, WORLD_BANK_DB_PRODUCTION_ENABLED: "false" }), /requires WORLD_BANK_DB_PRODUCTION_ENABLED/);
+  assert.throws(() => resolveWorldBankDataSource({ ...production, PRODUCTION_DB_ALLOWED_HOSTS: "other" }), /PRODUCTION_DB_ALLOWED_HOSTS/);
+  assert.throws(() => resolveWorldBankDataSource({ WORLD_BANK_DATA_SOURCE: "db", DB_TARGET: "development", DATABASE_URL: "postgres://dev:pw@postgres/woori_today_portal_dev" }), /local PostgreSQL host/);
+});
+
+test("publish workflow is digest-pinned, main guarded, and limited to portal without replacing server env files", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+  assert.match(workflow, /branches: \[main\]/);
+  assert.match(workflow, /scripts\/deploy\/release-guard\.mjs/);
+  assert.match(workflow, /PORTAL_DIGEST/);
+  assert.match(workflow, /--env-file \.env\.moneybook --env-file \.env\.portal/);
+  assert.match(workflow, /up -d --no-deps portal/);
+  assert.match(workflow, /rollback_tag/);
+  assert.doesNotMatch(workflow, /docker compose down|compose down/);
+  assert.doesNotMatch(workflow, /cp .*\.env\.portal|tee .*\.env\.portal/);
 });
 
 test("destructive SQL is blocked before an unapplied migration runs", () => {
