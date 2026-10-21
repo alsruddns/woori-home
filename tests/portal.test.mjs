@@ -17,6 +17,7 @@ const portalFooter = await readFile(new URL("../src/app/(locale)/[locale]/portal
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
 const platformLayout = await readFile(new URL("../src/app/(locale)/[locale]/platform-layout.tsx", import.meta.url), "utf8");
 const platformControls = await readFile(new URL("../src/app/(locale)/[locale]/platform-controls.tsx", import.meta.url), "utf8");
+const platformSidebar = await readFile(new URL("../src/app/(locale)/[locale]/platform-sidebar.tsx", import.meta.url), "utf8");
 const rootLayout = await readFile(new URL("../src/app/(root)/layout.tsx", import.meta.url), "utf8");
 const sitemap = await readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8");
 const robots = await readFile(new URL("../src/app/robots.ts", import.meta.url), "utf8");
@@ -191,6 +192,13 @@ test("the new localized data home keeps the portal guide at about and preserves 
   assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
   assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/energy", "\/science", "\/papers", "\/about"\]/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
+});
+
+test("about remains available by URL and in the footer but is omitted from category menus", () => {
+  assert.match(platformControls, /categoryPaths = \["\/world", "\/economy", "\/stocks", "\/population", "\/energy", "\/countries", "\/science"\]/);
+  assert.match(platformSidebar, /dataCategories\.filter\(\(category\) => category\.id !== "about"\)/);
+  assert.match(platformLayout, /href=\{`\/\$\{locale\}\/about`\}>\{copy\.categories\[7\]\}/);
+  assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
 });
 
 test("localized data copy explains missing years without technical interpolation wording", () => {

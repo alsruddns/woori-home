@@ -20,7 +20,7 @@ export function PlatformControls({ locale }: { locale: Locale }) {
   const family = familySitesCopy[locale];
   const pathname = usePathname();
   const familyKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
-  const categoryPaths = ["/world", "/economy", "/stocks", "/population", "/energy", "/countries", "/science", "/about"] as const;
+  const categoryPaths = ["/world", "/economy", "/stocks", "/population", "/energy", "/countries", "/science"] as const;
 
   function toggleTheme() {
     const next = theme === "dark" ? "light" : "dark";
@@ -48,7 +48,7 @@ export function PlatformControls({ locale }: { locale: Locale }) {
       <strong>{copy.siteLabel}</strong>
       {familyKeys.map((key) => <a key={key} href={familySiteHref(locale, key)} aria-current={key === "portal" && pathname === `/${locale}` ? "page" : undefined} onClick={() => setOpen(false)}>{family.sites[key]}</a>)}
       <strong>{copy.menu}</strong>
-      {copy.categories.map((label, index) => { const href = `/${locale}${categoryPaths[index]}`; const active = pathname === href || pathname.startsWith(`${href}/`) || (index === 0 && pathname === `/${locale}`); return <a key={index} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined} onClick={() => setOpen(false)}>{label}</a>; })}
+      {categoryPaths.map((path, index) => { const href = `/${locale}${path}`; const active = pathname === href || pathname.startsWith(`${href}/`) || (index === 0 && pathname === `/${locale}`); return <a key={path} href={href} aria-current={active ? "page" : undefined} className={active ? "is-active" : undefined} onClick={() => setOpen(false)}>{copy.categories[index]}</a>; })}
     </nav> : null}
   </div>;
 }

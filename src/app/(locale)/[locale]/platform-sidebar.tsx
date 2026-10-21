@@ -12,7 +12,8 @@ import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 export function PlatformSidebar({ locale }: { locale: Locale }) {
   const pathname = usePathname();
   const copy = platformCopy[locale];
-  return <aside className="platform-sidebar"><p className="platform-sidebar-label">{copy.menu}</p><nav aria-label={copy.menu}>{dataCategories.map((category, index) => {
+  return <aside className="platform-sidebar"><p className="platform-sidebar-label">{copy.menu}</p><nav aria-label={copy.menu}>{dataCategories.filter((category) => category.id !== "about").map((category) => {
+    const index = dataCategories.indexOf(category);
     const href = `/${locale}${category.path}`;
     const active = pathname === href || pathname.startsWith(`${href}/`) || (category.id === "world" && pathname === `/${locale}`);
     const categoryLabelIndex = index > 2 && category.id !== "crypto" ? index - 1 : index;
