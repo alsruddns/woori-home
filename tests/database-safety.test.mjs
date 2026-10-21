@@ -117,8 +117,9 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.doesNotMatch(workflow, /-e PRODUCTION_OPERATION_APPROVAL(?:\s|\\)/);
   assert.match(workflow, /unset PRODUCTION_OPERATION_APPROVAL/);
   assert.doesNotMatch(workflow, /docker run[^\n]*--env-file \.env\.portal/);
-  assert.match(workflow, /DB_IMPORT_URL:\\n/);
-  assert.match(workflow, /DB_MIGRATION_URL:\\n/);
+  assert.match(workflow, /DB_IMPORT_URL: ""\\n/);
+  assert.match(workflow, /DB_MIGRATION_URL: ""\\n/);
+  assert.match(workflow, /Non-empty privileged DB keys remain in Portal runtime/);
   assert.ok(workflow.indexOf("db_tools_run scripts/db/preflight-production.mjs") < workflow.indexOf("db_tools_run scripts/db/status-production.mjs"));
   assert.ok(workflow.indexOf("db_tools_run scripts/db/status-production.mjs") < workflow.indexOf("db_tools_run scripts/db/migrate-production.mjs"));
   assert.doesNotMatch(workflow, /docker compose down|compose down/);
