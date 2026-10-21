@@ -117,7 +117,7 @@ jobs:
                 printf '[DEPLOY ERROR] Stage: %s, Exit code: %s\n' "$stage" "$status" >&2
                 if [ "$deploy_started" = "1" ]; then
                   printf '[DEPLOY ROLLBACK] Restoring the previous Portal image.\n' >&2
-                  printf 'services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' "$rollback_tag" > "$override"
+                  printf 'services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' "$rollback_tag" > "$override"
                   if ! compose -f "$override" up -d --no-deps portal; then
                     printf '[DEPLOY ROLLBACK ERROR] Could not restore the previous Portal image.\n' >&2
                   else
@@ -160,7 +160,7 @@ jobs:
 
             stage="Validate Compose configuration"
             printf '[DEPLOY 2] %s\n' "$stage"
-            printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' > "$override"
+            printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' > "$override"
             compose -f "$override" config --quiet
             config_json="$(compose -f "$override" config --format json)"
 
@@ -190,10 +190,10 @@ jobs:
 
             stage="Block privileged database variables in Portal runtime"
             printf '[DEPLOY 3.4] %s\n' "$stage"
-            if printf '%s' "$config_json" | jq -e '(.services.portal.environment // {}) as $env | ["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | all(. as $key | $env[$key] == null)' >/dev/null; then :; else
-              check_status=$?
-              printf '[DEPLOY CHECK FAILED] Privileged DB variables remain in Portal runtime environment.\n' >&2
-              exit "$check_status"
+            remaining_privileged_keys="$(printf '%s' "$config_json" | jq -r '(.services.portal.environment // {}) as $env | ["DB_IMPORT_URL","DB_MIGRATION_URL","DB_MIGRATION_ALLOW_PRODUCTION","PRODUCTION_OPERATION_APPROVAL","PRODUCTION_BACKUP_REFERENCE","PRODUCTION_BACKUP_CONFIRMED"] | map(select($env[.] != null and $env[.] != "")) | join(",")')"
+            if [ -n "$remaining_privileged_keys" ]; then
+              printf '[DEPLOY CHECK FAILED] Non-empty privileged DB keys remain in Portal runtime: %s\n' "$remaining_privileged_keys" >&2
+              exit 1
             fi
 
             stage="Verify current Portal and create a database backup"
@@ -264,7 +264,7 @@ jobs:
             old_image_id="$(docker inspect --format='{{.Image}}' portal)"
             rollback_tag="ghcr.io/alsruddns/woori-home:rollback-${old_image_id#sha256:}"
             docker tag "$old_image_id" "$rollback_tag"
-            printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL:\n      DB_MIGRATION_URL:\n      DB_MIGRATION_ALLOW_PRODUCTION:\n      PRODUCTION_OPERATION_APPROVAL:\n      PRODUCTION_BACKUP_REFERENCE:\n      PRODUCTION_BACKUP_CONFIRMED:\n' "$PORTAL_DIGEST" > "$override"
+            printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' "$PORTAL_DIGEST" > "$override"
             compose -f "$override" config --quiet
 
             stage="Deploy Portal image"
