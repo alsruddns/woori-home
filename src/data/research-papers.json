@@ -53,7 +53,8 @@
         "uk": "Однопараметрова динамічна темна енергія: Хінти для коливань",
         "ms": "Energi gelap satu-parameter dinamis: Petunjuk untuk osilasi",
         "sv": "Enparameter dynamisk mörk energi: Tips för oscillationer",
-        "cs": "Oneparametr dynamická temná energie: rady pro oscilace"
+        "cs": "Oneparametr dynamická temná energie: rady pro oscilace",
+        "ro": "Energie întunecată dinamică monoparametru: Sugestii pentru oscilații"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -113,7 +114,8 @@
         "uk": "Фізико-освітлене машинне навчання з грубістю-виправними міжфазними декрипторами для проведення Membrane Fouling",
         "ms": "Fisika Fisika-Guided Machine Belajar dengan Kekasaran-Terjalin Interfacial Descriptors for Membrane Fouling Prediction",
         "sv": "Fysikstyrd maskininlärning med grovhetskorrerad interfacial beskrivare för membranfoulering förutsägelse",
-        "cs": "Fyzika-průvodce stroj učení s Roughness- korigované Interfacial Descriptors pro Membrane Fouling Predikce"
+        "cs": "Fyzika-průvodce stroj učení s Roughness- korigované Interfacial Descriptors pro Membrane Fouling Predikce",
+        "ro": "Fizica-ghidată mașină de învățare cu rugozitate-corected Interfacial Descriptori pentru predicție Membrane Fauling"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -171,7 +173,8 @@
         "uk": "STEM-Based Robotics Professional Development for Physics Teachers: Група-Level Training Оцінка в MGMP Fisika Jakarta",
         "ms": "Pengembangan Profesional Robotika Berasaskan Fisika untuk Guru: Evaluasi Pelatihan Tingkat Grup di MGMP Fisika Jakarta",
         "sv": "STEM-Based Robotics Professional Development for Physics Teachers: A Group-Level Training Evaluation in MGMP Fisika Jakarta",
-        "cs": "STEM- based robotics Professional Development for Physics Teachers: A Group- Level Training Evaluation in MGMP Fisika Jakarta"
+        "cs": "STEM- based robotics Professional Development for Physics Teachers: A Group- Level Training Evaluation in MGMP Fisika Jakarta",
+        "ro": "Dezvoltarea profesională a roboticii bazate pe STEM pentru profesorii de fizică: o evaluare a formării la nivel de grup în MGMP Fisika Jakarta"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -221,7 +224,8 @@
         "uk": "Біореактори відпрацьованих вод: комплексний огляд проблемної штучного інтелекту та цифрових Twin Applications",
         "ms": "Bioreaktor Membbrane Air Limbah: Tinjauan Komprehensif tentang Kecerdasan Terapan yang Dapat Dijelaskan dan Aplikasi Kembar Digital",
         "sv": "Avloppsvattenmembran Bioreaktorer: En omfattande granskning av förklarande artificiell intelligens och digitala tvillingapplikationer",
-        "cs": "Wastewater Membrane Bioreactors: Komplexní přehled prokazatelné umělé inteligence a digitální Twin aplikace"
+        "cs": "Wastewater Membrane Bioreactors: Komplexní přehled prokazatelné umělé inteligence a digitální Twin aplikace",
+        "ro": "Bioreactoare Membrane Wastewater: O revizuire cuprinzătoare a Inteligenţei Artificiale Explicabile şi Aplicaţii Gemene Digitale"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -308,7 +312,8 @@
         "uk": "Комплексний огляд фізіології та доказової бази для керівництва використання ергогенних та медичних добавок для підвищення продуктивності велосипедів",
         "ms": "Sebuah tinjauan komprehensif dari fisiologi dan basis bukti untuk membimbing penggunaan ergogenik dan suplemen medis untuk kinerja bersepeda yang ditingkatkan",
         "sv": "En omfattande översyn av fysiologin och bevisbasen för att styra användningen av ergogena och medicinska kosttillskott för förbättrad cykelprestanda",
-        "cs": "Komplexní přezkum fyziologie a důkazního základu pro použití ergogenních a lékařských doplňků pro zvýšení výkonu cyklistiky"
+        "cs": "Komplexní přezkum fyziologie a důkazního základu pro použití ergogenních a lékařských doplňků pro zvýšení výkonu cyklistiky",
+        "ro": "O revizuire cuprinzătoare a fiziologiei și a bazei de dovezi pentru a ghida utilizarea de suplimente ergogene și medicale pentru îmbunătățirea performanței ciclism"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -359,7 +364,8 @@
         "uk": "Потенції та застосування штучного інтелекту та машинного навчання в матеріалі науки та технології Мембрана: комплексний огляд",
         "ms": "Berbagai Kemajuan dan Aplikasi Kecerdasan dan Pembelajaran Mesin Seni Rupa dalam Ilmu Material dan Teknologi Membran: Tinjauan Komprehensif",
         "sv": "Framsteg och tillämpningar av artificiell intelligens och maskininlärning i materialvetenskap och membranteknik: en omfattande granskning",
-        "cs": "Výstupy a aplikace umělé inteligence a strojového učení v materiálové vědě a membránové technologii: Komplexní přehled"
+        "cs": "Výstupy a aplikace umělé inteligence a strojového učení v materiálové vědě a membránové technologii: Komplexní přehled",
+        "ro": "Avansări și aplicații de inteligență artificială și învățare mașină în știința materialelor și tehnologia membrane: O revizuire cuprinzătoare"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -411,7 +417,8 @@
         "uk": "Огляд стратегій оптимізації енергоменеджменту в мікрогрейдах",
         "ms": "Tinjauan Strategi Optimasi untuk Manajemen Energi dalam Mikrogrid",
         "sv": "En översyn av optimeringsstrategier för energihantering i Microgrids",
-        "cs": "Přezkum optimalizačních strategií pro řízení energie v mikrosystémech"
+        "cs": "Přezkum optimalizačních strategií pro řízení energie v mikrosystémech",
+        "ro": "O revizuire a strategiilor de optimizare pentru managementul energiei în microgride"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -470,7 +477,8 @@
         "uk": "Штучний інтелект-дерективний проміжок віку як маркер для статевого старіння у жінок",
         "ms": "Kecerdasan artifisial kecerdasan-derived retina kesenjangan usia sebagai penanda untuk penuaan reproduksi pada wanita",
         "sv": "Artificiell intelligenshärledd retinal ålder gap som en markör för reproduktiv åldrande hos kvinnor",
-        "cs": "Umělá inteligence odvozené věkové mezery sítnice jako marker pro reprodukční stárnutí u žen"
+        "cs": "Umělá inteligence odvozené věkové mezery sítnice jako marker pro reprodukční stárnutí u žen",
+        "ro": "Spațiu artificial de vârstă retinală derivat din inteligență ca un marker pentru îmbătrânirea reproductivă la femei"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -522,7 +530,8 @@
         "uk": "Прогнозування Положення Drogue в Автономній Аеріальні Заправки на основі фізико-інформованої нейромережі",
         "ms": "Prediksi Posisi Drogue dalam Refueling Aerial Otonomi Berdasarkan Jaringan Neural yang Berinformasi Fisika",
         "sv": "Förutsägelse av Drogue Position i autonom flygrevärme baserat på ett fysikinformerat neuralt nätverk",
-        "cs": "Předpověď pozice drogu v autonomním vzdušném utečeném prostředí na základě fyziky- Informované neurologické sítě"
+        "cs": "Předpověď pozice drogu v autonomním vzdušném utečeném prostředí na základě fyziky- Informované neurologické sítě",
+        "ro": "Predicţia poziţiei Drogue în alimentarea aeriană autonomă bazată pe o reţea neurală integrată în fizică"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",

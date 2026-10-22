@@ -71,7 +71,7 @@ test("energy and science data copy covers all 20 locales without an English-only
     read("src/lib/data-platform/energy-copy.ts"), read("src/lib/data-platform/science-copy.ts"),
     read("src/app/(locale)/[locale]/(platform)/[category]/page.tsx"), read("src/app/sitemap.ts"),
   ]);
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs"]) {
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro"]) {
     assert.match(energy, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing energy content`);
     assert.match(science, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing science content`);
   }
@@ -93,7 +93,7 @@ test("World Bank refresh is a batch adapter and retains the old snapshot on fail
 
 test("the data platform has translations for each supported locale", async () => {
   const copy = await read("src/lib/data-platform/locales.ts");
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs"]) {
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro"]) {
     assert.match(copy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}): \\{`));
   }
 });
@@ -143,7 +143,7 @@ test("country comparison defaults to ten countries, caps selections at twenty, a
   assert.doesNotMatch(api, /fetch\(/);
   const worldData = await read("src/app/(locale)/[locale]/world-data.tsx");
   assert.match(worldData, /\["kr", "us", "jp", "cn", "de", "gb", "fr", "in", "ca", "au"\]/);
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs"]) {
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro"]) {
     assert.match(copy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}): \\{`));
   }
 });

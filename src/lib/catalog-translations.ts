@@ -33,6 +33,8 @@ const values = {
   sv: ["Ränta på ränta","Sparränta","Låneränta","Belåningsgrad (LTV)","Procent","Rabatt","Förändringstakt","Förhållande","Enhetsomvandlare","Kroppsmasseindex (BMI)","Datumskillnad","Nedräkning","Teckenräknare","Textjämförelse","JSON-formaterare","JSON-validator","CSV till JSON","Base64-kodning och avkodning","Ändra bildstorlek","Komprimera bild","PNG till JPG","HEIC till JPG","Slå samman PDF-filer","Dela PDF"]
 ,
   cs: ["Složené úročení","Úroky z úspor","Úroky z půjčky","Poměr úvěru k hodnotě (LTV)","Procento","Sleva","Míra změny","Poměr","Převodník jednotek","Index tělesné hmotnosti (BMI)","Rozdíl dat","Odpočet","Počet znaků","Porovnání textu","Formátovač JSON","Validátor JSON","CSV na JSON","Kódování a dekódování Base64","Změnit velikost obrázku","Komprese obrázku","PNG na JPG","HEIC na JPG","Sloučit soubory PDF","Rozdělit PDF"]
+,
+  ro: ["Dobândă compusă","Dobânda economiilor","Dobânda împrumutului","Raport credit-valoare (LTV)","Procent","Reducere","Rata de modificare","Raport","Convertor de unități","Indice de masă corporală (IMC)","Diferența dintre date","Numărătoare inversă","Număr de caractere","Comparare texte","Formatare JSON","Validare JSON","CSV în JSON","Codificare și decodificare Base64","Redimensionare imagine","Comprimare imagine","PNG în JPG","HEIC în JPG","Unire fișiere PDF","Separare PDF"]
 } satisfies Partial<Record<Locale, string[]>>;
 
 export const catalogTranslations = Object.fromEntries(Object.entries(values).map(([locale, labels]) => [locale, Object.fromEntries(slugs.map((slug, index) => [slug, labels[index]]))])) as Partial<Record<Locale, Record<string, string>>>;

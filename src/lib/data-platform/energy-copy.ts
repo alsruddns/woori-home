@@ -46,4 +46,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
   sv: {"intro":"Eltillgång är andelen personer som kan använda el. Det skiljer sig från elförbrukningen, jämför länder tillsammans med varje observationsår.","comparison":"Senaste observationer från land","noData":"Ingen publicerad observation är tillgänglig för detta land.","dateLabel":"Referensår"}
 ,
   cs: {"intro":"Přístup k elektrické energii je podíl lidí, kteří mohou používat elektřinu. Odlišuje se od spotřeby elektřiny; porovnává země s každým rokem pozorování.","comparison":"Poslední připomínky podle jednotlivých zemí","noData":"Pro tuto zemi není k dispozici žádné zveřejněné pozorování.","dateLabel":"Referenční rok"}
+,
+  ro: {"intro":"Accesul la electricitate este partea persoanelor care pot folosi electricitatea. Este diferită de consumul de energie electrică; compară țările în fiecare an de observare.","comparison":"Ultimele observații pe țări","noData":"Nu este disponibilă nicio observație publicată pentru această țară.","dateLabel":"Anul de referință"}
 };

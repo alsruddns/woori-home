@@ -41,6 +41,8 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   sv: "MoneyBook ?ppnas p? engelska."
 ,
   cs: "MoneyBook se otevře v angličtině."
+,
+  ro: "MoneyBook se va deschide în limba engleză."
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -85,4 +87,6 @@ export const familySitesCopy: Record<Locale, {
   sv: {"label":"Familjeplatser","sites":{"portal":"Portal","calculator":"Kalkylatorer","tools":"Onlineverktyg","moneyBook":"Gratis delad pengar bok","docs":"Dokument","quiz":"Quiz och tester"},"docsTitle":"Dokument","docsDescription":"Hitta användbara dokument och mallar för vardagliga behov.","docsCta":"Bläddra i dokument","quizTitle":"Quiz och tester","quizDescription":"Ta en paus med en mängd roliga frågesporter och tester.","quizCta":"Utforska quizzes","menu":"Menyn"}
 ,
   cs: {"label":"Rodinné stránky","sites":{"portal":"Portál","calculator":"Kalkulačky","tools":"Online nástroje","moneyBook":"Volný Sdílené peníze kniha","docs":"Dokumenty","quiz":"Kvíz & testy"},"docsTitle":"Dokumenty","docsDescription":"Najít užitečné dokumenty a šablony pro každodenní potřeby.","docsCta":"Prohlížet dokumenty","quizTitle":"Kvíz & testy","quizDescription":"Vezměte si přestávku s řadou zábavných kvízů a testů.","quizCta":"Prozkoumejte kvízy","menu":"Nabídka"}
+,
+  ro: {"label":"Site-uri familiale","sites":{"portal":"Portal","calculator":"Calculatoare","tools":"Unelte online","moneyBook":"Carte gratuită de bani partajați","docs":"Documente","quiz":"Testează și testează"},"docsTitle":"Documente","docsDescription":"Găsiți documente și șabloane utile pentru nevoile zilnice.","docsCta":"Navighează documentele","quizTitle":"Testează și testează","quizDescription":"Ia o pauză cu o varietate de teste și teste distractive.","quizCta":"Explorează teste","menu":"Meniu"}
 };

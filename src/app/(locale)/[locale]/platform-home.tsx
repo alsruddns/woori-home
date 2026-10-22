@@ -33,6 +33,8 @@ const viewLabels: Record<Locale, string> = {
   sv: "Utforska data"
 ,
   cs: "Prozkoumejte data"
+,
+  ro: "Explorează date"
 };
 
 export function PlatformHome({ locale }: { locale: Locale }) {

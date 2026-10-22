@@ -32,4 +32,6 @@ export const datePickerCopy: Record<Locale, { previousMonth: string; nextMonth: 
   sv: { previousMonth: "F?reg?ende m?nad", nextMonth: "N?sta m?nad", close: "St?ng", calendar: "?ppna kalendern", today: "I dag" }
 ,
   cs: { previousMonth: "Předchozí měsíc", nextMonth: "Další měsíc", close: "Zavřít", calendar: "Otevřít kalendář", today: "Dnes" }
+,
+  ro: { previousMonth: "Luna precedentă", nextMonth: "Luna următoare", close: "Închide", calendar: "Deschide calendarul", today: "Astăzi" }
 };

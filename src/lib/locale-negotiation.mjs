@@ -1,4 +1,4 @@
-const supported = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs"];
+const supported = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro"];
 
 export function negotiateLocale(acceptLanguage, fallback = "ko") {
   const choices = String(acceptLanguage ?? "").split(",").map((entry, index) => {
