@@ -1,8 +1,8 @@
 import type { Locale } from "@/lib/site";
 
-const localeOrder: Locale[] = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+const localeOrder: Locale[] = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr"];
 const localizedLabels: Record<string, string[]> = {
-  unemployment: ["실업률", "Unemployment", "失業率", "失业率", "Desempleo", "Desemprego", "Arbeitslosigkeit", "Chômage", "Thất nghiệp", "Pengangguran", "การว่างงาน", "失業率", "Disoccupazione", "Werkloosheid", "बेरोज़गारी", "???????????"],
+  unemployment: ["실업률", "Unemployment", "失業率", "失业率", "Desempleo", "Desemprego", "Arbeitslosigkeit", "Chômage", "Thất nghiệp", "Pengangguran", "การว่างงาน", "失業率", "Disoccupazione", "Werkloosheid", "बेरोज़गारी", "???????????", "İşsizlik"],
 };
 
 const descriptions: Record<string, { unit: string; definition: string; interpretation: string; koDefinition: string; koInterpretation: string }> = {
@@ -22,6 +22,8 @@ const units: Record<Locale, string> = {
   it: "% della forza lavoro", nl: "% van de beroepsbevolking", hi: "श्रमबल का %",
 
   "ru": "% ??????? ????"
+,
+  "tr": "iş gücünün yüzdesi"
 };
 
 export function expandedIndicator(id: string, code: string, category: "economy") {

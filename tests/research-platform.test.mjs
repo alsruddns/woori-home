@@ -18,7 +18,7 @@ const { mineralCopy } = require("../src/lib/data-platform/mineral-copy.ts");
 const { comparePeriodCopy, isRateIndicator } = require("../src/lib/data-platform/compare-period-copy.ts");
 const { calculateGoldMove, findPreviousComparableQuote, normalizeLicensedGoldQuote, pricePerGoldUnit, validateGoldSnapshot } = require("../src/lib/data-platform/gold-market.ts");
 const { goldCopy, goldSourceTermsLabel } = require("../src/lib/data-platform/gold-copy.ts");
-const supportedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru"];
+const supportedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr"];
 
 test("country rankings use exact-year country values, exclude aggregates, sort both ways, and share ties", () => {
   const rows = [
@@ -45,7 +45,7 @@ test("period change requires both observed endpoints and distinguishes absolute 
 });
 
 test("research and commodity navigation copy is complete in every supported locale", () => {
-  const locales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru"];
+  const locales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr"];
   for (const locale of locales) {
     const copy = researchCopy[locale];
     assert.ok(copy.papers && copy.papersDescription && copy.metadataNotice && copy.noSummary, `${locale}: papers copy`);
@@ -120,7 +120,7 @@ test("global home briefing and mineral source status are localized across all su
     read("src/app/(locale)/[locale]/(platform)/commodities/page.tsx"),
     read("src/lib/data-platform/mineral-copy.ts"),
   ]);
-  const locales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru"];
+  const locales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr"];
   for (const locale of locales) {
     const home = homeBriefingCopy[locale];
     assert.ok(home.briefing && home.population && home.gdp && home.electricityAccess && home.latestResearch && home.researchMetadataOnly, `${locale}: home briefing copy`);

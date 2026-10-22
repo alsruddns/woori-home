@@ -18,6 +18,8 @@ const values = {
   hi: ["चक्रवृद्धि ब्याज", "बचत पर ब्याज", "ऋण की किस्त", "LTV कैलकुलेटर", "प्रतिशत", "छूट", "प्रतिशत परिवर्तन", "अनुपात", "इकाई परिवर्तक", "BMI कैलकुलेटर", "तिथियों का अंतर", "उलटी गिनती", "अक्षर गणक", "पाठ की तुलना", "JSON स्वरूपित करें", "JSON की जाँच करें", "CSV से JSON", "Base64 एन्कोड और डिकोड", "चित्र का आकार बदलें", "चित्र संपीड़ित करें", "PNG से JPG", "HEIC से JPG", "PDF जोड़ें", "PDF अलग करें"],
 
   ru: ["Сложные проценты","Проценты по вкладу","Платёж по кредиту","Калькулятор LTV","Процент","Скидка","Изменение в процентах","Соотношение","Конвертер единиц","ИМТ","Разница между датами","Обратный отсчёт","Счётчик символов","Сравнение текстов","Форматирование JSON","Проверка JSON","CSV в JSON","Кодирование и декодирование Base64","Изменение размера изображения","Сжатие изображения","PNG в JPG","HEIC в JPG","Объединение PDF","Разделение PDF"],
+
+  tr: ["Bileşik faiz","Birikim faizi","Kredi taksiti","LTV hesaplayıcı","Yüzde","İndirim","Yüzde değişimi","Oran","Birim dönüştürücü","Vücut kitle indeksi","Tarih farkı","Geri sayım","Karakter sayacı","Metin karşılaştırma","JSON biçimlendirici","JSON doğrulayıcı","CSV'den JSON'a","Base64 kodla ve çöz","Görsel boyutlandırma","Görsel sıkıştırma","PNG'den JPG'ye","HEIC'den JPG'ye","PDF birleştirme","PDF bölme"],
 } satisfies Partial<Record<Locale, string[]>>;
 
 export const catalogTranslations = Object.fromEntries(Object.entries(values).map(([locale, labels]) => [locale, Object.fromEntries(slugs.map((slug, index) => [slug, labels[index]]))])) as Partial<Record<Locale, Record<string, string>>>;

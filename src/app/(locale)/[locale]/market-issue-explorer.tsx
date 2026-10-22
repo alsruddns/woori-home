@@ -13,10 +13,14 @@ import { useTodayQueryDate } from "./use-today-query-date";
 const translatedPending: Record<Locale, string> = {
   ru:"Источник проверяется",
   ko:"자료 제공처 검토 중", en:"Source review in progress", ja:"情報源を確認中", zh:"正在审核数据来源", es:"Fuente en revisión", "pt-br":"Fonte em análise", de:"Quelle wird geprüft", fr:"Source en cours de vérification", vi:"Đang xem xét nguồn", id:"Sumber sedang ditinjau", th:"อยู่ระหว่างตรวจสอบแหล่งข้อมูล", "zh-tw":"正在審核資料來源", it:"Fonte in verifica", nl:"Bron wordt gecontroleerd", hi:"स्रोत की समीक्षा जारी है",
+
+  "tr": "Çeviri taslağı"
 };
 const originalTitleLabels: Record<Locale, string> = {
   ru:"Оригинальное название",
   ko:"원문 제목", en:"Original title", ja:"原題", zh:"原文标题", es:"Título original", "pt-br":"Título original", de:"Originaltitel", fr:"Titre original", vi:"Tiêu đề gốc", id:"Judul asli", th:"ชื่อเรื่องต้นฉบับ", "zh-tw":"原文標題", it:"Titolo originale", nl:"Oorspronkelijke titel", hi:"मूल शीर्षक",
+
+  "tr": "Özgün başlık"
 };
 
 export function MarketIssueExplorer({ locale, market }: { locale: Locale; market: "crypto" | "stocks" }) {

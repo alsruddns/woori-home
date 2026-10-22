@@ -17,4 +17,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
   it:{title:"Notizie importanti sui mercati azionari",description:"Le comunicazioni ufficiali di borse, autorità e aziende saranno organizzate per data dopo averne verificato le condizioni d’uso.",empty:"Nessuna notizia verificata sui mercati azionari per questa data.",published:"Pubblicato",source:"Fonte"},
   nl:{title:"Belangrijke berichten over aandelenmarkten",description:"Officiële mededelingen van beurzen, toezichthouders en bedrijven worden na controle van de gebruiksvoorwaarden per datum aangeboden.",empty:"Voor deze datum zijn geen gecontroleerde beursberichten beschikbaar.",published:"Gepubliceerd",source:"Bron"},
   hi:{title:"शेयर बाज़ार की प्रमुख घोषणाएँ",description:"उपयोग की शर्तें सत्यापित होने के बाद एक्सचेंज, नियामकों और कंपनियों की आधिकारिक घोषणाएँ तारीख के अनुसार दी जाएँगी।",empty:"इस तारीख के लिए कोई सत्यापित शेयर बाज़ार सूचना उपलब्ध नहीं है।",published:"प्रकाशित",source:"स्रोत"},
+
+  "tr": {title:"Borsa haberleri",description:"Borsalar, düzenleyiciler ve şirketlerden tarihli duyurular, kullanım izinleri doğrulandıktan sonra yayımlanır.",empty:"Bu tarih için doğrulanmış borsa haberi yok.",published:"Yayınlandı",source:"Kaynak"}
 };

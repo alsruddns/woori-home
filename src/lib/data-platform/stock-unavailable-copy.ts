@@ -17,4 +17,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   nl: "Er zijn nog geen echte aandelenkoersen goedgekeurd voor openbare weergave. De gegevens volgen nadat de bron en gebruiksrechten zijn gecontroleerd.",
   hi: "सार्वजनिक प्रदर्शन के लिए स्वीकृत वास्तविक शेयर भाव अभी उपलब्ध नहीं हैं। स्रोत और उपयोग अधिकारों की पुष्टि के बाद डेटा दिया जाएगा।",
   ru: "Подтверждённых реальных котировок акций для публикации пока нет. Данные появятся после проверки источника и прав на использование.",
+
+  "tr": "Herkese açık gösterim için doğrulanmış gerçek hisse fiyatları henüz mevcut değil. Kaynak ve kullanım hakları doğrulandıktan sonra veriler sunulacaktır."
 };

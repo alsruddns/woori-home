@@ -12,6 +12,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
   es: { insights: "Datos e información", worldStats: "Economía y estadísticas mundiales" }, "pt-br": { insights: "Dados e análises", worldStats: "Economia e estatísticas mundiais" }, de: { insights: "Daten & Einblicke", worldStats: "Weltwirtschaft & Statistiken" }, fr: { insights: "Données et analyses", worldStats: "Économie et statistiques mondiales" },
   vi: { insights: "Dữ liệu & phân tích", worldStats: "Kinh tế và thống kê thế giới" }, id: { insights: "Data & wawasan", worldStats: "Ekonomi dan statistik dunia" }, th: { insights: "ข้อมูลและข้อมูลเชิงลึก", worldStats: "เศรษฐกิจและสถิติโลก" }, "zh-tw": { insights: "資料與洞察", worldStats: "世界經濟與統計" },
   it: { insights: "Dati e approfondimenti", worldStats: "Economia e statistiche mondiali" }, nl: { insights: "Data & inzichten", worldStats: "Wereldeconomie & statistieken" }, hi: { insights: "डेटा और जानकारी", worldStats: "विश्व अर्थव्यवस्था और आँकड़े" }, ru: { insights:"Данные и аналитика",worldStats:"Мировая экономика и статистика" },
+
+  "tr": {insights:"Veriler ve analizler",worldStats:"Dünya ekonomisi ve istatistikleri"}
 };
 
 export function categoryNavigation(locale: Locale) {

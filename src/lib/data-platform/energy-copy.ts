@@ -31,4 +31,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
   it: { intro: "L’accesso all’elettricità è la quota di popolazione che può utilizzarla. È diverso dal consumo; controllare l’anno di riferimento di ciascun paese.", comparison: "Ultime osservazioni per paese", noData: "Non è disponibile un’osservazione pubblicata per questo paese.", dateLabel: "Anno di riferimento" },
   nl: { intro: "Toegang tot elektriciteit is het aandeel van de bevolking dat elektriciteit kan gebruiken. Dit verschilt van verbruik; let op het referentiejaar per land.", comparison: "Recentste waarnemingen per land", noData: "Voor dit land is geen gepubliceerde waarneming beschikbaar.", dateLabel: "Referentiejaar" },
   hi: { intro: "बिजली तक पहुंच उन लोगों का अनुपात है जो बिजली का उपयोग कर सकते हैं। यह बिजली की खपत से अलग है; देशों की तुलना में संदर्भ वर्ष भी देखें।", comparison: "देश के अनुसार नवीनतम अवलोकन", noData: "इस देश के लिए कोई प्रकाशित अवलोकन उपलब्ध नहीं है।", dateLabel: "संदर्भ वर्ष" },
+
+  "tr": {intro:"Ülkelerin elektrik kaynaklarını ve temiz enerji göstergelerini inceleyin.",comparison:"Yayımlanan yıllık değerleri karşılaştırın; eksik yıllar için tahmin yapılmaz.",noData:"Bu seçim için enerji verisi yok.",dateLabel:"Veri yılı"}
 };

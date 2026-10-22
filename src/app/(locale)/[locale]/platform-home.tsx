@@ -18,6 +18,8 @@ import { mineralCopy } from "@/lib/data-platform/mineral-copy";
 const viewLabels: Record<Locale, string> = {
   ru:"Открыть данные",
   ko:"데이터 보기", en:"Explore data", ja:"データを見る", zh:"查看数据", es:"Ver datos", "pt-br":"Ver dados", de:"Daten ansehen", fr:"Voir les données", vi:"Xem dữ liệu", id:"Lihat data", th:"ดูข้อมูล", "zh-tw":"查看資料", it:"Visualizza i dati", nl:"Bekijk gegevens", hi:"डेटा देखें",
+
+  "tr": "Genel bakış"
 };
 
 export function PlatformHome({ locale }: { locale: Locale }) {

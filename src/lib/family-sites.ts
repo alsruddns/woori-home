@@ -30,6 +30,8 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   it: "MoneyBook si aprirà in inglese.",
   nl: "MoneyBook wordt in het Engels geopend.",
   hi: "MoneyBook अंग्रेज़ी में खुलेगा।",
+
+  "tr": "MoneyBook sayfası İngilizce açılacaktır."
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -59,4 +61,6 @@ export const familySitesCopy: Record<Locale, {
   nl: { label: "Familiewebsites", sites: { portal: "Portaal", calculator: "Rekenmachines", tools: "Online hulpmiddelen", moneyBook: "Gratis gedeeld huishoudboekje", docs: "Documenten en sjablonen", quiz: "Quizzen en tests" }, docsTitle: "Documenten en sjablonen", docsDescription: "Vind handige documenten en sjablonen voor elke dag.", docsCta: "Documenten bekijken", quizTitle: "Quizzen en tests", quizDescription: "Ontdek allerlei leuke quizzen en tests.", quizCta: "Quizzen ontdekken", menu: "Menu" },
   hi: { label: "परिवार की साइटें", sites: { portal: "पोर्टल", calculator: "कैलकुलेटर", tools: "ऑनलाइन टूल", moneyBook: "मुफ़्त साझा खर्च खाता", docs: "दस्तावेज़ और टेम्पलेट", quiz: "क्विज़ और टेस्ट" }, docsTitle: "दस्तावेज़ और टेम्पलेट", docsDescription: "रोज़मर्रा के काम के दस्तावेज़ और टेम्पलेट पाएँ।", docsCta: "दस्तावेज़ देखें", quizTitle: "क्विज़ और टेस्ट", quizDescription: "कई रोचक क्विज़ और टेस्ट के साथ कुछ नया आज़माएँ।", quizCta: "क्विज़ देखें", menu: "मेन्यू" },
   ru: { label:"Сервисы WOORI.TODAY",sites:{portal:"Портал",calculator:"Калькуляторы",tools:"Инструменты",moneyBook:"Общий семейный бюджет",docs:"Документы и шаблоны",quiz:"Викторины и тесты"},docsTitle:"Документы и шаблоны",docsDescription:"Практичные документы и шаблоны для повседневных задач.",docsCta:"Открыть документы",quizTitle:"Викторины и тесты",quizDescription:"Попробуйте разные интересные викторины и тесты.",quizCta:"К викторинам",menu:"Меню" },
+
+  "tr": {label:"Aile hizmetleri",sites:{portal:"Portal",calculator:"Hesap makineleri",tools:"Çevrimiçi araçlar",moneyBook:"MoneyBook",docs:"Belgeler",quiz:"Quiz"},docsTitle:"Belge şablonları",docsDescription:"Tutanak, teklif ve haftalık planlar için kullanıma hazır şablonlar.",docsCta:"Belgeleri aç",quizTitle:"Bilgi yarışmaları",quizDescription:"Genel kültür, matematik, coğrafya ve teknoloji konularında kısa quizler.",quizCta:"Quizleri aç",menu:"Hizmet menüsü"}
 };
