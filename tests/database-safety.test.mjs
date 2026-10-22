@@ -146,7 +146,10 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /grant-financial-runtime-read-production\.mjs/);
   assert.match(workflow, /financial-sec-production\.mjs verify/);
   assert.match(workflow, /Inspect SEC production schema and Runtime grants before import[\s\S]*financial-sec-production\.mjs status/);
-  assert.match(workflow, /import-sec-company-facts-production\.mjs --apply/);
+  assert.match(workflow, /sec_tools_run\(\)[\s\S]*docker network connect/);
+  assert.match(workflow, /sec_tools_run --dry-run/);
+  assert.match(workflow, /sec_tools_run --apply/);
+  assert.match(workflow, /sec_tools_run --apply/);
   assert.match(workflow, /PRODUCTION_RESTORE_VALIDATION_REFERENCE/);
   assert.match(workflow, /Select one operation per protected run/);
   assert.match(workflow, /default: false/);

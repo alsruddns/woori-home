@@ -278,6 +278,24 @@ jobs:
                   -e SEC_EDGAR_USER_AGENT \
                   "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env "$@"
               }
+              sec_tools_run() {
+                local external_network container_name run_status
+                external_network="$(docker inspect --format='{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' portal | grep -vx compose_database | head -n 1)"
+                test -n "$external_network"
+                container_name="woori-sec-tools-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+                docker create --name "$container_name" --network compose_database \
+                  --mount type=bind,src=/opt/services/compose/.env.portal,dst=/app/.portal.env,readonly \
+                  --mount "type=bind,src=$approval_file,dst=/app/.production-approval,readonly" \
+                  -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
+                  -e PRODUCTION_OPERATION_APPROVAL_FILE=/app/.production-approval -e PRODUCTION_DB_ALLOWED_HOSTS \
+                  -e PRODUCTION_BACKUP_CONFIRMED="${backup_reference:+true}" -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
+                  -e SEC_EDGAR_USER_AGENT \
+                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/data/import-sec-company-facts-production.mjs "$@" >/dev/null
+                docker network connect "$external_network" "$container_name"
+                if docker start --attach "$container_name"; then run_status=0; else run_status=$?; fi
+                docker rm "$container_name" >/dev/null
+                return "$run_status"
+              }
               validate_backup_archive() {
                 docker run --rm \
                   --mount "type=bind,src=$1,dst=/tmp/production.dump,readonly" \
@@ -378,9 +396,9 @@ jobs:
                 stage="Inspect SEC production schema and Runtime grants before import"
                 db_tools_run scripts/data/financial-sec-production.mjs status
                 stage="Collect SEC facts and validate production dry run"
-                db_tools_run scripts/data/import-sec-company-facts-production.mjs --dry-run
+                sec_tools_run --dry-run
                 stage="Import SEC Company Facts"
-                db_tools_run scripts/data/import-sec-company-facts-production.mjs --apply --backup-reference="$backup_reference"
+                sec_tools_run --apply --backup-reference="$backup_reference"
                 stage="Verify SEC Company Facts after import"
                 db_tools_run scripts/data/financial-sec-production.mjs verify
               fi
