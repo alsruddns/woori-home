@@ -19,6 +19,7 @@ const platformControls = await readFile(new URL("../src/app/(locale)/[locale]/pl
 const platformSidebar = await readFile(new URL("../src/app/(locale)/[locale]/platform-sidebar.tsx", import.meta.url), "utf8");
 const categoryNavigation = await readFile(new URL("../src/lib/data-platform/category-navigation.ts", import.meta.url), "utf8");
 const datePicker = await readFile(new URL("../src/app/(locale)/[locale]/date-picker.tsx", import.meta.url), "utf8");
+const datePickerStyles = await readFile(new URL("../src/app/(locale)/[locale]/date-picker.css", import.meta.url), "utf8");
 const datePickerCopySource = await readFile(new URL("../src/lib/date-picker-copy.ts", import.meta.url), "utf8");
 const scienceDateExplorer = await readFile(new URL("../src/app/(locale)/[locale]/science-date-explorer.tsx", import.meta.url), "utf8");
 const rootProxy = await readFile(new URL("../src/proxy.ts", import.meta.url), "utf8");
@@ -320,6 +321,10 @@ test("shared calendar opens from both controls, uses localized Intl dates, and a
   assert.match(datePicker, /ArrowLeft/);
   assert.match(datePicker, /opener\.current\?\.focus\(\)/);
   assert.match(datePicker, /shared-date-picker-today/);
+  assert.match(datePickerStyles, /shared-date-picker-trigger>\.shared-date-picker-value\{[^}]*white-space:nowrap/);
+  assert.match(datePickerStyles, /shared-date-picker-trigger>\.shared-date-picker-icon\{[^}]*flex:0 0 38px/);
+  assert.match(datePickerStyles, /@media\(max-width:600px\)/);
+  assert.match(datePickerStyles, /shared-date-picker-trigger>\.shared-date-picker-icon\{flex-basis:42px/);
   assert.match(datePicker, /available\.has\(date\)/);
   assert.match(scienceDateExplorer, /<DatePicker/);
   assert.doesNotMatch(scienceDateExplorer, /type="date"|datalist/i);
