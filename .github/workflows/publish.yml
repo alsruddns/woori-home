@@ -295,16 +295,27 @@ jobs:
                 test -n "$RESTORE_VALIDATION_REFERENCE"
                 test "$RESTORE_VALIDATION_REFERENCE" = "$EXPECTED_RESTORE_VALIDATION_REFERENCE"
                 [[ "$RESTORE_VALIDATION_REFERENCE" =~ ^[A-Za-z0-9][A-Za-z0-9._/:+-]{2,255}$ ]]
-                stage="Verify current Portal and create a database backup"
-                printf '[DEPLOY DB] %s\n' "$stage"
+                stage="Check current Portal container health"
                 current_health="$(docker inspect --format='{{.State.Health.Status}}' portal)"
+                printf '[DEPLOY DB CHECK] Current Portal container health: %s\n' "$current_health"
                 test "$current_health" = healthy
-                curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
+                stage="Check current Portal HTTP health URL"
+                if curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null; then
+                  printf '[DEPLOY DB CHECK] Portal health URL returned a successful response.\n'
+                else
+                  printf '[DEPLOY DB CHECK FAILED] Portal health URL did not return a successful response.\n' >&2
+                  exit 1
+                fi
+                stage="Check production backup disk capacity"
                 backup_size="$(printf '%s' "$preflight_report" | jq -er '.databaseSizeBytes | tonumber')"
                 available_kb="$(df -Pk /opt/backups/woori-portal | awk 'NR==2 {print $4}')"
                 test -n "$available_kb"
+                printf '[DEPLOY DB CHECK] Required DB size bytes: %s; available backup space KiB: %s\n' "$backup_size" "$available_kb"
                 test "$available_kb" -ge "$(( (backup_size + 1023) / 1024 ))"
+                stage="Check PostgreSQL archive validation tool"
                 command -v pg_restore >/dev/null
+                stage="Create fresh pre-write database backup"
+                printf '[DEPLOY DB] %s\n' "$stage"
                 before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
                 if /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1; then :; else
                   backup_status=$?
@@ -317,6 +328,7 @@ jobs:
                 test -n "$after" && test -s "$after"
                 if [ "$after" = "${before_entry#* }" ] && [ "$after_time" = "${before_entry%% *}" ]; then echo "Backup file did not change." >&2; exit 1; fi
                 chmod 600 "$after"
+                stage="Validate fresh production backup archive"
                 pg_restore --list "$after" >/dev/null
                 sha256sum "$after" > "$after.sha256"
                 chmod 600 "$after.sha256"
