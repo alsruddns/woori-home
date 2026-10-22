@@ -37,4 +37,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
   "pl": {intro:"Sprawdź źródła energii elektrycznej i wskaźniki czystej energii w poszczególnych krajach.",comparison:"Porównuj opublikowane wartości roczne; brakujące lata nie są szacowane.",noData:"Brak danych o energii dla tego wyboru.",dateLabel:"Rok danych"}
 ,
   "fil": {intro:"Tingnan ang pinagkukunan ng kuryente at mga indicator ng malinis na enerhiya sa bawat bansa.",comparison:"Ihambing ang mga nai-publish na taunang halaga; hindi tinatantya ang mga nawawalang taon.",noData:"Walang datos ng enerhiya para sa napiling ito.",dateLabel:"Taon ng datos"}
+,
+  "bn": {intro:"দেশভিত্তিক বিদ্যুৎ উৎপাদনের উৎস ও পরিচ্ছন্ন জ্বালানির সূচক দেখুন।",comparison:"প্রকাশিত বার্ষিক মান তুলনা করুন; অনুপস্থিত বছরের মান অনুমান করা হয় না।",noData:"এই নির্বাচনের জন্য জ্বালানির ডেটা নেই।",dateLabel:"ডেটার বছর"}
 };

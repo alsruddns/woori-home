@@ -18,6 +18,7 @@ export function familySiteHref(locale: Locale, key: FamilySiteKey) {
 }
 
 export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
+  bn: "MoneyBook-এর পাতা ইংরেজিতে খুলবে।",
   fil: "Magbubukas sa Ingles ang pahina ng MoneyBook.",
   pl: "Strona MoneyBook otworzy się po angielsku.",
   ru: "Страница MoneyBook откроется на английском.",
@@ -35,6 +36,7 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
 
   "tr": "MoneyBook sayfası İngilizce açılacaktır."
 ,
+
 
 };
 
@@ -71,4 +73,6 @@ export const familySitesCopy: Record<Locale, {
   "pl": {label:"Serwisy rodzinne",sites:{portal:"Portal",calculator:"Kalkulatory",tools:"Narzędzia online",moneyBook:"MoneyBook",docs:"Dokumenty",quiz:"Quizy"},docsTitle:"Szablony dokumentów",docsDescription:"Gotowe układy protokołów, ofert i planów tygodniowych.",docsCta:"Otwórz dokumenty",quizTitle:"Quizy wiedzy",quizDescription:"Krótkie quizy z wiedzy ogólnej, matematyki, geografii i technologii.",quizCta:"Otwórz quizy",menu:"Menu usług"}
 ,
   "fil": {label:"Mga serbisyong magkakaugnay",sites:{portal:"Portal",calculator:"Mga calculator",tools:"Mga online na tool",moneyBook:"MoneyBook",docs:"Mga dokumento",quiz:"Quiz"},docsTitle:"Mga template ng dokumento",docsDescription:"Mga handang template para sa tala ng pulong, quotation at lingguhang plano.",docsCta:"Buksan ang mga dokumento",quizTitle:"Mga quiz",quizDescription:"Maiikling quiz tungkol sa kaalaman, matematika, heograpiya at teknolohiya.",quizCta:"Buksan ang mga quiz",menu:"Menu ng serbisyo"}
+,
+  "bn": {label:"পরিবারের সাইট",sites:{portal:"Portal",calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল",moneyBook:"MoneyBook",docs:"নথি",quiz:"কুইজ"},docsTitle:"নথির টেমপ্লেট",docsDescription:"সভা নোট, কোটেশন ও সাপ্তাহিক পরিকল্পনার প্রস্তুত টেমপ্লেট।",docsCta:"নথি খুলুন",quizTitle:"জ্ঞান যাচাইয়ের কুইজ",quizDescription:"সাধারণ জ্ঞান, গণিত, ভূগোল ও প্রযুক্তি নিয়ে ছোট কুইজ।",quizCta:"কুইজ খুলুন",menu:"সেবা মেনু"}
 };

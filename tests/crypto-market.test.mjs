@@ -76,10 +76,10 @@ test("production snapshots remain empty until a provider license is approved", a
   assert.deepEqual(stockIssues.issues, []);
 });
 
-test("all nineteen crypto UI locales are present and crypto routes stay out of the sitemap", async () => {
+test("all twenty crypto UI locales are present and crypto routes stay out of the sitemap", async () => {
   const copy = await read("src/lib/data-platform/crypto-copy.ts");
   const stockCopy = await read("src/lib/data-platform/market-issue-copy.ts");
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil"]) {
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn"]) {
     assert.match(copy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}): \\{`), `${locale} copy missing`);
     assert.match(stockCopy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}):\\s*\\{`), `${locale} stock issue copy missing`);
   }

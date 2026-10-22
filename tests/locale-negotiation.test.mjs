@@ -9,6 +9,7 @@ test("Accept-Language selects the highest-ranked supported locale", () => {
   assert.equal(negotiateLocale("tr-TR,tr;q=0.8,en;q=0.7"), "tr");
   assert.equal(negotiateLocale("pl-PL,pl;q=0.8,en;q=0.7"), "pl");
   assert.equal(negotiateLocale("fil-PH,fil;q=0.8,en;q=0.7"), "fil");
+  assert.equal(negotiateLocale("bn-BD,bn;q=0.8,en;q=0.7"), "bn");
 });
 
 test("Chinese script and region preferences select the matching supported variant", () => {

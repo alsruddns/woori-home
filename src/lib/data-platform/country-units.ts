@@ -27,6 +27,8 @@ export const countryUnits: Record<Locale, Units> = {
   "pl": {population:"osoby",gdp:"bieżące USD",'gdp-per-capita':"bieżące USD na osobę",fertility:"urodzenia na kobietę",'life-expectancy':"lata",'population-growth':"% rocznie"}
 ,
   "fil": {population:"tao",gdp:"kasalukuyang US$",'gdp-per-capita':"kasalukuyang US$ bawat tao",fertility:"kapanganakan bawat babae",'life-expectancy':"taon",'population-growth':"% bawat taon"}
+,
+  "bn": {population:"জন",gdp:"বর্তমান মার্কিন ডলার",'gdp-per-capita':"জনপ্রতি বর্তমান মার্কিন ডলার",fertility:"নারীপ্রতি জন্ম",'life-expectancy':"বছর",'population-growth':"বার্ষিক %"}
 };
 
 export function unitFor(locale: Locale, indicator: IndicatorDefinition) {

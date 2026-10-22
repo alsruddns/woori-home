@@ -18,6 +18,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
   "pl": {insights:"Dane i analizy",worldStats:"Gospodarka światowa i statystyki"}
 ,
   "fil": {insights:"Datos at mga pananaw",worldStats:"Pandaigdigang ekonomiya at estadistika"}
+,
+  "bn": {insights:"ডেটা ও বিশ্লেষণ",worldStats:"বিশ্ব অর্থনীতি ও পরিসংখ্যান"}
 };
 
 export function categoryNavigation(locale: Locale) {

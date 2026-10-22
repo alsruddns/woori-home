@@ -23,4 +23,6 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
   "pl": {title:"Nie znaleziono strony",description:"Ten adres jest niedostępny lub strona została przeniesiona.",home:"Wróć na stronę główną"}
 ,
   "fil": {title:"Hindi makita ang pahina",description:"Maaaring hindi available ang address na ito o nailipat ang pahina.",home:"Bumalik sa home"}
+,
+  "bn": {title:"পাতা পাওয়া যায়নি",description:"ঠিকানাটি অনুপলভ্য বা পাতাটি সরানো হয়ে থাকতে পারে।",home:"হোমে ফিরুন"}
 };

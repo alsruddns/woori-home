@@ -23,4 +23,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
   "pl": {title:"Wiadomości z rynku akcji",description:"Datowane komunikaty giełd, regulatorów i firm będą publikowane po sprawdzeniu praw do źródeł.",empty:"Brak zweryfikowanych wiadomości giełdowych z tego dnia.",published:"Opublikowano",source:"Źródło"}
 ,
   "fil": {title:"Mga balita sa stock market",description:"Ilalathala ayon sa petsa ang mga pahayag mula sa palitan, regulator at kumpanya kapag napatunayan ang pahintulot sa pinagmulan.",empty:"Walang beripikadong balita sa stock market para sa petsang ito.",published:"Nai-publish",source:"Pinagmulan"}
+,
+  "bn": {title:"শেয়ারবাজারের খবর",description:"উৎস ব্যবহারের অনুমতি যাচাই হলে এক্সচেঞ্জ, নিয়ন্ত্রক ও কোম্পানির তারিখভিত্তিক ঘোষণা দেখানো হবে।",empty:"এই তারিখে যাচাইকৃত শেয়ারবাজারের খবর নেই।",published:"প্রকাশিত",source:"উৎস"}
 };
