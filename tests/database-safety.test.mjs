@@ -108,7 +108,7 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /test -r \.env\.portal/);
   assert.match(workflow, /\[DEPLOY 1\] %s/);
   assert.ok(workflow.includes('stage="Validate release references and server inputs"'));
-  for (const stage of ["Validate Compose configuration", "Validate Portal network assignments", "Validate configured Portal image", "Validate Portal runtime database URL source", "Block privileged database variables in Portal runtime", "Verify current Portal and create a database backup", "Validate GHCR image access", "Preserve rollback image", "Deploy Portal image", "Wait for Portal Healthcheck", "HTTP smoke test"]) {
+  for (const stage of ["Validate Compose configuration", "Validate Portal network assignments", "Validate configured Portal image", "Validate Portal runtime database URL source", "Block privileged database variables in Portal runtime", "Check current Portal container health", "Check current Portal HTTP health URL", "Check production backup disk capacity", "Create fresh pre-write database backup", "Validate fresh production backup archive", "Validate GHCR image access", "Preserve rollback image", "Deploy Portal image", "Wait for Portal Healthcheck", "HTTP smoke test"]) {
     assert.ok(workflow.includes(stage), `missing deployment stage: ${stage}`);
   }
   assert.match(workflow, /DEPLOY CHECK FAILED/);
@@ -151,6 +151,10 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /default: false/);
   assert.match(workflow, /pg_restore --list/);
   assert.match(workflow, /sha256sum --check/);
+  assert.match(workflow, /Check current Portal container health/);
+  assert.match(workflow, /Check production backup disk capacity/);
+  assert.match(workflow, /Create fresh pre-write database backup/);
+  assert.match(workflow, /Validate fresh production backup archive/);
   assert.ok(workflow.indexOf("db_tools_run scripts/db/preflight-production.mjs") < workflow.indexOf("db_tools_run scripts/db/status-production.mjs"));
   assert.ok(workflow.indexOf("db_tools_run scripts/db/status-production.mjs") < workflow.indexOf("db_tools_run scripts/db/migrate-production.mjs"));
   assert.doesNotMatch(workflow, /docker compose down|compose down/);
