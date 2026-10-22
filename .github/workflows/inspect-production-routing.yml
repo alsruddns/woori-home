@@ -33,6 +33,37 @@ jobs:
             nginx_container="$(docker ps --format "{{.Names}}" | awk "tolower(\$0) ~ /nginx/ { print; exit }")"
             test -n "$nginx_container"
             docker exec "$nginx_container" nginx -t
+            printf '[NGINX INSPECT] Shared locale map and Portal/service location directives:\n'
+            docker exec "$nginx_container" nginx -T 2>/dev/null | python3 -c '
+            import re, sys
+            lines = sys.stdin.readlines()
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                if re.match(r"\s*map\s+\$uri\s+\$valid_locale\s*\{", line):
+                    block = [line]
+                    depth = line.count("{") - line.count("}")
+                    i += 1
+                    while i < len(lines) and depth > 0:
+                        block.append(lines[i])
+                        depth += lines[i].count("{") - lines[i].count("}")
+                        i += 1
+                    print("".join(block).rstrip())
+                    continue
+                if re.match(r"\s*location\b.*\{", line):
+                    block = [line]
+                    depth = line.count("{") - line.count("}")
+                    i += 1
+                    while i < len(lines) and depth > 0:
+                        block.append(lines[i])
+                        depth += lines[i].count("{") - lines[i].count("}")
+                        i += 1
+                    text = "".join(block)
+                    if re.search(r"/(?:portal-api|api|calculators|tools|quiz|docs)/|location\s*=\s*/", line):
+                        print("\n".join(part.rstrip() for part in block if re.match(r"\s*location\b|\s*(?:proxy_pass|return|rewrite|try_files|set)\b", part)))
+                    continue
+                i += 1
+            '
             printf '[NGINX INSPECT] Nginx configuration mounts:\n'
             docker inspect --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' "$nginx_container"
             mount_rw="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/etc/nginx/conf.d"}}{{.RW}}{{end}}{{end}}' "$nginx_container")"
