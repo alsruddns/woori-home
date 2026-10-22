@@ -14,6 +14,7 @@ import { financialUiCopy } from "@/lib/data-platform/financial-ui-copy";
 import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-copy";
 import { cryptoTreemapLayout, type CryptoCoinQuote } from "@/lib/data-platform/crypto-market.mjs";
 import { FinancialPriceChart } from "./financial-price-chart";
+import { CompanyFundamentalsPanel } from "./company-fundamentals-panel";
 import { DatePicker } from "./date-picker";
 import { useSnapshotQueryDate } from "./use-snapshot-query-date";
 
@@ -131,6 +132,7 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
         </tr>)}</tbody></table></div>
       </> : <section className="stock-empty-state" role="status"><h2>{copy.noSnapshotTitle}</h2><p>{emptyMessage}</p><p>{copy.sourceDisclosure}</p></section>}
     </section> : <section className="stock-empty-state" role="status"><h2>{copy.noMarketSnapshots}</h2><p>{emptyMessage}</p><p>{copy.sourceDisclosure}</p></section>}
+    <CompanyFundamentalsPanel locale={locale} />
   </>;
 }
 

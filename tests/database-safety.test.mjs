@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { assertNoDestructiveMigration, resolveDatabaseTarget } from "../scripts/db/connection-safety.mjs";
 import { pendingMigrations } from "../scripts/db/migration-status.mjs";
 import { assertDatabaseRolesShareTarget, assertProductionOperation, parseProductionApprovalArgs } from "../scripts/db/production-operation.mjs";
+import { quotePgIdentifier, validateFinancialProductionContext } from "../scripts/db/financial-production-safety.mjs";
 import { assertCommitDigest, assertCommitShaTag, isMainProductionRelease } from "../scripts/deploy/release-guard.mjs";
 import { approvedWorldBankDbIndicators, resolveWorldBankDataSource, worldBankIndicatorSource } from "../src/lib/db/world-bank-mode.mjs";
 import { parseDatabaseRoleEnv } from "../scripts/deploy/database-env.mjs";
@@ -135,9 +136,29 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /DB_IMPORT_URL: ""\\n/);
   assert.match(workflow, /DB_MIGRATION_URL: ""\\n/);
   assert.match(workflow, /Non-empty privileged DB keys remain in Portal runtime/);
+  assert.match(workflow, /inputs\.apply_migrations/);
+  assert.match(workflow, /inputs\.import_world_bank/);
+  assert.match(workflow, /inputs\.import_sec/);
+  assert.match(workflow, /confirm_production_db_write/);
+  assert.match(workflow, /Production database writes require the explicit confirm_production_db_write input/);
+  assert.equal((workflow.match(/!contains\(github\.event\.head_commit\.message \|\| '', '\[db-first\]'\)/g) ?? []).length, 2);
+  assert.match(workflow, /preflight-financial-production\.mjs/);
+  assert.match(workflow, /grant-financial-runtime-read-production\.mjs/);
+  assert.match(workflow, /financial-sec-production\.mjs verify/);
+  assert.match(workflow, /import-sec-company-facts-production\.mjs --apply/);
+  assert.match(workflow, /PRODUCTION_RESTORE_VALIDATION_REFERENCE/);
+  assert.match(workflow, /Select one operation per protected run/);
+  assert.match(workflow, /default: false/);
+  assert.match(workflow, /pg_restore --list/);
+  assert.match(workflow, /sha256sum --check/);
   assert.ok(workflow.indexOf("db_tools_run scripts/db/preflight-production.mjs") < workflow.indexOf("db_tools_run scripts/db/status-production.mjs"));
   assert.ok(workflow.indexOf("db_tools_run scripts/db/status-production.mjs") < workflow.indexOf("db_tools_run scripts/db/migrate-production.mjs"));
   assert.doesNotMatch(workflow, /docker compose down|compose down/);
+  const secStart = workflow.indexOf('if [ "$IMPORT_SEC" = "true" ]; then');
+  const secEnd = workflow.indexOf("\n              fi", secStart);
+  assert.ok(secStart >= 0 && secEnd > secStart);
+  assert.match(workflow.slice(secStart, secEnd), /financial-sec-production\.mjs/);
+  assert.doesNotMatch(workflow.slice(secStart, secEnd), /import-world-bank/);
   assert.doesNotMatch(workflow, /cp .*\.env\.portal|tee .*\.env\.portal/);
 });
 
@@ -182,6 +203,30 @@ test("destructive SQL is blocked before an unapplied migration runs", () => {
   assert.doesNotThrow(() => assertNoDestructiveMigration("CREATE TABLE metrics (id text primary key)", "create.sql"));
   assert.throws(() => assertNoDestructiveMigration("ALTER TABLE metrics DROP COLUMN value", "drop.sql"), /destructive SQL/);
   assert.throws(() => assertNoDestructiveMigration("TRUNCATE TABLE metrics", "truncate.sql"), /destructive SQL/);
+  const periodKeyMigration = "ALTER TABLE \"financial_company_facts\" ADD COLUMN \"period_key\" varchar(10) DEFAULT 'instant' NOT NULL; UPDATE \"financial_company_facts\" SET \"period_key\"=coalesce(\"start_date\",'instant'); ALTER TABLE \"financial_company_facts\" DROP CONSTRAINT \"financial_company_facts_pk\"; ALTER TABLE \"financial_company_facts\" ADD CONSTRAINT \"financial_company_facts_pk\" PRIMARY KEY(\"company_id\",\"period_key\");";
+  assert.doesNotThrow(() => assertNoDestructiveMigration(periodKeyMigration, "0005_sec_fact_period_key.sql"));
+  assert.throws(() => assertNoDestructiveMigration(`${periodKeyMigration} DROP TABLE metrics`, "0005_sec_fact_period_key.sql"), /destructive SQL/);
+});
+
+test("financial production DB tools require the three split production roles, exact role names, host allowlist, main Actions context and approval", () => {
+  const env = {
+    DB_TARGET: "production",
+    GITHUB_ACTIONS: "true",
+    GITHUB_REF: "refs/heads/main",
+    PRODUCTION_OPERATION_APPROVAL: "configured",
+    PRODUCTION_DB_ALLOWED_HOSTS: "postgres",
+    DATABASE_URL: "postgres://woori_portal:runtime@postgres:5432/woori_today_portal",
+    DB_IMPORT_URL: "postgres://woori_portal_import:import@postgres:5432/woori_today_portal",
+    DB_MIGRATION_URL: "postgres://woori_portal_migration:migration@postgres:5432/woori_today_portal",
+  };
+  assert.equal(validateFinancialProductionContext({ env }).DB_IMPORT_URL.database, "woori_today_portal");
+  assert.throws(() => validateFinancialProductionContext({ env: { ...env, GITHUB_REF: "refs/heads/develop" } }), /main/);
+  assert.throws(() => validateFinancialProductionContext({ env: { ...env, DB_IMPORT_URL: "postgres://runtime:import@postgres:5432/woori_today_portal" } }), /woori_portal_import/);
+  assert.throws(() => validateFinancialProductionContext({ env: { ...env, PRODUCTION_DB_ALLOWED_HOSTS: "other" } }), /PRODUCTION_DB_ALLOWED_HOSTS/);
+  assert.throws(() => validateFinancialProductionContext({ env, requireBackup: true, backupReference: "backup-20261022" }), /backup/);
+  assert.equal(validateFinancialProductionContext({ env: { ...env, PRODUCTION_BACKUP_CONFIRMED: "true", PRODUCTION_BACKUP_REFERENCE: "backup-20261022" }, requireBackup: true, backupReference: "backup-20261022" }).DB_IMPORT_URL.database, "woori_today_portal");
+  assert.equal(quotePgIdentifier("woori_portal"), '"woori_portal"');
+  assert.throws(() => quotePgIdentifier("runtime; DROP TABLE x"), /identifier/);
 });
 
 test("migration status compares Drizzle bigint timestamps without reapplying prior versions", () => {

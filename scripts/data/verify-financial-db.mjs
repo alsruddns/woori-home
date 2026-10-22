@@ -52,6 +52,20 @@ try {
   }
   if (!foreignKeyRejected) throw new Error("Financial asset foreign-key constraint was not enforced.");
   console.log("Financial DB INSERT / SELECT / precision / conflict UPSERT passed inside a rollback transaction.");
+  const { rows: [company] } = await client.query(`insert into financial_companies
+    (source_id,provider_company_id,cik,ticker,name,exchange,country_code,source_url)
+    values ($1,'test-cik','0000000001','TESTCO','Temporary SEC fact fixture','NASDAQ','US','https://example.invalid') returning id`, [sourceId]);
+  const factValues = (periodKey, value) => [company.id, sourceId, datasetId, "us-gaap", "Revenues", "USD", value, periodKey, 2026, "Q2", periodKey, "2026-06-30", "2026-08-01", "10-Q", "0000000001-26-000001", "https://example.invalid/sec", new Date()];
+  const factInsert = `insert into financial_company_facts
+    (company_id,source_id,dataset_id,taxonomy,concept,unit,value,period_key,fiscal_year,fiscal_period,start_date,end_date,filed_date,form,accession_number,source_url,fetched_at)
+    values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+    on conflict (company_id,taxonomy,concept,unit,end_date,accession_number,period_key) do update set value=excluded.value`;
+  await client.query(factInsert, factValues("2026-04-01", "20.00000000"));
+  await client.query(factInsert, factValues("2026-01-01", "40.00000000"));
+  await client.query(factInsert, factValues("2026-04-01", "21.00000000"));
+  const { rows: factRows } = await client.query(`select value::text as value,start_date from financial_company_facts where company_id=$1 and end_date='2026-06-30' order by start_date`, [company.id]);
+  if (factRows.length !== 2 || factRows[0].value !== "40.00000000" || factRows[1].value !== "21.00000000") throw new Error("SEC fact period-key UPSERT did not preserve quarterly and year-to-date facts separately.");
+  console.log("SEC facts preserve quarter versus year-to-date periods and UPSERT inside a rollback transaction.");
   console.log("Financial DB stale provider snapshot was rejected inside the rollback transaction.");
   console.log("Financial DB foreign-key rejection passed.");
   await client.query("rollback");

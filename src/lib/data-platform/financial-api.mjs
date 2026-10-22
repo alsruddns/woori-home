@@ -38,13 +38,20 @@ export function parseFinancialHistoryQuery(searchParams, assetId) {
   return { ok: true, limit, from, to };
 }
 
+export function parseFinancialCompanyFactsQuery(searchParams) {
+  const page = positiveInteger(searchParams.get("page"), 1, 10000);
+  const pageSize = positiveInteger(searchParams.get("pageSize"), 100, 200);
+  if (!page || !pageSize) return { ok: false, status: 400, error: "invalid_pagination" };
+  return { ok: true, page, pageSize, offset: (page - 1) * pageSize };
+}
+
 function validDate(value) {
   const date = new Date(`${value}T00:00:00.000Z`);
   return Number.isFinite(date.valueOf()) && date.toISOString().slice(0, 10) === value;
 }
 
-export function financialApiErrorResponse() {
-  const body = { error: "financial_data_unavailable", message: "Financial market data is not available." };
+export function financialApiErrorResponse(reason = "financial-db-query-failed") {
+  const body = { error: "financial_data_unavailable", reason, message: "Financial market data is temporarily unavailable." };
   const response = Response.json(body, { status: 503, headers: { "cache-control": FINANCIAL_API_CACHE_CONTROL } });
   return response;
 }

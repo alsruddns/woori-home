@@ -5,10 +5,15 @@ import { parseDatabaseRoleEnv } from "./database-env.mjs";
 
 const ALLOWED_TOOLS = new Set([
   "scripts/db/preflight-production.mjs",
+  "scripts/db/preflight-financial-production.mjs",
   "scripts/db/status-production.mjs",
   "scripts/db/migrate-production.mjs",
+  "scripts/db/grant-financial-runtime-read-production.mjs",
+  "scripts/db/grant-financial-import-production.mjs",
   "scripts/data/import-world-bank-production.mjs",
   "scripts/data/verify-world-bank-production.mjs",
+  "scripts/data/financial-sec-production.mjs",
+  "scripts/data/import-sec-company-facts-production.mjs",
 ]);
 
 const [envPath, tool, ...args] = process.argv.slice(2);

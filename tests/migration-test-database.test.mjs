@@ -11,7 +11,7 @@ import {
   verifyMigrationTestSchema,
 } from "../scripts/db/migration-test-safety.mjs";
 
-const times = [1792547153047, 1792556890666, 1792557184725, 1792558376174];
+const times = [1792547153047, 1792556890666, 1792557184725, 1792558376174, 1792647422261, 1792647749069];
 const rows = times.map((created_at) => ({ created_at: String(created_at) }));
 
 test("the migration test accepts only its dedicated database and isolated container host", () => {
@@ -63,14 +63,14 @@ test("migration test state permits only an empty first run or the complete expec
   }), /refusing to change/);
 });
 
-test("migration schema verification requires four entries, eight tables and twenty indexes", () => {
+test("migration schema verification requires six entries, ten tables and twenty-seven indexes", () => {
   assert.deepEqual(verifyMigrationTestSchema({
     appliedRows: rows,
     migrationTimes: times,
     tables: EXPECTED_TABLES,
     indexes: EXPECTED_INDEXES,
-  }), { applied: 4, pending: 0, tables: 8, indexes: 20 });
-  assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows.slice(1), migrationTimes: times, tables: EXPECTED_TABLES, indexes: EXPECTED_INDEXES }), /four unique/);
+  }), { applied: 6, pending: 0, tables: 10, indexes: 27 });
+  assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows.slice(1), migrationTimes: times, tables: EXPECTED_TABLES, indexes: EXPECTED_INDEXES }), /6 unique/);
   assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows, migrationTimes: times, tables: EXPECTED_TABLES.slice(1), indexes: EXPECTED_INDEXES }), /expected table set/);
   assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows, migrationTimes: times, tables: EXPECTED_TABLES, indexes: EXPECTED_INDEXES.slice(1) }), /expected index set/);
 });
@@ -90,5 +90,7 @@ test("test migration command ignores production and development URL variables", 
     "0001_worldbank_collection_counts",
     "0002_worldbank_country_metadata",
     "0003_financial_market_data",
+    "0004_sec_company_facts",
+    "0005_sec_fact_period_key",
   ]);
 });

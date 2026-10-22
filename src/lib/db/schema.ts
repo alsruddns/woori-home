@@ -167,3 +167,45 @@ export const financialDailyPrices = pgTable("financial_daily_prices", {
   check("financial_daily_prices_volume_check", sql`${table.volume} is null or ${table.volume} >= 0`),
   check("financial_daily_prices_market_cap_check", sql`${table.marketCap} is null or ${table.marketCap} >= 0`),
 ]);
+
+export const financialCompanies = pgTable("financial_companies", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sourceId: varchar("source_id", { length: 80 }).notNull().references(() => dataSources.id, { onDelete: "restrict" }),
+  providerCompanyId: varchar("provider_company_id", { length: 24 }).notNull(),
+  cik: varchar("cik", { length: 10 }).notNull(),
+  ticker: varchar("ticker", { length: 12 }).notNull(),
+  name: text("name").notNull(),
+  exchange: varchar("exchange", { length: 24 }),
+  countryCode: char("country_code", { length: 2 }).notNull().default("US"),
+  sourceUrl: text("source_url").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("financial_companies_source_cik_unique_idx").on(table.sourceId, table.cik),
+  uniqueIndex("financial_companies_source_ticker_unique_idx").on(table.sourceId, table.ticker),
+  index("financial_companies_ticker_idx").on(table.ticker),
+]);
+
+export const financialCompanyFacts = pgTable("financial_company_facts", {
+  companyId: uuid("company_id").notNull().references(() => financialCompanies.id, { onDelete: "restrict" }),
+  sourceId: varchar("source_id", { length: 80 }).notNull().references(() => dataSources.id, { onDelete: "restrict" }),
+  datasetId: varchar("dataset_id", { length: 120 }).notNull().references(() => datasets.id, { onDelete: "restrict" }),
+  taxonomy: varchar("taxonomy", { length: 40 }).notNull(),
+  concept: varchar("concept", { length: 180 }).notNull(),
+  unit: varchar("unit", { length: 40 }).notNull(),
+  value: numeric("value", { precision: 38, scale: 8 }).notNull(),
+  periodKey: varchar("period_key", { length: 10 }).notNull(),
+  fiscalYear: integer("fiscal_year"),
+  fiscalPeriod: varchar("fiscal_period", { length: 8 }),
+  startDate: varchar("start_date", { length: 10 }),
+  endDate: varchar("end_date", { length: 10 }).notNull(),
+  filedDate: varchar("filed_date", { length: 10 }).notNull(),
+  form: varchar("form", { length: 12 }).notNull(),
+  accessionNumber: varchar("accession_number", { length: 24 }).notNull(),
+  sourceUrl: text("source_url").notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true, mode: "date" }).notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.companyId, table.taxonomy, table.concept, table.unit, table.endDate, table.accessionNumber, table.periodKey], name: "financial_company_facts_pk" }),
+  index("financial_company_facts_end_date_idx").on(table.endDate, table.companyId),
+  index("financial_company_facts_period_idx").on(table.fiscalYear, table.fiscalPeriod),
+  check("financial_company_facts_dates_check", sql`${table.endDate} ~ '^\\d{4}-\\d{2}-\\d{2}$' and ${table.filedDate} ~ '^\\d{4}-\\d{2}-\\d{2}$'`),
+]);
