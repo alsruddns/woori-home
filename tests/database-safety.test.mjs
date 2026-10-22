@@ -148,6 +148,7 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /Inspect SEC production schema and Runtime grants before import[\s\S]*financial-sec-production\.mjs status/);
   assert.match(workflow, /sec_tools_run\(\)[\s\S]*docker network connect/);
   assert.match(workflow, /container_name="woori-sec-tools-\$\(date \+%s%N\)"/);
+  assert.match(workflow, /scripts\/deploy\/run-production-db-tool\.mjs \/app\/\.portal\.env scripts\/data\/import-sec-company-facts-production\.mjs/);
   assert.match(workflow, /sec_tools_run --dry-run/);
   assert.match(workflow, /sec_tools_run --apply/);
   assert.match(workflow, /sec_tools_run --apply/);

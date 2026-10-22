@@ -290,7 +290,7 @@ jobs:
                   -e PRODUCTION_OPERATION_APPROVAL_FILE=/app/.production-approval -e PRODUCTION_DB_ALLOWED_HOSTS \
                   -e PRODUCTION_BACKUP_CONFIRMED="${backup_reference:+true}" -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
                   -e SEC_EDGAR_USER_AGENT \
-                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/data/import-sec-company-facts-production.mjs "$@" >/dev/null
+                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env scripts/data/import-sec-company-facts-production.mjs "$@" >/dev/null
                 docker network connect "$external_network" "$container_name"
                 if docker start --attach "$container_name"; then run_status=0; else run_status=$?; fi
                 docker rm "$container_name" >/dev/null
