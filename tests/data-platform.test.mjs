@@ -66,18 +66,20 @@ test("NASA NeoWs snapshot is validated, date-scoped, and kept independent of vis
   assert.match(audit, /APOD image and video embedding remains deferred/);
 });
 
-test("energy and science data copy covers all 15 locales without an English-only fallback", async () => {
+test("energy and science data copy covers all 26 locales without an English-only fallback", async () => {
   const [energy, science, route, sitemap] = await Promise.all([
     read("src/lib/data-platform/energy-copy.ts"), read("src/lib/data-platform/science-copy.ts"),
     read("src/app/(locale)/[locale]/(platform)/[category]/page.tsx"), read("src/app/sitemap.ts"),
   ]);
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
+  assert.match(energy, /export const energyLocales: Locale\[\] = \["ko","en","ja","zh","es","pt-br","de","fr","vi","id","th","zh-tw","it","nl","hi","ru","tr","pl","fil","bn","uk","ms","sv","cs","ro","el"\]/);
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.match(energy, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing energy content`);
     assert.match(science, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing science content`);
   }
   assert.match(energy, /distinct from electricity consumption/i);
   assert.match(route, /category === "energy" \|\| category === "science"/);
-  assert.match(sitemap, /energyDetails/);
+  assert.match(sitemap, /publicPortalPaths/);
+  assert.doesNotMatch(sitemap, /energyDetails|publicDataPaths|localizedDataPaths/);
   assert.doesNotMatch(route, /indicator\.definition\[locale\] \?\? platformCopy\[locale\]\.sourceNote/);
 });
 
@@ -92,7 +94,7 @@ test("World Bank refresh is a batch adapter and retains the old snapshot on fail
 
 test("the data platform has translations for each supported locale", async () => {
   const copy = await read("src/lib/data-platform/locales.ts");
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.match(copy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}): \\{`));
   }
 });
@@ -142,9 +144,24 @@ test("country comparison defaults to ten countries, caps selections at twenty, a
   assert.doesNotMatch(api, /fetch\(/);
   const worldData = await read("src/app/(locale)/[locale]/world-data.tsx");
   assert.match(worldData, /\["kr", "us", "jp", "cn", "de", "gb", "fr", "in", "ca", "au"\]/);
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.match(copy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}): \\{`));
   }
+});
+
+test("mobile briefing overrides follow desktop component rules and keep metric cards readable", async () => {
+  const css = await read("src/app/(locale)/[locale]/platform.css");
+  const mobileRules = css.slice(css.lastIndexOf("/* Keep the responsive overrides after component rules"));
+  assert.ok(mobileRules.length > 0);
+  assert.match(mobileRules, /@media\(max-width:900px\)\{[\s\S]*?\.global-briefing-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(mobileRules, /@media\(max-width:600px\)\{[\s\S]*?\.global-briefing-metrics\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(mobileRules, /\.global-briefing-metrics strong\{[^}]*word-break:keep-all/);
+  assert.match(mobileRules, /\.global-briefing-paper-list a\{[^}]*-webkit-line-clamp:3/);
+  assert.match(mobileRules, /\.platform-controls\{display:flex;flex:1 1 100%/);
+  assert.doesNotMatch(mobileRules, /overflow-x:hidden/);
+  assert.match(css, /\.paper-filters select\{[^}]*min-width:0/);
+  assert.match(css, /\.platform-table-scroll\{[^}]*overflow-x:auto/);
+  assert.match(css, /\.paper-card h2\{overflow-wrap:anywhere/);
 });
 
 test("country trend charts leave gaps disconnected and provide keyboard-accessible data points", async () => {
@@ -157,6 +174,6 @@ test("country trend charts leave gaps disconnected and provide keyboard-accessib
   assert.match(chart, /tabIndex=\{0\}/);
   assert.match(dashboard, /Dataset/);
   assert.match(dashboard, /SP\.POP\.TOTL/);
-  assert.match(sitemap, /dataCountries\.map/);
-  assert.match(sitemap, /countries\/\$\{code\}/);
+  assert.match(sitemap, /publicPortalPaths/);
+  assert.doesNotMatch(sitemap, /dataCountries|countries\/\$\{code\}/);
 });

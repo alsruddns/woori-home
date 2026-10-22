@@ -53,15 +53,15 @@ const { snapshotDatesForMarket, stockSnapshotForDate } = require("../src/lib/dat
 const { stockMarkets } = require("../src/lib/data-platform/registry.ts");
 
 test("portal defines all supported locales and localized home content", () => {
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) assert.ok(site.includes(`route: "${locale}"`), `missing locale config: ${locale}`);
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) assert.ok(site.includes(`route: "${locale}"`), `missing locale config: ${locale}`);
   for (const locale of ["ko", "en", "ja", "zh"]) assert.match(site, new RegExp(`\\b${locale}: \\{`));
-  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) assert.ok(translations.includes(`${locale}: {`) || translations.includes(`"${locale}": {`), `missing home translation: ${locale}`);
+  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) assert.ok(translations.includes(`${locale}: {`) || translations.includes(`"${locale}": {`), `missing home translation: ${locale}`);
   assert.match(layout, /if \(!isLocale\(locale\)\) notFound\(\)/);
 });
 
 test("all locale dictionaries, legal pages, and service names are complete without English fallbacks", () => {
   const errors = [];
-  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"];
   const baseKeys = Object.keys(siteData.messages.en).sort();
   for (const locale of expectedLocales) {
     const home = siteData.messages[locale];
@@ -90,12 +90,12 @@ test("all locale dictionaries, legal pages, and service names are complete witho
   assert.deepEqual(errors, [], errors.join("\n"));
 });
 
-test("sitemap has 45 canonical portal URLs with 15 hreflang entries and x-default", () => {
+test("sitemap has 78 canonical portal URLs with 26 hreflang entries and x-default", () => {
   const entries = siteData.locales.flatMap((locale) => siteData.publicPortalPaths.map((path) => ({ url: `${siteData.origin}/${locale}${path}`, languages: siteData.alternates(path).languages })));
-  assert.equal(entries.length, 45);
-  assert.equal(new Set(entries.map((entry) => entry.url)).size, 45);
+  assert.equal(entries.length, 78);
+  assert.equal(new Set(entries.map((entry) => entry.url)).size, 78);
   for (const entry of entries) {
-    assert.equal(Object.keys(entry.languages).length, 16);
+    assert.equal(Object.keys(entry.languages).length, 27);
     assert.equal(entry.languages["x-default"], entry.url.replace(/^https:\/\/www\.woori\.today\/(?:[^/]+)(.*)$/, "https://www.woori.today/ko$1"));
   }
 });
@@ -104,6 +104,8 @@ test("language selection preserves each supported page path", async () => {
   assert.equal(getLocalePath("/ko/privacy", "es"), "/es/privacy");
   assert.equal(getLocalePath("/es/terms", "de"), "/de/terms");
   assert.equal(getLocalePath("/ja", "hi"), "/hi");
+  for (const locale of siteData.locales) assert.equal(getLocalePath(`/${locale}/countries/us`, "pt-br"), "/pt-br/countries/us");
+  assert.equal(getLocalePath("/countries/us", "nl"), "/nl/countries/us");
   const selector = require("node:fs").readFileSync(new URL("../src/app/(locale)/[locale]/language-selector.tsx", import.meta.url), "utf8");
   assert.match(selector, /aria-label=\{uiLabels\[locale\]\.language\}/);
   assert.match(selector, /value=\{locale\}/);
@@ -209,7 +211,7 @@ test("about remains available by URL and in the footer but is omitted from categ
 });
 
 test("localized data copy explains missing years without technical interpolation wording", () => {
-  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"];
   for (const locale of expectedLocales) {
     const copy = platformCopy[locale];
     assert.ok(copy.overviewBody && copy.latest && copy.previousChange && copy.updated && copy.sourceNote, `${locale}: missing data copy`);
@@ -243,8 +245,8 @@ test("theme is initialized once before hydration and uses a narrow root suppress
   assert.equal(unavailableStorageHtml.dataset.theme, "dark");
 });
 
-test("stock markets have translated names and every visible control in all 15 locales", () => {
-  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"];
+test("stock markets have translated names and every visible control in all 20 locales", () => {
+  const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"];
   assert.deepEqual(Object.keys(stockCopy).sort(), [...expectedLocales].sort());
   for (const locale of expectedLocales) {
     const copy = stockCopy[locale];
@@ -308,7 +310,7 @@ test("shared calendar opens from both controls, uses localized Intl dates, and a
   assert.match(scienceDateExplorer, /<DatePicker/);
   assert.doesNotMatch(scienceDateExplorer, /type="date"|datalist/i);
   assert.match(scienceDateExplorer, /router\.push\(.*scroll: false/);
-  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.match(datePickerCopySource, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{[^\\n]*today: "[^"]+"`), `${locale}: missing localized calendar labels`);
   }
   assert.match(rootProxy, /matcher: "\/"/);

@@ -16,4 +16,24 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
   it: { title: "Pagina non trovata", description: "Questo indirizzo non è disponibile oppure la pagina è stata spostata.", home: "Torna alla home" },
   nl: { title: "Pagina niet gevonden", description: "Dit adres is niet beschikbaar of de pagina is verplaatst.", home: "Terug naar home" },
   hi: { title: "पृष्ठ नहीं मिला", description: "यह पता उपलब्ध नहीं है या पृष्ठ को स्थानांतरित कर दिया गया है।", home: "होम पर लौटें" },
+  ru: { title: "Страница не найдена", description: "Эта страница недоступна или была перемещена.", home: "На главную" },
+
+  "tr": {title:"Sayfa bulunamadı",description:"Aradığınız sayfa mevcut değil veya taşınmış olabilir.",home:"Ana sayfaya dön"}
+,
+  "pl": {title:"Nie znaleziono strony",description:"Ten adres jest niedostępny lub strona została przeniesiona.",home:"Wróć na stronę główną"}
+,
+  "fil": {title:"Hindi makita ang pahina",description:"Maaaring hindi available ang address na ito o nailipat ang pahina.",home:"Bumalik sa home"}
+,
+  "bn": {title:"পাতা পাওয়া যায়নি",description:"ঠিকানাটি অনুপলভ্য বা পাতাটি সরানো হয়ে থাকতে পারে।",home:"হোমে ফিরুন"},
+  uk: {"title":"Сторінку не знайдено","description":"Не вдалося знайти сторінку, яку ви шукаєте.","home":"На головну"}
+,
+  ms: {"title":"Halaman tidak ditemukan","description":"Alamat ini mungkin tidak tersedia atau mungkin telah berubah.","home":"Kembali ke rumah"}
+,
+  sv: {"title":"Sidan hittades inte","description":"Denna adress kan vara otillgänglig eller kan ha ändrats.","home":"Återvänd hem"}
+,
+  cs: {"title":"Stránka nenalezena","description":"Tato adresa může být nedostupná nebo se mohla změnit.","home":"Vrať se domů."}
+,
+  ro: {"title":"Pagina nu a fost găsită","description":"Această adresă poate fi indisponibilă sau poate fi modificată.","home":"Întoarce-te acasă."}
+,
+  el: {"title":"Η σελίδα δε βρέθηκε","description":"Αυτή η διεύθυνση μπορεί να μην είναι διαθέσιμη ή να έχει αλλάξει.","home":"Επιστροφή στο σπίτι"}
 };

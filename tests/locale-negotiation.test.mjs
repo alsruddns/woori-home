@@ -6,6 +6,17 @@ test("Accept-Language selects the highest-ranked supported locale", () => {
   assert.equal(negotiateLocale("fr-CA,fr;q=0.9,en;q=0.8"), "fr");
   assert.equal(negotiateLocale("es-MX;q=0.7,ko;q=0.9"), "ko");
   assert.equal(negotiateLocale("pt-BR,pt;q=0.8"), "pt-br");
+  assert.equal(negotiateLocale("tr-TR,tr;q=0.8,en;q=0.7"), "tr");
+  assert.equal(negotiateLocale("pl-PL,pl;q=0.8,en;q=0.7"), "pl");
+  assert.equal(negotiateLocale("fil-PH,fil;q=0.8,en;q=0.7"), "fil");
+  assert.equal(negotiateLocale("bn-BD,bn;q=0.8,en;q=0.7"), "bn");
+  assert.equal(negotiateLocale("ms-MY, en;q=0.8"), "ms");
+  assert.equal(negotiateLocale("ru-RU,ru;q=0.8"), "ru");
+  assert.equal(negotiateLocale("uk-UA,uk;q=0.8"), "uk");
+  assert.equal(negotiateLocale("sv-SE,sv;q=0.8"), "sv");
+  assert.equal(negotiateLocale("cs-CZ,cs;q=0.8"), "cs");
+  assert.equal(negotiateLocale("ro-RO,ro;q=0.8"), "ro");
+  assert.equal(negotiateLocale("el-GR,el;q=0.8"), "el");
 });
 
 test("Chinese script and region preferences select the matching supported variant", () => {
@@ -14,6 +25,7 @@ test("Chinese script and region preferences select the matching supported varian
 });
 
 test("unsupported browser languages fall back to Korean", () => {
-  assert.equal(negotiateLocale("ru-RU,ar;q=0.9"), "ko");
+  assert.equal(negotiateLocale("ru-RU,ar;q=0.9"), "ru");
+  assert.equal(negotiateLocale("ar,fr;q=0.8"), "fr");
   assert.equal(negotiateLocale("*"), "ko");
 });

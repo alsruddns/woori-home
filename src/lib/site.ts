@@ -18,6 +18,21 @@ export const localeConfig = [
   { route: "it", hreflang: "it", nativeName: "Italiano", ogLocale: "it_IT" },
   { route: "nl", hreflang: "nl", nativeName: "Nederlands", ogLocale: "nl_NL" },
   { route: "hi", hreflang: "hi", nativeName: "हिन्दी", ogLocale: "hi_IN" },
+  { route: "ru", hreflang: "ru", nativeName: "Русский", ogLocale: "ru_RU" },
+  { route: "tr", hreflang: "tr", nativeName: "Türkçe", ogLocale: "tr_TR" },
+  { route: "pl", hreflang: "pl", nativeName: "Polski", ogLocale: "pl_PL" },
+  { route: "fil", hreflang: "fil", nativeName: "Filipino", ogLocale: "fil_PH" },
+  { route: "bn", hreflang: "bn", nativeName: "বাংলা", ogLocale: "bn_BD" },
+  { route: "uk", hreflang: "uk", nativeName: "Українська", ogLocale: "uk_UA" },
+  { route: "ms", hreflang: "ms", nativeName: "Bahasa Melayu", ogLocale: "ms_MY" },
+
+  { route: "sv", hreflang: "sv", nativeName: "Svenska", ogLocale: "sv_SE" }
+,
+  { route: "cs", hreflang: "cs", nativeName: "Čeština", ogLocale: "cs_CZ" }
+,
+  { route: "ro", hreflang: "ro", nativeName: "Română", ogLocale: "ro_RO" }
+,
+  { route: "el", hreflang: "el", nativeName: "Ελληνικά", ogLocale: "el_GR" }
 ] as const;
 export const locales = localeConfig.map((item) => item.route);
 export type Locale = (typeof localeConfig)[number]["route"];
@@ -27,15 +42,72 @@ export const newTabLabels: Record<Locale, string> = {
   ko: "새 탭에서 열립니다", en: "opens in a new tab", ja: "新しいタブで開きます", zh: "在新标签页中打开",
   es: "se abre en una pestaña nueva", "pt-br": "abre em uma nova aba", de: "wird in einem neuen Tab geöffnet", fr: "s’ouvre dans un nouvel onglet",
   vi: "mở trong tab mới", id: "terbuka di tab baru", th: "เปิดในแท็บใหม่", "zh-tw": "會在新分頁中開啟",
-  it: "si apre in una nuova scheda", nl: "opent in een nieuw tabblad", hi: "नए टैब में खुलेगा",
+  it: "si apre in una nuova scheda", nl: "opent in een nieuw tabblad", hi: "नए टैब में खुलेगा", ru: "откроется в новой вкладке",
+
+  "tr": "yeni bir sekmede açılır"
+,
+  "pl": "otwiera się w nowej karcie"
+,
+  "fil": "bubukas sa bagong tab"
+,
+  "bn": "নতুন ট্যাবে খোলে",
+  "uk": "відкривається в новій вкладці"
+,
+  ms: "Dibuka di tab baru"
+,
+  sv: "Öppnar i en ny flik"
+,
+  cs: "otevře v nové kartě"
+,
+  ro: "deschide într-o filă nouă"
+,
+  el: "Ανοίγει σε μια νέα καρτέλα"
 };
 export const uiLabels: Record<Locale, { language: string; primaryNav: string }> = {
   ko: { language: "언어 선택", primaryNav: "주요 탐색" }, en: { language: "Choose language", primaryNav: "Primary navigation" }, ja: { language: "言語を選択", primaryNav: "メインナビゲーション" }, zh: { language: "选择语言", primaryNav: "主要导航" },
-  es: { language: "Elegir idioma", primaryNav: "Navegación principal" }, "pt-br": { language: "Escolher idioma", primaryNav: "Navegação principal" }, de: { language: "Sprache auswählen", primaryNav: "Hauptnavigation" }, fr: { language: "Choisir la langue", primaryNav: "Navigation principale" }, vi: { language: "Chọn ngôn ngữ", primaryNav: "Điều hướng chính" }, id: { language: "Pilih bahasa", primaryNav: "Navigasi utama" }, th: { language: "เลือกภาษา", primaryNav: "เมนูหลัก" }, "zh-tw": { language: "選擇語言", primaryNav: "主要導覽" }, it: { language: "Scegli la lingua", primaryNav: "Navigazione principale" }, nl: { language: "Taal kiezen", primaryNav: "Hoofdnavigatie" }, hi: { language: "भाषा चुनें", primaryNav: "मुख्य नेविगेशन" },
+  es: { language: "Elegir idioma", primaryNav: "Navegación principal" }, "pt-br": { language: "Escolher idioma", primaryNav: "Navegação principal" }, de: { language: "Sprache auswählen", primaryNav: "Hauptnavigation" }, fr: { language: "Choisir la langue", primaryNav: "Navigation principale" }, vi: { language: "Chọn ngôn ngữ", primaryNav: "Điều hướng chính" }, id: { language: "Pilih bahasa", primaryNav: "Navigasi utama" }, th: { language: "เลือกภาษา", primaryNav: "เมนูหลัก" }, "zh-tw": { language: "選擇語言", primaryNav: "主要導覽" }, it: { language: "Scegli la lingua", primaryNav: "Navigazione principale" }, nl: { language: "Taal kiezen", primaryNav: "Hoofdnavigatie" }, hi: { language: "भाषा चुनें", primaryNav: "मुख्य नेविगेशन" }, ru: { language: "Выбрать язык", primaryNav: "Основная навигация" },
+
+  "tr": {language:"Dil seçin",primaryNav:"Ana gezinme"}
+,
+  "pl": {language:"Wybierz język",primaryNav:"Nawigacja główna"}
+,
+  "fil": {language:"Pumili ng wika",primaryNav:"Pangunahing nabigasyon"}
+,
+  "bn": {language:"ভাষা নির্বাচন করুন",primaryNav:"প্রধান নেভিগেশন"},
+  "uk": {language:"Виберіть мову",primaryNav:"Основна навігація"}
+,
+  ms: {"language":"Pilih bahasa","primaryNav":"Pemanduan arah"}
+,
+  sv: {"language":"Välj språk","primaryNav":"Primär navigering"}
+,
+  cs: {"language":"Vyberte jazyk","primaryNav":"Primární navigace"}
+,
+  ro: {"language":"Alege limba","primaryNav":"Navigarea primară"}
+,
+  el: {"language":"Επιλογή γλώσσας","primaryNav":"Πρωτοβάθμια πλοήγηση"}
 };
 export const sectionLabels: Record<Locale, { calculator: string; tools: string }> = {
   ko: { calculator: "계산기", tools: "온라인 도구" }, en: { calculator: "Calculator", tools: "Online tools" }, ja: { calculator: "計算ツール", tools: "オンラインツール" }, zh: { calculator: "计算器", tools: "在线工具" },
-  es: { calculator: "Calculadoras", tools: "Herramientas en línea" }, "pt-br": { calculator: "Calculadoras", tools: "Ferramentas online" }, de: { calculator: "Rechner", tools: "Online-Tools" }, fr: { calculator: "Calculatrices", tools: "Outils en ligne" }, vi: { calculator: "Máy tính", tools: "Công cụ trực tuyến" }, id: { calculator: "Kalkulator", tools: "Alat online" }, th: { calculator: "เครื่องคำนวณ", tools: "เครื่องมือออนไลน์" }, "zh-tw": { calculator: "計算機", tools: "線上工具" }, it: { calculator: "Calcolatori", tools: "Strumenti online" }, nl: { calculator: "Calculators", tools: "Online tools" }, hi: { calculator: "कैलकुलेटर", tools: "ऑनलाइन टूल" },
+  es: { calculator: "Calculadoras", tools: "Herramientas en línea" }, "pt-br": { calculator: "Calculadoras", tools: "Ferramentas online" }, de: { calculator: "Rechner", tools: "Online-Tools" }, fr: { calculator: "Calculatrices", tools: "Outils en ligne" }, vi: { calculator: "Máy tính", tools: "Công cụ trực tuyến" }, id: { calculator: "Kalkulator", tools: "Alat online" }, th: { calculator: "เครื่องคำนวณ", tools: "เครื่องมือออนไลน์" }, "zh-tw": { calculator: "計算機", tools: "線上工具" }, it: { calculator: "Calcolatori", tools: "Strumenti online" }, nl: { calculator: "Calculators", tools: "Online tools" }, hi: { calculator: "कैलकुलेटर", tools: "ऑनलाइन टूल" }, ru: { calculator: "Калькуляторы", tools: "Онлайн-инструменты" },
+
+  "tr": {calculator:"Hesap makineleri",tools:"Çevrimiçi araçlar"}
+,
+  "pl": {calculator:"Kalkulatory",tools:"Narzędzia online"}
+,
+  "fil": {calculator:"Mga calculator",tools:"Mga online na tool"}
+,
+  "bn": {calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল"},
+  "uk": {calculator:"Калькулятори",tools:"Онлайн-інструменти"}
+,
+  ms: {"calculator":"Kalkulator","tools":"Tool"}
+,
+  sv: {"calculator":"Kalkylator","tools":"Onlineverktyg"}
+,
+  cs: {"calculator":"Kalkulačka","tools":"Online nástroje"}
+,
+  ro: {"calculator":"Calculator","tools":"Unelte online"}
+,
+  el: {"calculator":"Υπολογισμός","tools":"Εργαλεία σε απευθείας σύνδεση"}
 };
 export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
 export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;
@@ -44,9 +116,8 @@ export const publicDataPaths = ["/world", "/economy", "/countries", "/population
 export const localizedDataPaths = ["/economy/gdp", "/economy/gdp-per-capita", "/economy/unemployment", "/population/fertility", "/population/life-expectancy", "/population/population-growth"] as const;
 export function getLocalePath(pathname: string, locale: Locale) {
   const segments = pathname.split("/").filter(Boolean);
-  const suffix = segments.slice(1).join("/");
-  const supportedPage = ["", "privacy", "terms"].includes(suffix);
-  return `/${locale}${supportedPage && suffix ? `/${suffix}` : ""}`;
+  const pathSegments = isLocale(segments[0] ?? "") ? segments.slice(1) : segments;
+  return `/${locale}${pathSegments.length ? `/${pathSegments.join("/")}` : ""}`;
 }
 
 export const messages = {

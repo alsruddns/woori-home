@@ -5,6 +5,7 @@ import { energyAccessCopy } from "./energy-copy";
 
 type Units = Record<string, string>;
 export const countryUnits: Record<Locale, Units> = {
+  ru:{population:"человек",gdp:"млрд долларов США","gdp-per-capita":"долларов США на человека",fertility:"рождений на женщину","life-expectancy":"лет","population-growth":"% в год"},
   ko:{population:"명",gdp:"당해 연도 US$", "gdp-per-capita":"당해 연도 US$ / 명",fertility:"명 / 여성", "life-expectancy":"년", "population-growth":"% / 년"},
   en:{population:"people",gdp:"current US$", "gdp-per-capita":"current US$ / person",fertility:"births / woman", "life-expectancy":"years", "population-growth":"% / year"},
   ja:{population:"人",gdp:"当年USドル", "gdp-per-capita":"当年USドル / 人",fertility:"人 / 女性", "life-expectancy":"年", "population-growth":"% / 年"},
@@ -20,6 +21,25 @@ export const countryUnits: Record<Locale, Units> = {
   it:{population:"persone",gdp:"US$ correnti", "gdp-per-capita":"US$ correnti / persona",fertility:"nascite / donna", "life-expectancy":"anni", "population-growth":"% / anno"},
   nl:{population:"personen",gdp:"huidige US$", "gdp-per-capita":"huidige US$ / persoon",fertility:"geboorten / vrouw", "life-expectancy":"jaar", "population-growth":"% / jaar"},
   hi:{population:"लोग",gdp:"वर्तमान US$", "gdp-per-capita":"वर्तमान US$ / व्यक्ति",fertility:"जन्म / महिला", "life-expectancy":"वर्ष", "population-growth":"% / वर्ष"},
+
+  "tr": {population:"kişi",gdp:"cari ABD doları",'gdp-per-capita':"kişi başına cari ABD doları",fertility:"kadın başına doğum",'life-expectancy':"yıl",'population-growth':"yıllık yüzde"}
+,
+  "pl": {population:"osoby",gdp:"bieżące USD",'gdp-per-capita':"bieżące USD na osobę",fertility:"urodzenia na kobietę",'life-expectancy':"lata",'population-growth':"% rocznie"}
+,
+  "fil": {population:"tao",gdp:"kasalukuyang US$",'gdp-per-capita':"kasalukuyang US$ bawat tao",fertility:"kapanganakan bawat babae",'life-expectancy':"taon",'population-growth':"% bawat taon"}
+,
+  "bn": {population:"জন",gdp:"বর্তমান মার্কিন ডলার",'gdp-per-capita':"জনপ্রতি বর্তমান মার্কিন ডলার",fertility:"নারীপ্রতি জন্ম",'life-expectancy':"বছর",'population-growth':"বার্ষিক %"},
+  "uk": {population:"осіб",gdp:"поточні долари США",'gdp-per-capita':"поточні долари США на особу",fertility:"народжень на жінку",'life-expectancy':"років",'population-growth':"% на рік"}
+,
+  ms: {"population":"Orang-orang","gdp":"Australia","gdp-per-capita":"Orang saat ini senilai US$ / orang","fertility":"kelahiran / wanita","life-expectancy":"years","population-growth":"% / tahun"}
+,
+  sv: {"population":"människor","gdp":"nuvarande US$","gdp-per-capita":"nuvarande US $ / person","fertility":"Födelse / Kvinna","life-expectancy":"år","population-growth":"%/år"}
+,
+  cs: {"population":"lidé","gdp":"aktuální US $","gdp-per-capita":"aktuální US $/ person","fertility":"porod / žena","life-expectancy":"roky","population-growth":"% / rok"}
+,
+  ro: {"population":"oameni","gdp":"curent US$","gdp-per-capita":"curent US$ / persoană","fertility":"naşteri/femeie","life-expectancy":"ani","population-growth":"% / an"}
+,
+  el: {"population":"άτομα","gdp":"τρέχον US$","gdp-per-capita":"τρέχον US$ / άτομο","fertility":"γεννήσεις / γυναίκα","life-expectancy":"έτη","population-growth":"% / έτος"}
 };
 
 export function unitFor(locale: Locale, indicator: IndicatorDefinition) {

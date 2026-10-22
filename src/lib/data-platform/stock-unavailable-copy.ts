@@ -16,4 +16,24 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   it: "Non sono ancora disponibili quotazioni azionarie reali autorizzate alla pubblicazione. I dati saranno forniti dopo la verifica della fonte e dei diritti.",
   nl: "Er zijn nog geen echte aandelenkoersen goedgekeurd voor openbare weergave. De gegevens volgen nadat de bron en gebruiksrechten zijn gecontroleerd.",
   hi: "सार्वजनिक प्रदर्शन के लिए स्वीकृत वास्तविक शेयर भाव अभी उपलब्ध नहीं हैं। स्रोत और उपयोग अधिकारों की पुष्टि के बाद डेटा दिया जाएगा।",
+  ru: "Подтверждённых реальных котировок акций для публикации пока нет. Данные появятся после проверки источника и прав на использование.",
+
+  "tr": "Herkese açık gösterim için doğrulanmış gerçek hisse fiyatları henüz mevcut değil. Kaynak ve kullanım hakları doğrulandıktan sonra veriler sunulacaktır."
+,
+  "pl": "Brak rzeczywistych cen akcji zatwierdzonych do publicznego wyświetlania. Dane zostaną udostępnione po potwierdzeniu źródła i praw do ich wykorzystania."
+,
+  "fil": "Wala pang aktuwal na presyo ng stock na naaprubahan para sa pampublikong pagpapakita. Magiging available ang datos kapag napatunayan ang pinagmulan at mga karapatan sa paggamit."
+,
+  "bn": "সর্বজনীন প্রদর্শনের অনুমোদনসহ প্রকৃত শেয়ারের দাম এখনো নেই। উৎস ও ব্যবহারের অধিকার যাচাই হলে ডেটা দেওয়া হবে।",
+  uk: "Дані фондового ринку тимчасово недоступні. Спробуйте пізніше."
+,
+  ms: "Belum ada kutipan saham untuk publik. Petikan akan muncul setelah sumber dan hak penggunaan disahkan."
+,
+  sv: "Inga aktiekurser clearade för offentlig visning finns ännu. Citat kommer att visas efter att källan och användarrättigheterna har verifierats."
+,
+  cs: "Dosud nejsou k dispozici žádné akciové uvozovky. Citace se objeví po ověření zdroje a práv na užívání."
+,
+  ro: "Încă nu sunt disponibile cotații de stoc pentru afișarea publică. Citatele vor apărea după ce sursa și drepturile de utilizare sunt verificate."
+,
+  el: "Δεν υπάρχουν διαθέσιμα εισαγωγικά μετοχών για δημόσια προβολή. Τα εισαγωγικά θα εμφανίζονται μετά την επαλήθευση της πηγής και των δικαιωμάτων χρήσης."
 };

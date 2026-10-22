@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/site";
 
 export const comparePeriodCopy: Record<Locale, { range: string; from: string; to: string; startValue: string; endValue: string; difference: string; percent: string; percentagePoints: string; percentagePointUnit: string }> = {
+  ru:{range:"Изменение за период",from:"Начальный год",to:"Конечный год",startValue:"Начальное значение",endValue:"Конечное значение",difference:"Абсолютное изменение",percent:"Относительное изменение",percentagePoints:"Изменение",percentagePointUnit:"п. п."},
   ko:{range:"기간 변화 비교",from:"시작 연도",to:"종료 연도",startValue:"시작 값",endValue:"종료 값",difference:"변화량",percent:"변화율",percentagePoints:"변화량",percentagePointUnit:"%p"},
   en:{range:"Change over a period",from:"Start year",to:"End year",startValue:"Starting value",endValue:"Ending value",difference:"Absolute change",percent:"Relative change",percentagePoints:"Change",percentagePointUnit:"pp"},
   ja:{range:"期間の変化を比較",from:"開始年",to:"終了年",startValue:"開始値",endValue:"終了値",difference:"変化量",percent:"変化率",percentagePoints:"変化量",percentagePointUnit:"ポイント"},
@@ -16,6 +17,25 @@ export const comparePeriodCopy: Record<Locale, { range: string; from: string; to
   it:{range:"Variazione nel periodo",from:"Anno iniziale",to:"Anno finale",startValue:"Valore iniziale",endValue:"Valore finale",difference:"Variazione assoluta",percent:"Variazione relativa",percentagePoints:"Variazione",percentagePointUnit:"p.p."},
   nl:{range:"Verandering over een periode",from:"Beginjaar",to:"Eindjaar",startValue:"Beginwaarde",endValue:"Eindwaarde",difference:"Absolute verandering",percent:"Relatieve verandering",percentagePoints:"Verandering",percentagePointUnit:"procentpunt"},
   hi:{range:"अवधि में बदलाव",from:"प्रारंभ वर्ष",to:"अंतिम वर्ष",startValue:"प्रारंभिक मान",endValue:"अंतिम मान",difference:"निरपेक्ष बदलाव",percent:"सापेक्ष बदलाव",percentagePoints:"बदलाव",percentagePointUnit:"प्रतिशत अंक"},
+
+  "tr": {range:"Dönem içindeki değişim",from:"Başlangıç yılı",to:"Bitiş yılı",startValue:"Başlangıç değeri",endValue:"Bitiş değeri",difference:"Mutlak değişim",percent:"Göreli değişim",percentagePoints:"Değişim",percentagePointUnit:"yüzde puan"}
+,
+  "pl": {range:"Zmiana w okresie",from:"Rok początkowy",to:"Rok końcowy",startValue:"Wartość początkowa",endValue:"Wartość końcowa",difference:"Zmiana bezwzględna",percent:"Zmiana względna",percentagePoints:"Zmiana",percentagePointUnit:"punkty procentowe"}
+,
+  "fil": {range:"Pagbabago sa panahon",from:"Taon ng simula",to:"Taon ng pagtatapos",startValue:"Halaga sa simula",endValue:"Halaga sa dulo",difference:"Ganap na pagbabago",percent:"Kaugnay na pagbabago",percentagePoints:"Pagbabago",percentagePointUnit:"puntos ng porsiyento"}
+,
+  "bn": {range:"সময়ের পরিবর্তন",from:"শুরুর বছর",to:"শেষের বছর",startValue:"শুরুর মান",endValue:"শেষের মান",difference:"পরম পরিবর্তন",percent:"আপেক্ষিক পরিবর্তন",percentagePoints:"পরিবর্তন",percentagePointUnit:"শতাংশ পয়েন্ট"},
+  "uk": {range:"Зміна за період",from:"Початковий рік",to:"Кінцевий рік",startValue:"Початкове значення",endValue:"Кінцеве значення",difference:"Абсолютна зміна",percent:"Відносна зміна",percentagePoints:"Зміна",percentagePointUnit:"відсоткові пункти"}
+,
+  ms: {"range":"Perubahan di dalam suatu periode","from":"Tahun pertama","to":"Tahun akhir","startValue":"Nilai permulaan []","endValue":"Nilai Pengakhiran []","difference":"Perubahan absolut","percent":"Perubahan relatif","percentagePoints":"♪ Perubahan ♪","percentagePointUnit":"KANIN"}
+,
+  sv: {"range":"Förändring under en period","from":"Startår","to":"Slutår","startValue":"Startvärde","endValue":"Slutför värdet","difference":"Absolut förändring","percent":"Relativ förändring","percentagePoints":"Förändring","percentagePointUnit":"pp"}
+,
+  cs: {"range":"Změna v průběhu období","from":"Počáteční rok","to":"Konec roku","startValue":"Počáteční hodnota","endValue":"Hodnota ukončení","difference":"Absolutní změna","percent":"Relativní změna","percentagePoints":"Změna","percentagePointUnit":"pp"}
+,
+  ro: {"range":"Modificarea pe o perioadă","from":"Anul de începere","to":"Anul de sfârșit","startValue":"Valoare inițială","endValue":"Valoare finală","difference":"Modificarea absolută","percent":"Modificarea relativă","percentagePoints":"Modificare","percentagePointUnit":"pp"}
+,
+  el: {"range":"Μεταβολή σε περίοδο","from":"Έτος έναρξης","to":"Τελικό έτος","startValue":"Τιμή εκκίνησης","endValue":"Τελική τιμή","difference":"Απόλυτη μεταβολή","percent":"Σχετική μεταβολή","percentagePoints":"Αλλαγή","percentagePointUnit":"pp"}
 };
 
 export const isRateIndicator = (indicatorId: string) => ["electricity-access", "population-growth", "unemployment"].includes(indicatorId);

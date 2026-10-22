@@ -18,6 +18,10 @@ export function familySiteHref(locale: Locale, key: FamilySiteKey) {
 }
 
 export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
+  bn: "MoneyBook-এর পাতা ইংরেজিতে খুলবে।",
+  fil: "Magbubukas sa Ingles ang pahina ng MoneyBook.",
+  pl: "Strona MoneyBook otworzy się po angielsku.",
+  ru: "Страница MoneyBook откроется на английском.",
   es: "La página de MoneyBook se abrirá en inglés.",
   "pt-br": "A página do MoneyBook será aberta em inglês.",
   de: "MoneyBook wird auf Englisch geöffnet.",
@@ -29,6 +33,18 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   it: "MoneyBook si aprirà in inglese.",
   nl: "MoneyBook wordt in het Engels geopend.",
   hi: "MoneyBook अंग्रेज़ी में खुलेगा।",
+  "tr": "MoneyBook sayfası İngilizce açılacaktır.",
+  uk: "MoneyBook наразі доступний корейською, англійською, японською та китайською мовами. Відкрийте англійську версію."
+,
+  ms: "MoneyBook akan dibuka dalam bahasa Inggeris."
+,
+  sv: "MoneyBook ?ppnas p? engelska."
+,
+  cs: "MoneyBook se otevře v angličtině."
+,
+  ro: "MoneyBook se va deschide în limba engleză."
+,
+  el: "Το MoneyBook θα ανοίξει στα αγγλικά."
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -57,4 +73,24 @@ export const familySitesCopy: Record<Locale, {
   it: { label: "Siti della famiglia", sites: { portal: "Portale", calculator: "Calcolatrici", tools: "Strumenti online", moneyBook: "Registro spese condiviso gratuito", docs: "Documenti e modelli", quiz: "Quiz e test" }, docsTitle: "Documenti e modelli", docsDescription: "Trova documenti e modelli pratici per la vita di tutti i giorni.", docsCta: "Sfoglia i documenti", quizTitle: "Quiz e test", quizDescription: "Divertiti con tanti quiz e test diversi.", quizCta: "Scopri i quiz", menu: "Menu" },
   nl: { label: "Familiewebsites", sites: { portal: "Portaal", calculator: "Rekenmachines", tools: "Online hulpmiddelen", moneyBook: "Gratis gedeeld huishoudboekje", docs: "Documenten en sjablonen", quiz: "Quizzen en tests" }, docsTitle: "Documenten en sjablonen", docsDescription: "Vind handige documenten en sjablonen voor elke dag.", docsCta: "Documenten bekijken", quizTitle: "Quizzen en tests", quizDescription: "Ontdek allerlei leuke quizzen en tests.", quizCta: "Quizzen ontdekken", menu: "Menu" },
   hi: { label: "परिवार की साइटें", sites: { portal: "पोर्टल", calculator: "कैलकुलेटर", tools: "ऑनलाइन टूल", moneyBook: "मुफ़्त साझा खर्च खाता", docs: "दस्तावेज़ और टेम्पलेट", quiz: "क्विज़ और टेस्ट" }, docsTitle: "दस्तावेज़ और टेम्पलेट", docsDescription: "रोज़मर्रा के काम के दस्तावेज़ और टेम्पलेट पाएँ।", docsCta: "दस्तावेज़ देखें", quizTitle: "क्विज़ और टेस्ट", quizDescription: "कई रोचक क्विज़ और टेस्ट के साथ कुछ नया आज़माएँ।", quizCta: "क्विज़ देखें", menu: "मेन्यू" },
+  ru: { label:"Сервисы WOORI.TODAY",sites:{portal:"Портал",calculator:"Калькуляторы",tools:"Инструменты",moneyBook:"Общий семейный бюджет",docs:"Документы и шаблоны",quiz:"Викторины и тесты"},docsTitle:"Документы и шаблоны",docsDescription:"Практичные документы и шаблоны для повседневных задач.",docsCta:"Открыть документы",quizTitle:"Викторины и тесты",quizDescription:"Попробуйте разные интересные викторины и тесты.",quizCta:"К викторинам",menu:"Меню" },
+
+  "tr": {label:"Aile hizmetleri",sites:{portal:"Portal",calculator:"Hesap makineleri",tools:"Çevrimiçi araçlar",moneyBook:"MoneyBook",docs:"Belgeler",quiz:"Quiz"},docsTitle:"Belge şablonları",docsDescription:"Tutanak, teklif ve haftalık planlar için kullanıma hazır şablonlar.",docsCta:"Belgeleri aç",quizTitle:"Bilgi yarışmaları",quizDescription:"Genel kültür, matematik, coğrafya ve teknoloji konularında kısa quizler.",quizCta:"Quizleri aç",menu:"Hizmet menüsü"}
+,
+  "pl": {label:"Serwisy rodzinne",sites:{portal:"Portal",calculator:"Kalkulatory",tools:"Narzędzia online",moneyBook:"MoneyBook",docs:"Dokumenty",quiz:"Quizy"},docsTitle:"Szablony dokumentów",docsDescription:"Gotowe układy protokołów, ofert i planów tygodniowych.",docsCta:"Otwórz dokumenty",quizTitle:"Quizy wiedzy",quizDescription:"Krótkie quizy z wiedzy ogólnej, matematyki, geografii i technologii.",quizCta:"Otwórz quizy",menu:"Menu usług"}
+,
+  "fil": {label:"Mga serbisyong magkakaugnay",sites:{portal:"Portal",calculator:"Mga calculator",tools:"Mga online na tool",moneyBook:"MoneyBook",docs:"Mga dokumento",quiz:"Quiz"},docsTitle:"Mga template ng dokumento",docsDescription:"Mga handang template para sa tala ng pulong, quotation at lingguhang plano.",docsCta:"Buksan ang mga dokumento",quizTitle:"Mga quiz",quizDescription:"Maiikling quiz tungkol sa kaalaman, matematika, heograpiya at teknolohiya.",quizCta:"Buksan ang mga quiz",menu:"Menu ng serbisyo"}
+,
+  "bn": {label:"পরিবারের সাইট",sites:{portal:"Portal",calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল",moneyBook:"MoneyBook",docs:"নথি",quiz:"কুইজ"},docsTitle:"নথির টেমপ্লেট",docsDescription:"সভা নোট, কোটেশন ও সাপ্তাহিক পরিকল্পনার প্রস্তুত টেমপ্লেট।",docsCta:"নথি খুলুন",quizTitle:"জ্ঞান যাচাইয়ের কুইজ",quizDescription:"সাধারণ জ্ঞান, গণিত, ভূগোল ও প্রযুক্তি নিয়ে ছোট কুইজ।",quizCta:"কুইজ খুলুন",menu:"সেবা মেনু"},
+  uk: {"label":"Сімейні сервіси","sites":{"portal":"Портал","calculator":"Калькулятор","tools":"Інструменти","moneyBook":"MoneyBook","docs":"Документи","quiz":"Вікторини"},"docsTitle":"Документи","docsDescription":"Шаблони документів для повсякденних завдань.","docsCta":"Переглянути шаблони","quizTitle":"Вікторини","quizDescription":"Короткі вікторини для навчання та відпочинку.","quizCta":"Відкрити вікторини","menu":"Меню сервісів"}
+,
+  ms: {"label":"Situs Keluarga","sites":{"portal":"Portal","calculator":"Kalkulator","tools":"Alatan Daring","moneyBook":"Buku Uang Kongsi Bebas Percuma","docs":"Dokumen-dokumen","quiz":"Uji Quiz &"},"docsTitle":"Dokumen-dokumen","docsDescription":"Keanekagunaan dokumen dan template untuk keperluan sehari-hari.","docsCta":"Dokumen Lungsur","quizTitle":"Uji Quiz &","quizDescription":"Masa istirahat dengan berbagai kuis dan tes yang menyenangkan.","quizCta":"Kuiz Eksplore","menu":"Menu"}
+,
+  sv: {"label":"Familjeplatser","sites":{"portal":"Portal","calculator":"Kalkylatorer","tools":"Onlineverktyg","moneyBook":"Gratis delad pengar bok","docs":"Dokument","quiz":"Quiz och tester"},"docsTitle":"Dokument","docsDescription":"Hitta användbara dokument och mallar för vardagliga behov.","docsCta":"Bläddra i dokument","quizTitle":"Quiz och tester","quizDescription":"Ta en paus med en mängd roliga frågesporter och tester.","quizCta":"Utforska quizzes","menu":"Menyn"}
+,
+  cs: {"label":"Rodinné stránky","sites":{"portal":"Portál","calculator":"Kalkulačky","tools":"Online nástroje","moneyBook":"Volný Sdílené peníze kniha","docs":"Dokumenty","quiz":"Kvíz & testy"},"docsTitle":"Dokumenty","docsDescription":"Najít užitečné dokumenty a šablony pro každodenní potřeby.","docsCta":"Prohlížet dokumenty","quizTitle":"Kvíz & testy","quizDescription":"Vezměte si přestávku s řadou zábavných kvízů a testů.","quizCta":"Prozkoumejte kvízy","menu":"Nabídka"}
+,
+  ro: {"label":"Site-uri familiale","sites":{"portal":"Portal","calculator":"Calculatoare","tools":"Unelte online","moneyBook":"Carte gratuită de bani partajați","docs":"Documente","quiz":"Testează și testează"},"docsTitle":"Documente","docsDescription":"Găsiți documente și șabloane utile pentru nevoile zilnice.","docsCta":"Navighează documentele","quizTitle":"Testează și testează","quizDescription":"Ia o pauză cu o varietate de teste și teste distractive.","quizCta":"Explorează teste","menu":"Meniu"}
+,
+  el: {"label":"Οικογενειακές τοποθεσίες","sites":{"portal":"Πύλη","calculator":"Υπολογιστές","tools":"Online εργαλεία","moneyBook":"Δωρεάν κοινόχρηστο βιβλίο χρημάτων","docs":"Έγγραφα","quiz":"& Δοκιμές Quiz"},"docsTitle":"Έγγραφα","docsDescription":"Βρείτε χρήσιμα έγγραφα και πρότυπα για τις καθημερινές ανάγκες.","docsCta":"Περιήγηση εγγράφων","quizTitle":"& Δοκιμές Quiz","quizDescription":"Κάντε ένα διάλειμμα με μια ποικιλία από διασκεδαστικά κουίζ και δοκιμές.","quizCta":"Εξερευνήστε τα κουίζ","menu":"Μενού"}
 };

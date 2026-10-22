@@ -16,4 +16,24 @@ export const datePickerCopy: Record<Locale, { previousMonth: string; nextMonth: 
   it: { previousMonth: "Mese precedente", nextMonth: "Mese successivo", close: "Chiudi calendario", calendar: "Apri calendario", today: "Oggi" },
   nl: { previousMonth: "Vorige maand", nextMonth: "Volgende maand", close: "Kalender sluiten", calendar: "Kalender openen", today: "Vandaag" },
   hi: { previousMonth: "पिछला महीना", nextMonth: "अगला महीना", close: "कैलेंडर बंद करें", calendar: "कैलेंडर खोलें", today: "आज" },
+  ru: { previousMonth: "Предыдущий месяц", nextMonth: "Следующий месяц", close: "Закрыть календарь", calendar: "Открыть календарь", today: "Сегодня" },
+
+  "tr": {previousMonth:"Önceki ay",nextMonth:"Sonraki ay",close:"Kapat",calendar:"Takvim",today: "Bugün"}
+,
+  "pl": {previousMonth:"Poprzedni miesiąc",nextMonth:"Następny miesiąc",close:"Zamknij",calendar:"Kalendarz",today: "Dzisiaj"}
+,
+  "fil": {previousMonth:"Nakaraang buwan",nextMonth:"Susunod na buwan",close:"Isara",calendar:"Kalendaryo",today: "Ngayon"}
+,
+  "bn": {previousMonth:"আগের মাস",nextMonth:"পরের মাস",close:"বন্ধ করুন",calendar:"ক্যালেন্ডার",today: "আজ"},
+  uk: { previousMonth: "Попередній місяць", nextMonth: "Наступний місяць", close: "Закрити", calendar: "Відкрити календар", today: "Сьогодні" }
+,
+  ms: { previousMonth: "Bulan sebelumnya", nextMonth: "Bulan seterusnya", close: "Tutup", calendar: "Buka kalendar", today: "Hari ini" }
+,
+  sv: { previousMonth: "F?reg?ende m?nad", nextMonth: "N?sta m?nad", close: "St?ng", calendar: "?ppna kalendern", today: "I dag" }
+,
+  cs: { previousMonth: "Předchozí měsíc", nextMonth: "Další měsíc", close: "Zavřít", calendar: "Otevřít kalendář", today: "Dnes" }
+,
+  ro: { previousMonth: "Luna precedentă", nextMonth: "Luna următoare", close: "Închide", calendar: "Deschide calendarul", today: "Astăzi" }
+,
+  el: { previousMonth: "Προηγούμενος μήνας", nextMonth: "Επόμενος μήνας", close: "Κλείσιμο", calendar: "Άνοιγμα ημερολογίου", today: "Σήμερα" }
 };
