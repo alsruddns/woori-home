@@ -59,7 +59,7 @@ jobs:
                         depth += lines[i].count("{") - lines[i].count("}")
                         i += 1
                     text = "".join(block)
-                    if re.search(r"/(?:portal-api|api|calculators|tools|quiz|docs)/|location\s*=\s*/", line):
+                    if re.search(r"\$valid_locale|/(?:portal-api|api|calculators|tools|quiz|docs)/|location\s*=\s*/", line):
                         print("\n".join(part.rstrip() for part in block if re.match(r"\s*location\b|\s*(?:proxy_pass|return|rewrite|try_files|set)\b", part)))
                     continue
                 i += 1
@@ -77,9 +77,11 @@ jobs:
               target_host="$config_candidates"
               file_writable=false
               backup_writable=false
+              sudo_writable=false
               [ -w "$target_host" ] && file_writable=true
+              sudo -n test -w "$target_host" 2>/dev/null && sudo_writable=true
               [ -d "$backup_dir" ] && [ -w "$backup_dir" ] && backup_writable=true
-              printf '[NGINX INSPECT] Active config file=%s; deploy account file writable=%s; backup directory writable=%s\n' "$(basename "$target_host")" "$file_writable" "$backup_writable"
+              printf '[NGINX INSPECT] Active config file=%s; deploy account file writable=%s; sudo file writable=%s; backup directory writable=%s\n' "$(basename "$target_host")" "$file_writable" "$sudo_writable" "$backup_writable"
               target_container="/etc/nginx/conf.d/$(basename "$target_host")"
               if api_location_count="$(docker exec "$nginx_container" grep -Fc 'location ^~ /api/ {' "$target_container")"; then :; else api_location_count=0; fi
               printf '[NGINX INSPECT] Existing MoneyBook /api location count=%s\n' "$api_location_count"
