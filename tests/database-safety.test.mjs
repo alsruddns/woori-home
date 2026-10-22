@@ -141,6 +141,7 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /inputs\.import_sec/);
   assert.match(workflow, /confirm_production_db_write/);
   assert.match(workflow, /Production database writes require the explicit confirm_production_db_write input/);
+  assert.equal((workflow.match(/!contains\(github\.event\.head_commit\.message \|\| '', '\[db-first\]'\)/g) ?? []).length, 2);
   assert.match(workflow, /preflight-financial-production\.mjs/);
   assert.match(workflow, /grant-financial-runtime-read-production\.mjs/);
   assert.match(workflow, /financial-sec-production\.mjs verify/);

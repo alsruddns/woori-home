@@ -57,7 +57,7 @@ jobs:
 
   image:
     needs: release-guard
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -98,7 +98,7 @@ jobs:
 
   deploy:
     needs: image
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
     runs-on: ubuntu-latest
     environment: production
     concurrency:
