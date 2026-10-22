@@ -10,10 +10,10 @@ import type { CountrySeries } from "./country-charts";
 import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-copy";
 import { rankCountryObservations } from "@/lib/data-platform/rankings";
 import { rankingCopy } from "@/lib/data-platform/ranking-copy";
-import { supportedCountries } from "@/lib/data-platform/countries";
+import { dataCountries } from "@/lib/data-platform/countries";
 import { RankingControls } from "./ranking-controls";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
-import { resolveWorldBankDataSource } from "../../../lib/db/world-bank-mode.mjs";
+import { resolveWorldBankDataSource, worldBankIndicatorSource } from "../../../lib/db/world-bank-mode.mjs";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -59,10 +59,10 @@ export function WorldOverview({ locale, requestedIndicator, requestedYear, reque
       })}</div>
     </section>
     <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">SP.POP.TOTL</span><h2>{copy.compare}: {platformCopy[locale].categories[3]}</h2></div><span>{copy.referenceYear} · {copy.latest}</span></div><DataTable locale={locale} indicator="SP.POP.TOTL" /></section>
-    <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{ranking.included}: {supportedCountries.length}</span><h2>{ranking.title}</h2></div><span>{ranking.scope}</span></div>
+    <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{ranking.included}: {dataCountries.length}</span><h2>{ranking.title}</h2></div><span>{ranking.scope}</span></div>
       {selectedIndicator && year ? <RankingControls locale={locale} indicators={rankable} years={years} selectedIndicator={selectedIndicator.code} selectedYear={year} selectedDirection={direction} /> : null}
-      {ranked.length ? <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{ranking.rank}</th><th>{ranking.country}</th><th>{ranking.year}</th><th>{ranking.value} ({selectedIndicator ? unitFor(locale, selectedIndicator) : ""})</th></tr></thead><tbody>{ranked.map((row) => { const code = countryCodeForIso3(row.country); return <tr key={row.country}><td>{row.rank}</td><th scope="row">{code ? <Link href={`/${locale}/countries/${code}`}>{localizedCountryName(row.country, row.countryName, locale)}</Link> : localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>; })}</tbody></table></div> : <p className="platform-empty-row">{ranking.noData}</p>}
-      <p className="platform-data-note">{ranking.included}: {ranked.length} · {ranking.missing}: {Math.max(supportedCountries.length - ranked.length, 0)}. Tied values share the same rank; missing values are omitted.</p>
+      {ranked.length ? <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{ranking.rank}</th><th>{ranking.country}</th><th>{ranking.year}</th><th>{ranking.value} ({selectedIndicator ? unitFor(locale, selectedIndicator) : ""})</th></tr></thead><tbody>{ranked.map((row) => { const code = countryCodeForIso3(row.country); return <tr key={row.country}><td>{row.rank}</td><th scope="row">{code && dataCountries.some((country) => country.code === code) ? <Link href={`/${locale}/countries/${code}`}>{localizedCountryName(row.country, row.countryName, locale)}</Link> : localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>; })}</tbody></table></div> : <p className="platform-empty-row">{ranking.noData}</p>}
+      <p className="platform-data-note">{ranking.included}: {ranked.length} · {ranking.missing}: {Math.max(dataCountries.length - ranked.length, 0)}. Tied values share the same rank; missing values are omitted.</p>
     </section>
     <p className="platform-data-note">{copy.sourceNote} <a href="https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json">World Bank API</a></p>
   </>;
@@ -121,30 +121,34 @@ export function IndicatorCategory({ locale, category, title }: { locale: Locale;
   </>;
 }
 
-export async function CountryComparison({ locale, requestedCountries }: { locale: Locale; requestedCountries?: string[] }) {
+export async function CountryComparison({ locale, requestedCountries, requestedIndicator }: { locale: Locale; requestedCountries?: string[]; requestedIndicator?: string }) {
   const copy = platformCopy[locale];
   const validSelection = [...new Set(requestedCountries?.map((code) => code.toLowerCase()).filter((code) => countryByCode(code)) ?? [])];
-  const initialCountries = validSelection && validSelection.length >= 2 && validSelection.length <= 5 ? [...new Set(validSelection)] : ["kr", "us", "jp"];
+  const initialCountries = validSelection && validSelection.length >= 2 && validSelection.length <= 20 ? [...new Set(validSelection)] : ["kr", "us", "jp", "cn", "de", "gb", "fr", "in", "ca", "au"];
   const selectedSource = resolveWorldBankDataSource().source as "json" | "db";
-  let initialIndicatorId = "population";
+  const requestedIndicatorMeta = indicators.find((item) => item.id === requestedIndicator);
+  let initialIndicatorId = requestedIndicatorMeta?.id ?? "population";
   let sourceInfo: Awaited<ReturnType<typeof getReviewedWorldBankSourceInfo>> = null;
+  if (selectedSource === "db" && !requestedIndicatorMeta) {
+    initialIndicatorId = "unemployment";
+  }
+  const selectedIndicator = indicators.find((item) => item.id === initialIndicatorId)!;
   let initialSeries: CountrySeries[] = initialCountries.map((code) => {
     const country = countryByCode(code)!;
-    return { code: country.code, iso3: country.iso3, observations: observationsFor("SP.POP.TOTL", country.iso3).map(({ year, value, unit }) => ({ year, value, unit })) };
+    return { code: country.code, iso3: country.iso3, observations: observationsFor(selectedIndicator.code, country.iso3).map(({ year, value, unit }) => ({ year, value, unit })) };
   });
-  if (selectedSource === "db") {
-    initialIndicatorId = "unemployment";
+  if (worldBankIndicatorSource(selectedSource, selectedIndicator.code) === "db") {
     const [rows, selectedSourceInfo] = await Promise.all([
-      compareWorldBankCountries("SL.UEM.TOTL.ZS", initialCountries.map((code) => countryByCode(code)!.iso3)),
-      getReviewedWorldBankSourceInfo("SL.UEM.TOTL.ZS"),
+      compareWorldBankCountries(selectedIndicator.code, initialCountries.map((code) => countryByCode(code)!.iso3)),
+      getReviewedWorldBankSourceInfo(selectedIndicator.code),
     ]);
-    sourceInfo = selectedSourceInfo;
     initialSeries = initialCountries.map((code) => {
       const country = countryByCode(code)!;
       return { code: country.code, iso3: country.iso3, observations: rows.filter((row) => row.countryIso3 === country.iso3).map((row) => ({ year: row.year, value: Number(row.value), unit: row.unit })) };
     });
+    sourceInfo = selectedSourceInfo;
   }
-  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header><CountryComparisonDashboard locale={locale} initialCountries={initialCountries} initialSeries={initialSeries} initialIndicatorId={initialIndicatorId} dataSource={selectedSource} initialSourceInfo={sourceInfo} /></>;
+  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header><CountryComparisonDashboard key={`${initialCountries.join(",")}:${initialIndicatorId}`} locale={locale} initialCountries={initialCountries} initialSeries={initialSeries} initialIndicatorId={initialIndicatorId} dataSource={selectedSource} initialSourceInfo={sourceInfo} /></>;
 }
 
 export function EmptyCategory({ locale, title }: { locale: Locale; title: string }) {

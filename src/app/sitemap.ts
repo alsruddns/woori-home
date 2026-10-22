@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { alternates, locales, origin, publicPortalPaths, publicDataPaths, localizedDataPaths } from "@/lib/site";
-import { supportedCountries } from "@/lib/data-platform/countries";
+import { dataCountries } from "@/lib/data-platform/countries";
 import { indicators } from "@/lib/data-platform/registry";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${origin}/${locale}${path}`,
     alternates: alternates(path),
   }))));
-  const countryDetails = locales.flatMap((locale) => supportedCountries.map(({ code }) => ({
+  const countryDetails = locales.flatMap((locale) => dataCountries.map(({ code }) => ({
     url: `${origin}/${locale}/countries/${code}`,
     alternates: alternates(`/countries/${code}`),
   })));

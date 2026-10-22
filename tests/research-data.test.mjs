@@ -52,7 +52,7 @@ test("daily Crossref refresh is idempotent and preserves the last valid file on 
     assert.equal(first.changed, true);
     assert.equal(second.changed, false);
     assert.equal(await readFile(output, "utf8"), initial);
-    await assert.rejects(updatePapers({ output, fetchImpl: async () => ({ ok: false, status: 400, headers: new Headers() }) }), /HTTP 400/);
+    await assert.rejects(updatePapers({ output, forceRefresh: true, now: new Date("2026-10-23T00:00:00Z"), fetchImpl: async () => ({ ok: false, status: 400, headers: new Headers() }) }), /HTTP 400/);
     assert.equal(await readFile(output, "utf8"), initial);
   } finally {
     await rm(directory, { recursive: true, force: true });

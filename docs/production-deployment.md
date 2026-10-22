@@ -1,13 +1,13 @@
 # Production deployment preparation
 
-Status: **BLOCKED for production deployment until the GitHub `production` environment is protected.** A read-only GitHub API check on 2026-10-21 returned 404 for that environment. Production was not accessed or changed. Work is prepared on `develop` from the operator-supplied baseline `a2f1b950f06293eb4cd0b54fe4120d8c9d6928ab`; the deployment workflow has not been run. Server configuration and credentials remain unverified.
+Status rechecked 2026-10-22: GitHub `production` Environment exists and permits only `main` (no reviewer rule). The latest recorded main deployment is successful. Public checks reach the Portal API: the approved unemployment comparison returned `source=db` with `Cache-Control: no-store`; population returned `source=json` with its public cache policy; POST returned 405; `/ko` returned 200. The live `/portal-api/` route currently works. Runtime database privileges and host-side Nginx file contents have not been independently audited. No direct production DB command, migration, import, or write was run during this verification.
 
 ## Scope and verified baseline
 
 - All release operations are scoped to the `portal` Compose service. The workflow does not invoke `docker compose down`, recreate dependencies, edit either server environment file, or change MoneyBook, Calculator, Tools, Docs, Quiz, PostgreSQL, or Nginx.
 - The existing local PostgreSQL baseline supplied for this work is `woori_today_portal_dev`, 4 migrations applied / 0 pending, 1,090 reviewed World Bank observations, and zero financial prices. The previously recorded JSON comparison is exact for the two approved indicators. Re-run the local commands listed below against the current checkout before release.
-- Server facts are based only on operator notes: `/opt/services/compose/docker-compose.yml`, `.env.moneybook`, `.env.portal`, `portal`, `postgres`, `compose_database`, and `compose_default`. The remote Compose file, backup result, host, roles, healthcheck, and network are not inspected by this change.
-- No production migration, import, DB query, deployment, or rollback was executed.
+- Server paths and deployment behavior remain subject to on-host review. Public HTTP checks confirm current Portal behavior, not the exact contents of `/opt/services/compose/docker-compose.yml`, `.env.portal`, DB grants, or the active Nginx file.
+- No production migration, import, direct DB command, or DB write was executed.
 
 ## Workflow controls
 
@@ -96,4 +96,4 @@ Also exercise the release guard with main and non-main refs in unit tests. Brows
 
 ## Remaining conditions
 
-The code-level blockers are addressed: main-only workflow gate, digest deployment, two env-file Compose reads, portal-only update/rollback attempt, guarded production migration/import, and explicit production DB-read mode. Release remains blocked until GitHub environment protection is created and then verified. Before deployment, also verify live Compose/env/role/host/health settings, a successful non-empty backup restore, available disk space, and the final workflow from main. No production server or database state was inspected, so this document is not evidence of server readiness.
+The main-only Environment policy is verified through the GitHub API. Live DB read mode is verified at the public API for the approved and unapproved indicator routes. Before a future release, inspect the host Compose/env role and network settings, confirm SELECT-only runtime grants, verify a successful non-empty backup restore and disk headroom, and preserve the active Nginx `/portal-api/` location in the host's administrator-managed config. A behavior check does not prove those host-file details. Keep `apply_database_changes=false` unless a separately reviewed database operation is intentionally approved.

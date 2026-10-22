@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/site";
 import { indicators } from "@/lib/data-platform/registry";
 import { supportedCountries, countryName } from "@/lib/data-platform/countries";
@@ -15,6 +16,7 @@ import { comparePeriodCopy, isRateIndicator } from "@/lib/data-platform/compare-
 type SourceInfo = { provider: string; providerUrl: string; license: string; licenseUrl: string };
 
 export function CountryComparisonDashboard({ locale, initialCountries, initialSeries, initialIndicatorId = "population", dataSource = "json", initialSourceInfo = null }: { locale: Locale; initialCountries: string[]; initialSeries: CountrySeries[]; initialIndicatorId?: string; dataSource?: "json" | "db"; initialSourceInfo?: SourceInfo | null }) {
+  const router = useRouter();
   const copy = countryCopy[locale];
   const platform = platformCopy[locale];
   const requestId = useRef(0);
@@ -35,11 +37,11 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   function toggleCountry(code: string) {
     setDraftCountries((current) => current.includes(code)
       ? current.length > 2 ? current.filter((item) => item !== code) : current
-      : current.length < 5 ? [...current, code] : current);
+      : current.length < 20 ? [...current, code] : current);
   }
 
   async function compare() {
-    if (draftCountries.length < 2 || draftCountries.length > 5) return;
+    if (draftCountries.length < 2 || draftCountries.length > 20) return;
     const id = ++requestId.current;
     setError(false);
     setBusy(true);
@@ -53,6 +55,8 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
         setSourceInfo(result.sourceInfo ?? null);
         setCountries(draftCountries);
         setIndicatorId(draftIndicator);
+        const query = new URLSearchParams({ countries: draftCountries.join(","), indicator: draftIndicator });
+        router.push(`${window.location.pathname}?${query.toString()}`, { scroll: false });
       }
     } catch {
       if (id === requestId.current) setError(true);
@@ -90,14 +94,14 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   return <section className="country-comparison-dashboard" aria-busy={busy}>
     <div className="country-comparison-controls">
       <div className="country-control-group"><label htmlFor="comparison-indicator">{copy.metric}</label><select id="comparison-indicator" value={draftIndicator} onChange={(event) => setDraftIndicator(event.target.value)}>{availableIndicators.map((item) => <option key={item.id} value={item.id}>{item.label[locale] ?? item.label.en}</option>)}</select></div>
-      <details className="country-picker"><summary>{copy.chooseCountries} · {draftCountries.length}/5</summary><div className="country-picker-panel"><p>{copy.maxCountries}</p>{sortedCountries.map((country) => <label key={country.code}><input type="checkbox" checked={draftCountries.includes(country.code)} disabled={!draftCountries.includes(country.code) && draftCountries.length >= 5 || draftCountries.includes(country.code) && draftCountries.length <= 2} onChange={() => toggleCountry(country.code)}/><span>{countryName(country.code, locale)}</span></label>)}</div></details>
+      <details className="country-picker"><summary>{copy.chooseCountries} · {draftCountries.length}/20</summary><div className="country-picker-panel"><p>{copy.maxCountries.replace(/5/g, "20")}</p>{sortedCountries.map((country) => <label key={country.code}><input type="checkbox" checked={draftCountries.includes(country.code)} disabled={!draftCountries.includes(country.code) && draftCountries.length >= 20 || draftCountries.includes(country.code) && draftCountries.length <= 2} onChange={() => toggleCountry(country.code)}/><span>{countryName(country.code, locale)}</span></label>)}</div></details>
       <button className="country-compare-button" type="button" disabled={!hasChanges || draftCountries.length < 2} onClick={compare}>{copy.compareCountries}</button>
       {error ? <p className="country-comparison-error" role="alert">{copy.loadError}</p> : null}
     </div>
     {availableYears.length > 0 ? <section className="country-period-analysis"><div className="country-comparison-heading"><div><span className="platform-eyebrow">{indicator.code} · {unitFor(locale, indicator)}</span><h2>{periodCopy.range}</h2></div></div><div className="country-period-controls"><label>{periodCopy.from}<select value={fromYear ?? ""} onChange={(event) => chooseStartYear(Number(event.target.value))}>{availableYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label><label>{periodCopy.to}<select value={toYear ?? ""} onChange={(event) => chooseEndYear(Number(event.target.value))}>{availableYears.map((year) => <option key={year} value={year}>{year}</option>)}</select></label></div><div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{platform.country}</th><th>{periodCopy.startValue} · {fromYear}</th><th>{periodCopy.endValue} · {toYear}</th><th>{isRateIndicator(indicator.id) ? periodCopy.percentagePoints : periodCopy.difference} ({pointUnit})</th><th>{periodCopy.percent}</th></tr></thead><tbody>{periodRows.map((row) => <tr key={row.code}><th scope="row">{countryName(row.code, locale)}</th><td>{row.start == null ? "—" : number.format(row.start)}</td><td>{row.end == null ? "—" : number.format(row.end)}</td><td>{row.change == null ? "—" : number.format(row.change.absolute)}</td><td>{row.change?.percent == null ? "—" : `${number.format(row.change.percent)}%`}</td></tr>)}</tbody></table></div></section> : null}
     <div className="country-comparison-heading"><div><span className="platform-eyebrow">{indicator.code} · {unitFor(locale, indicator)}</span><h2>{indicator.label[locale] ?? indicator.label.en}</h2></div><span>{copy.latestByCountry}</span></div>
     <div className="country-comparison-chart"><CountryTrendChart locale={locale} title={indicator.label[locale] ?? indicator.label.en} unit={unitFor(locale, indicator)} series={series}/></div>
-    <section className="platform-table-section country-latest-table"><div className="platform-section-heading"><h2>{copy.latestByCountry}</h2><span>{platform.referenceYear}</span></div><div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{platform.country}</th><th>{platform.referenceYear}</th><th>{platform.value} · {unitFor(locale, indicator)}</th></tr></thead><tbody>{latest.map(({ code, observation }) => <tr key={code}><th scope="row"><Link href={`/${locale}/countries/${code}`}>{countryName(code, locale)}</Link></th><td>{observation?.year ?? "—"}</td><td>{observation ? number.format(observation.value) : "—"}</td></tr>)}</tbody></table>{latest.every((item) => !item.observation) ? <p className="platform-empty-row">{copy.noObservations}</p> : null}</div></section>
+    <section className="platform-table-section country-latest-table"><div className="platform-section-heading"><h2>{copy.latestByCountry}</h2><span>{platform.referenceYear}</span></div><div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{platform.country}</th><th>{platform.referenceYear}</th><th>{platform.value} · {unitFor(locale, indicator)}</th></tr></thead><tbody>{latest.map(({ code, observation }) => <tr key={code}><th scope="row">{observation ? <Link href={`/${locale}/countries/${code}`}>{countryName(code, locale)}</Link> : countryName(code, locale)}</th><td>{observation?.year ?? "—"}</td><td>{observation ? number.format(observation.value) : "—"}</td></tr>)}</tbody></table>{latest.every((item) => !item.observation) ? <p className="platform-empty-row">{copy.noObservations}</p> : null}</div></section>
     <p className="platform-data-note">{copy.dataGapNote}</p>
     {dataSource === "db" && sourceInfo ? <p className="platform-data-note"><a href={sourceInfo.providerUrl} rel="noreferrer">{sourceInfo.provider}</a> · <a href={sourceInfo.licenseUrl} rel="noreferrer">{sourceInfo.license}</a></p> : null}
   </section>;
