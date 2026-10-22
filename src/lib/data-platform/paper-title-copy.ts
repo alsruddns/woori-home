@@ -20,4 +20,6 @@ export const paperTitleCopy: Record<Locale, { originalTitle: string; translation
   cs: {"originalTitle":"Původní název","translationDraft":"Návrh na překlad hlavy","translationPending":"Probíhající překlad · zdrojový název"}
 ,
   ro: {"originalTitle":"Titlul original","translationDraft":"Proiectul de traducere a titlului","translationPending":"Traducere în curs · titlu sursă"}
+,
+  el: {"originalTitle":"Αρχικός τίτλος","translationDraft":"Μεταφραστικό σχέδιο τίτλου","translationPending":"εκκρεμεί μετάφραση · πηγαίος τίτλος"}
 };

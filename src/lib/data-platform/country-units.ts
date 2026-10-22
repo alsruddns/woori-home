@@ -38,6 +38,8 @@ export const countryUnits: Record<Locale, Units> = {
   cs: {"population":"lidé","gdp":"aktuální US $","gdp-per-capita":"aktuální US $/ person","fertility":"porod / žena","life-expectancy":"roky","population-growth":"% / rok"}
 ,
   ro: {"population":"oameni","gdp":"curent US$","gdp-per-capita":"curent US$ / persoană","fertility":"naşteri/femeie","life-expectancy":"ani","population-growth":"% / an"}
+,
+  el: {"population":"άτομα","gdp":"τρέχον US$","gdp-per-capita":"τρέχον US$ / άτομο","fertility":"γεννήσεις / γυναίκα","life-expectancy":"έτη","population-growth":"% / έτος"}
 };
 
 export function unitFor(locale: Locale, indicator: IndicatorDefinition) {

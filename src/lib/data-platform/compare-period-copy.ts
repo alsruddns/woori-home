@@ -34,6 +34,8 @@ export const comparePeriodCopy: Record<Locale, { range: string; from: string; to
   cs: {"range":"Změna v průběhu období","from":"Počáteční rok","to":"Konec roku","startValue":"Počáteční hodnota","endValue":"Hodnota ukončení","difference":"Absolutní změna","percent":"Relativní změna","percentagePoints":"Změna","percentagePointUnit":"pp"}
 ,
   ro: {"range":"Modificarea pe o perioadă","from":"Anul de începere","to":"Anul de sfârșit","startValue":"Valoare inițială","endValue":"Valoare finală","difference":"Modificarea absolută","percent":"Modificarea relativă","percentagePoints":"Modificare","percentagePointUnit":"pp"}
+,
+  el: {"range":"Μεταβολή σε περίοδο","from":"Έτος έναρξης","to":"Τελικό έτος","startValue":"Τιμή εκκίνησης","endValue":"Τελική τιμή","difference":"Απόλυτη μεταβολή","percent":"Σχετική μεταβολή","percentagePoints":"Αλλαγή","percentagePointUnit":"pp"}
 };
 
 export const isRateIndicator = (indicatorId: string) => ["electricity-access", "population-growth", "unemployment"].includes(indicatorId);

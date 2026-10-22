@@ -29,6 +29,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
   cs: {"insights":"Údaje a postřehy","worldStats":"Světová ekonomika a statistiky"}
 ,
   ro: {"insights":"Date și perspective","worldStats":"Economia mondială și statistici"}
+,
+  el: {"insights":"& Ενόραση δεδομένων","worldStats":"Παγκόσμια οικονομία & στατιστικές"}
 };
 
 export function categoryNavigation(locale: Locale) {

@@ -37,7 +37,7 @@ test("header links preserve locale, indicate active service, and expose a mobile
     const segment = { portal: "", calculator: "/calculators", tools: "/tools", moneyBook: "/money", docs: "/docs", quiz: "/quiz" }[key];
     assert.equal(familySiteHref("pt-br", key), key === "moneyBook" ? "/en/money" : `/pt-br${segment}`);
   }
-  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro"]) {
+  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.ok(moneyBookFallbackCopy[locale], `${locale} MoneyBook language notice`);
     assert.equal(familySiteHref(locale, "moneyBook"), locale === "zh-tw" ? "/zh/money" : "/en/money");
   }

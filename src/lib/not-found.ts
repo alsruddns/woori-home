@@ -34,4 +34,6 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
   cs: {"title":"Stránka nenalezena","description":"Tato adresa může být nedostupná nebo se mohla změnit.","home":"Vrať se domů."}
 ,
   ro: {"title":"Pagina nu a fost găsită","description":"Această adresă poate fi indisponibilă sau poate fi modificată.","home":"Întoarce-te acasă."}
+,
+  el: {"title":"Η σελίδα δε βρέθηκε","description":"Αυτή η διεύθυνση μπορεί να μην είναι διαθέσιμη ή να έχει αλλάξει.","home":"Επιστροφή στο σπίτι"}
 };

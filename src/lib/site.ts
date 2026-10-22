@@ -31,6 +31,8 @@ export const localeConfig = [
   { route: "cs", hreflang: "cs", nativeName: "?e?tina", ogLocale: "cs_CZ" }
 ,
   { route: "ro", hreflang: "ro", nativeName: "Rom?n?", ogLocale: "ro_RO" }
+,
+  { route: "el", hreflang: "el", nativeName: "????????", ogLocale: "el_GR" }
 ] as const;
 export const locales = localeConfig.map((item) => item.route);
 export type Locale = (typeof localeConfig)[number]["route"];
@@ -58,6 +60,8 @@ export const newTabLabels: Record<Locale, string> = {
   cs: "otevře v nové kartě"
 ,
   ro: "deschide într-o filă nouă"
+,
+  el: "Ανοίγει σε μια νέα καρτέλα"
 };
 export const uiLabels: Record<Locale, { language: string; primaryNav: string }> = {
   ko: { language: "언어 선택", primaryNav: "주요 탐색" }, en: { language: "Choose language", primaryNav: "Primary navigation" }, ja: { language: "言語を選択", primaryNav: "メインナビゲーション" }, zh: { language: "选择语言", primaryNav: "主要导航" },
@@ -79,6 +83,8 @@ export const uiLabels: Record<Locale, { language: string; primaryNav: string }> 
   cs: {"language":"Vyberte jazyk","primaryNav":"Primární navigace"}
 ,
   ro: {"language":"Alege limba","primaryNav":"Navigarea primară"}
+,
+  el: {"language":"Επιλογή γλώσσας","primaryNav":"Πρωτοβάθμια πλοήγηση"}
 };
 export const sectionLabels: Record<Locale, { calculator: string; tools: string }> = {
   ko: { calculator: "계산기", tools: "온라인 도구" }, en: { calculator: "Calculator", tools: "Online tools" }, ja: { calculator: "計算ツール", tools: "オンラインツール" }, zh: { calculator: "计算器", tools: "在线工具" },
@@ -100,6 +106,8 @@ export const sectionLabels: Record<Locale, { calculator: string; tools: string }
   cs: {"calculator":"Kalkulačka","tools":"Online nástroje"}
 ,
   ro: {"calculator":"Calculator","tools":"Unelte online"}
+,
+  el: {"calculator":"Υπολογισμός","tools":"Εργαλεία σε απευθείας σύνδεση"}
 };
 export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
 export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;

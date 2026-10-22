@@ -48,4 +48,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
   cs: {"intro":"Přístup k elektrické energii je podíl lidí, kteří mohou používat elektřinu. Odlišuje se od spotřeby elektřiny; porovnává země s každým rokem pozorování.","comparison":"Poslední připomínky podle jednotlivých zemí","noData":"Pro tuto zemi není k dispozici žádné zveřejněné pozorování.","dateLabel":"Referenční rok"}
 ,
   ro: {"intro":"Accesul la electricitate este partea persoanelor care pot folosi electricitatea. Este diferită de consumul de energie electrică; compară țările în fiecare an de observare.","comparison":"Ultimele observații pe țări","noData":"Nu este disponibilă nicio observație publicată pentru această țară.","dateLabel":"Anul de referință"}
+,
+  el: {"intro":"Η πρόσβαση στην ηλεκτρική ενέργεια είναι το μερίδιο των ανθρώπων που μπορούν να χρησιμοποιήσουν την ηλεκτρική ενέργεια. Είναι διαφορετικό από την κατανάλωση ηλεκτρικής ενέργειας· συγκρίνεται με τις χώρες παράλληλα με κάθε έτος παρατήρησης.","comparison":"Τελευταίες παρατηρήσεις ανά χώρα","noData":"Δεν υπάρχει διαθέσιμη δημοσιευμένη παρατήρηση για τη χώρα αυτή.","dateLabel":"Έτος αναφοράς"}
 };

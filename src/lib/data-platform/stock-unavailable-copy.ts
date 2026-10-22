@@ -34,4 +34,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   cs: "Dosud nejsou k dispozici žádné akciové uvozovky. Citace se objeví po ověření zdroje a práv na užívání."
 ,
   ro: "Încă nu sunt disponibile cotații de stoc pentru afișarea publică. Citatele vor apărea după ce sursa și drepturile de utilizare sunt verificate."
+,
+  el: "Δεν υπάρχουν διαθέσιμα εισαγωγικά μετοχών για δημόσια προβολή. Τα εισαγωγικά θα εμφανίζονται μετά την επαλήθευση της πηγής και των δικαιωμάτων χρήσης."
 };

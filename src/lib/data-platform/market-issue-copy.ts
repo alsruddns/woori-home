@@ -34,4 +34,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
   cs: {"title":"Emise na akciovém trhu","description":"Datované aktualizace od burz, regulátorů a společností se objeví po ověření zdrojových oprávnění.","empty":"Pro toto datum nejsou k dispozici žádné ověřené emise na akciovém trhu.","published":"Zveřejněno","source":"Zdroj"}
 ,
   ro: {"title":"Aspecte privind piața bursieră","description":"Actualizările date de la burse, autorităţi de reglementare şi companii vor apărea după verificarea permisiunilor sursă.","empty":"Pentru această dată nu sunt disponibile emisiuni verificate ale pieței bursiere.","published":"Publicat","source":"Sursă"}
+,
+  el: {"title":"Θέματα χρηματαγοράς","description":"Ημερομηνίες ενημερώσεις από τις ανταλλαγές, τις ρυθμιστικές αρχές και τις εταιρείες θα εμφανιστούν μετά την επαλήθευση των αδειών πηγής.","empty":"Δεν υπάρχουν επαληθευμένα τεύχη στο χρηματιστήριο για αυτή την ημερομηνία.","published":"Δημοσίευση","source":"Πηγή"}
 };

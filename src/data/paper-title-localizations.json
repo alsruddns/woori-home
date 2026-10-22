@@ -24,7 +24,8 @@
     "ms": "Energi gelap satu-parameter dinamis: Petunjuk untuk osilasi",
     "sv": "Enparameter dynamisk mörk energi: Tips för oscillationer",
     "cs": "Oneparametr dynamická temná energie: rady pro oscilace",
-    "ro": "Energie întunecată dinamică monoparametru: Sugestii pentru oscilații"
+    "ro": "Energie întunecată dinamică monoparametru: Sugestii pentru oscilații",
+    "el": "Δυναμική σκοτεινή ενέργεια ενός παραμέτρου: Συμβουλές για ταλαντώσεις"
   },
   "10.1021/acs.iecr.6c02154": {
     "ko": "막 오염 예측을 위한 거칠기 보정 계면 기술자를 활용한 물리 기반 머신러닝",
@@ -51,7 +52,8 @@
     "ms": "Fisika Fisika-Guided Machine Belajar dengan Kekasaran-Terjalin Interfacial Descriptors for Membrane Fouling Prediction",
     "sv": "Fysikstyrd maskininlärning med grovhetskorrerad interfacial beskrivare för membranfoulering förutsägelse",
     "cs": "Fyzika-průvodce stroj učení s Roughness- korigované Interfacial Descriptors pro Membrane Fouling Predikce",
-    "ro": "Fizica-ghidată mașină de învățare cu rugozitate-corected Interfacial Descriptori pentru predicție Membrane Fauling"
+    "ro": "Fizica-ghidată mașină de învățare cu rugozitate-corected Interfacial Descriptori pentru predicție Membrane Fauling",
+    "el": "Μηχανική που καθοδηγείται από τη φυσική Μάθηση με Roughness-Corrected Interfacial Descriptors για Membrane Fouling Prediction"
   },
   "10.58797/teras.0501.10": {
     "ko": "물리 교사를 위한 STEM 기반 로봇공학 전문성 개발: 자카르타 MGMP Fisika의 집단 단위 교육 평가",
@@ -78,7 +80,8 @@
     "ms": "Pengembangan Profesional Robotika Berasaskan Fisika untuk Guru: Evaluasi Pelatihan Tingkat Grup di MGMP Fisika Jakarta",
     "sv": "STEM-Based Robotics Professional Development for Physics Teachers: A Group-Level Training Evaluation in MGMP Fisika Jakarta",
     "cs": "STEM- based robotics Professional Development for Physics Teachers: A Group- Level Training Evaluation in MGMP Fisika Jakarta",
-    "ro": "Dezvoltarea profesională a roboticii bazate pe STEM pentru profesorii de fizică: o evaluare a formării la nivel de grup în MGMP Fisika Jakarta"
+    "ro": "Dezvoltarea profesională a roboticii bazate pe STEM pentru profesorii de fizică: o evaluare a formării la nivel de grup în MGMP Fisika Jakarta",
+    "el": "STEM-Βασισμένη στη Ρομποτική Επαγγελματική Ανάπτυξη για τους Καθηγητές Φυσικής: A Group-Level Training Evaluation in MGMP Fisika Jakarta"
   },
   "10.3390/membranes16050181": {
     "ko": "폐수 막 생물반응기: 설명 가능한 인공지능과 디지털 트윈 응용에 관한 종합 검토",
@@ -105,7 +108,8 @@
     "ms": "Bioreaktor Membbrane Air Limbah: Tinjauan Komprehensif tentang Kecerdasan Terapan yang Dapat Dijelaskan dan Aplikasi Kembar Digital",
     "sv": "Avloppsvattenmembran Bioreaktorer: En omfattande granskning av förklarande artificiell intelligens och digitala tvillingapplikationer",
     "cs": "Wastewater Membrane Bioreactors: Komplexní přehled prokazatelné umělé inteligence a digitální Twin aplikace",
-    "ro": "Bioreactoare Membrane Wastewater: O revizuire cuprinzătoare a Inteligenţei Artificiale Explicabile şi Aplicaţii Gemene Digitale"
+    "ro": "Bioreactoare Membrane Wastewater: O revizuire cuprinzătoare a Inteligenţei Artificiale Explicabile şi Aplicaţii Gemene Digitale",
+    "el": "Αποβλήτων Νερού Μεμβράνες Βιοαντιδραστήρες: Μια Πλήρης Επισκόπηση της Εξηγήσιμης Τεχνητής Νοημοσύνης και Ψηφιακές Δίδυμες Εφαρμογές"
   },
   "10.1080/15502783.2026.2630487": {
     "ko": "사이클링 경기력 향상을 위한 운동능력 증진·의학적 보충제 사용 지침: 생리학과 근거에 대한 종합 검토",
@@ -132,7 +136,8 @@
     "ms": "Sebuah tinjauan komprehensif dari fisiologi dan basis bukti untuk membimbing penggunaan ergogenik dan suplemen medis untuk kinerja bersepeda yang ditingkatkan",
     "sv": "En omfattande översyn av fysiologin och bevisbasen för att styra användningen av ergogena och medicinska kosttillskott för förbättrad cykelprestanda",
     "cs": "Komplexní přezkum fyziologie a důkazního základu pro použití ergogenních a lékařských doplňků pro zvýšení výkonu cyklistiky",
-    "ro": "O revizuire cuprinzătoare a fiziologiei și a bazei de dovezi pentru a ghida utilizarea de suplimente ergogene și medicale pentru îmbunătățirea performanței ciclism"
+    "ro": "O revizuire cuprinzătoare a fiziologiei și a bazei de dovezi pentru a ghida utilizarea de suplimente ergogene și medicale pentru îmbunătățirea performanței ciclism",
+    "el": "Μια συνολική ανασκόπηση της φυσιολογίας και της βάσης στοιχείων για την καθοδήγηση της χρήσης των εργογόνων και ιατρικών συμπληρωμάτων για την ενίσχυση της απόδοσης του ποδηλάτου"
   },
   "10.3390/membranes15120353": {
     "ko": "재료과학 및 막 기술에서 인공지능과 머신러닝의 발전과 응용: 종합 검토",
@@ -159,7 +164,8 @@
     "ms": "Berbagai Kemajuan dan Aplikasi Kecerdasan dan Pembelajaran Mesin Seni Rupa dalam Ilmu Material dan Teknologi Membran: Tinjauan Komprehensif",
     "sv": "Framsteg och tillämpningar av artificiell intelligens och maskininlärning i materialvetenskap och membranteknik: en omfattande granskning",
     "cs": "Výstupy a aplikace umělé inteligence a strojového učení v materiálové vědě a membránové technologii: Komplexní přehled",
-    "ro": "Avansări și aplicații de inteligență artificială și învățare mașină în știința materialelor și tehnologia membrane: O revizuire cuprinzătoare"
+    "ro": "Avansări și aplicații de inteligență artificială și învățare mașină în știința materialelor și tehnologia membrane: O revizuire cuprinzătoare",
+    "el": "Προοπτικές και Εφαρμογές Τεχνητής Νοημοσύνης και Μηχανικής Μάθησης στην Επιστήμη των Υλικών και στην Τεχνολογία Μεμβρανών: Μια ολοκληρωμένη επισκόπηση"
   },
   "10.3390/en18133245": {
     "ko": "마이크로그리드 에너지 관리 최적화 전략 검토",
@@ -186,7 +192,8 @@
     "ms": "Tinjauan Strategi Optimasi untuk Manajemen Energi dalam Mikrogrid",
     "sv": "En översyn av optimeringsstrategier för energihantering i Microgrids",
     "cs": "Přezkum optimalizačních strategií pro řízení energie v mikrosystémech",
-    "ro": "O revizuire a strategiilor de optimizare pentru managementul energiei în microgride"
+    "ro": "O revizuire a strategiilor de optimizare pentru managementul energiei în microgride",
+    "el": "Μια Επισκόπηση των Στρατηγικών Βελτιστοποίησης για τη Διαχείριση Ενέργειας στα Μικρογρίδια"
   },
   "10.1038/s41746-025-01699-8": {
     "ko": "인공지능으로 산출한 망막 연령 차이: 여성의 생식 노화 지표",
@@ -213,7 +220,8 @@
     "ms": "Kecerdasan artifisial kecerdasan-derived retina kesenjangan usia sebagai penanda untuk penuaan reproduksi pada wanita",
     "sv": "Artificiell intelligenshärledd retinal ålder gap som en markör för reproduktiv åldrande hos kvinnor",
     "cs": "Umělá inteligence odvozené věkové mezery sítnice jako marker pro reprodukční stárnutí u žen",
-    "ro": "Spațiu artificial de vârstă retinală derivat din inteligență ca un marker pentru îmbătrânirea reproductivă la femei"
+    "ro": "Spațiu artificial de vârstă retinală derivat din inteligență ca un marker pentru îmbătrânirea reproductivă la femei",
+    "el": "Τεχνητή νοημοσύνη που προέρχεται από το χάσμα ηλικίας του αμφιβληστροειδούς ως δείκτης για την αναπαραγωγική γήρανση στις γυναίκες"
   },
   "10.3390/aerospace12060540": {
     "ko": "물리 정보 신경망을 이용한 자율 공중급유 드로그 위치 예측",
@@ -240,6 +248,7 @@
     "ms": "Prediksi Posisi Drogue dalam Refueling Aerial Otonomi Berdasarkan Jaringan Neural yang Berinformasi Fisika",
     "sv": "Förutsägelse av Drogue Position i autonom flygrevärme baserat på ett fysikinformerat neuralt nätverk",
     "cs": "Předpověď pozice drogu v autonomním vzdušném utečeném prostředí na základě fyziky- Informované neurologické sítě",
-    "ro": "Predicţia poziţiei Drogue în alimentarea aeriană autonomă bazată pe o reţea neurală integrată în fizică"
+    "ro": "Predicţia poziţiei Drogue în alimentarea aeriană autonomă bazată pe o reţea neurală integrată în fizică",
+    "el": "Πρόβλεψη της θέσης του Drogue σε αυτόνομο αερικό ανεφοδιασμό με βάση ένα πληροφορημένο με φυσική νευρικό δίκτυο"
   }
 }
