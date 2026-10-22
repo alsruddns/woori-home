@@ -29,6 +29,20 @@
       "when": 1792558376174,
       "tag": "0003_financial_market_data",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792647422261,
+      "tag": "0004_sec_company_facts",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792647749069,
+      "tag": "0005_sec_fact_period_key",
+      "breakpoints": true
     }
   ]
 }

@@ -70,4 +70,22 @@ Official pages rechecked:
 
 No provider credentials were added, no subscription was purchased, and no financial price rows were imported. Pricing and terms can change; confirm the exact plan, endpoint, fields, storage duration, and display/reuse rights again before activation.
 
+## 2026-10-22 implementation update
+
+**SEC EDGAR Company Facts — approved for the reviewed filing facts.** The SEC's official FAQ says government-created sec.gov content and EDGAR public filing content are free to access and reuse. Company Facts contains standard taxonomy facts reported by issuers. The implementation stores only standard US-GAAP company facts and filing metadata, excludes exhibits/images and market quotes, links each observation to the SEC archive, and labels the values issuer-reported rather than SEC-endorsed. A live read-only probe returned HTTP 200 for Apple, Microsoft, NVIDIA, Alphabet, Amazon, Meta and Tesla. SEC requests use an identifying User-Agent with the Portal contact email and a 150 ms inter-request delay (well below SEC's 10 requests/second maximum).
+
+Official sources: [SEC EDGAR API documentation](https://www.sec.gov/search-filings/edgar-application-programming-interfaces), [SEC reuse FAQ](https://www.sec.gov/about/webmaster-frequently-asked-questions), [SEC developer fair access](https://www.sec.gov/developer).
+
+**OpenDART — adapter implemented, use remains disabled.** The official terms make an API key necessary and refer unspecified copyright matters to the Public Data Act, but do not expressly settle commercial display and long-term storage for this public site. No key is configured and no request or import has been made. Wait for a documented permission decision before enabling its license gate.
+
+Official sources: [OpenDART API overview](https://opendart.fss.or.kr/intro/main.do), [OpenDART terms](https://opendart.fss.or.kr/intro/terms.do).
+
+**Upbit — public endpoint access is not republication permission.** The official docs describe unauthenticated quotation endpoints for current quotes and historical candles, but this review did not confirm all five intended uses: (1) current prices on an ad-supported public site, (2) derived day-over-day changes, (3) PostgreSQL daily-candle storage, (4) long-term history, and (5) redistribution through our own finance API. The existing rights gate remains pending and collection remains disabled. No reviewed free alternate crypto provider expressly grants both public commercial display and long-term database storage/republication for this use.
+
+Suggested inquiry to Dunamu:
+
+> 안녕하세요. 광고가 포함된 공개 웹사이트 woori.today에서 업비트 공개 시세 API의 KRW 마켓 현재가와 전일 대비 등락률을 표시하고자 합니다. 일봉 OHLCV 응답을 PostgreSQL에 저장해 장기간 가격 이력을 보관하고, 저희 자체 금융 API와 차트에서 조회 결과를 제공할 예정입니다. 이 다섯 목적(광고 사이트 공개 표시, 현재가·등락률 표시, 일봉 저장, 장기 보관, 자체 API 재제공)에 대한 허용 여부와 필요한 출처 표기, 갱신·삭제 제한, 별도 라이선스 조건을 서면으로 확인 부탁드립니다.
+
+No API key or subscription was added. No crypto quote data was collected or imported.
+
 EIA API metadata/data access was probed read-only with EIA's public demo credential over 2016-10-21 through 2026-10-21: WTI returned 2,500 rows, Brent 2,531, and Henry Hub spot 2,512; each ended on 2026-10-14. No financial observations were written to PostgreSQL. These API counts establish technical availability only, not downstream rights. No user EIA key is configured in `.env.local`; no EIA account was registered. The exact requested daily spot series are blocked pending written confirmation of Refinitiv/LSEG rights for commercial display and long-term database storage. EIA public-domain terms alone do not clear third-party data. Do not set a source to `verified` or import these rows until the specific third-party rights are confirmed.

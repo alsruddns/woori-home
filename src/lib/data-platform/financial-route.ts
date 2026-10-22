@@ -1,7 +1,8 @@
-import { getFinancialHistory, getFinancialOverview, listFinancialMarketAssets } from "@/lib/db/financial-queries";
+import { countFinancialCompanyFacts, getFinancialDataStatus, getFinancialHistory, getFinancialOverview, listFinancialCompanyFacts, listFinancialMarketAssets } from "@/lib/db/financial-queries";
+import { classifyFinancialDatabaseError } from "./financial-db-error.mjs";
 import { isIP } from "node:net";
 import { allowFinancialRequest } from "./financial-rate-limit.mjs";
-import { financialApiErrorResponse, financialApiResponse, financialRateLimitResponse, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery, safeErrorCode } from "./financial-api.mjs";
+import { financialApiErrorResponse, financialApiResponse, financialRateLimitResponse, parseFinancialCompanyFactsQuery, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery, safeErrorCode } from "./financial-api.mjs";
 
 export function financialRateLimit(request: Request) {
   const forwarded = request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() ?? "anonymous";
@@ -19,8 +20,9 @@ export async function financialListRoute(request: Request, type: string) {
     const result = await listFinancialMarketAssets({ type, market: parsed.market, search: parsed.search, sort: parsed.sort, order: parsed.order, limit: parsed.pageSize, offset: parsed.offset, referenceDate: parsed.referenceDate });
     return financialApiResponse({ data: result.rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total: result.total }, asOf: result.rows.reduce<Date | null>((latest, row) => row.fetchedAt && (!latest || new Date(row.fetchedAt) > latest) ? new Date(row.fetchedAt) : latest, null) });
   } catch (error) {
-    console.error("Financial market read failed", safeErrorCode(error));
-    return financialApiErrorResponse();
+    const reason = classifyFinancialDatabaseError(error);
+    console.error("Financial market read failed", reason, safeErrorCode(error));
+    return financialApiErrorResponse(reason);
   }
 }
 
@@ -28,10 +30,27 @@ export async function financialOverviewRoute(request: Request) {
   const throttled = financialRateLimit(request);
   if (throttled) return throttled;
   try {
-    return financialApiResponse({ markets: await getFinancialOverview() });
+    const [markets, dataStatus] = await Promise.all([getFinancialOverview(), getFinancialDataStatus()]);
+    return financialApiResponse({ markets, dataStatus });
   } catch (error) {
-    console.error("Financial overview read failed", safeErrorCode(error));
-    return financialApiErrorResponse();
+    const reason = classifyFinancialDatabaseError(error);
+    console.error("Financial overview read failed", reason, safeErrorCode(error));
+    return financialApiErrorResponse(reason);
+  }
+}
+
+export async function financialCompanyFactsRoute(request: Request) {
+  const throttled = financialRateLimit(request);
+  if (throttled) return throttled;
+  try {
+    const parsed = parseFinancialCompanyFactsQuery(new URL(request.url).searchParams);
+    if (!parsed.ok) return financialApiResponse({ error: parsed.error }, parsed.status);
+    const [rows, total] = await Promise.all([listFinancialCompanyFacts(parsed.pageSize, parsed.offset), countFinancialCompanyFacts()]);
+    return financialApiResponse({ data: rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total }, source: rows[0]?.sourceName ?? "U.S. SEC EDGAR Company Facts", asOf: rows[0]?.filedDate ?? null, dataState: total ? "available" : "no-company-facts" });
+  } catch (error) {
+    const reason = classifyFinancialDatabaseError(error);
+    console.error("Financial company-facts read failed", reason, safeErrorCode(error));
+    return financialApiErrorResponse(reason);
   }
 }
 
@@ -54,8 +73,9 @@ export async function financialHeatmapRoute(request: Request, type: "stock" | "c
       data: result.total <= 100 && oneMarket && completeSizeData ? rows : [],
     });
   } catch (error) {
-    console.error("Financial heatmap read failed", safeErrorCode(error));
-    return financialApiErrorResponse();
+    const reason = classifyFinancialDatabaseError(error);
+    console.error("Financial heatmap read failed", reason, safeErrorCode(error));
+    return financialApiErrorResponse(reason);
   }
 }
 
@@ -68,7 +88,8 @@ export async function financialHistoryRoute(request: Request, assetId: string) {
     const history = await getFinancialHistory(assetId, parsed);
     return financialApiResponse({ data: history, pagination: { limit: parsed.limit, returned: history.length } });
   } catch (error) {
-    console.error("Financial history read failed", safeErrorCode(error));
-    return financialApiErrorResponse();
+    const reason = classifyFinancialDatabaseError(error);
+    console.error("Financial history read failed", reason, safeErrorCode(error));
+    return financialApiErrorResponse(reason);
   }
 }

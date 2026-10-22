@@ -8,6 +8,8 @@ export const EXPECTED_MIGRATION_TAGS = [
   "0001_worldbank_collection_counts",
   "0002_worldbank_country_metadata",
   "0003_financial_market_data",
+  "0004_sec_company_facts",
+  "0005_sec_fact_period_key",
 ];
 
 export const EXPECTED_TABLES = [
@@ -16,6 +18,8 @@ export const EXPECTED_TABLES = [
   "data_sources",
   "datasets",
   "financial_assets",
+  "financial_companies",
+  "financial_company_facts",
   "financial_daily_prices",
   "indicator_observations",
   "indicators",
@@ -33,6 +37,13 @@ export const EXPECTED_INDEXES = [
   "financial_assets_pkey",
   "financial_assets_source_asset_unique_idx",
   "financial_assets_type_active_idx",
+  "financial_companies_pkey",
+  "financial_companies_source_cik_unique_idx",
+  "financial_companies_source_ticker_unique_idx",
+  "financial_companies_ticker_idx",
+  "financial_company_facts_end_date_idx",
+  "financial_company_facts_period_idx",
+  "financial_company_facts_pk",
   "financial_daily_prices_date_asset_idx",
   "financial_daily_prices_dataset_date_idx",
   "financial_daily_prices_pk",
@@ -100,7 +111,7 @@ export function verifyMigrationTestSchema({ appliedRows, migrationTimes, tables,
   const applied = appliedRows.map((row) => Number(row.created_at));
   const expectedTimes = migrationTimes.map(Number);
   if (applied.length !== expectedTimes.length || new Set(applied).size !== expectedTimes.length) {
-    throw new MigrationTestSafetyError("Migration history must contain exactly four unique applied entries.");
+    throw new MigrationTestSafetyError(`Migration history must contain exactly ${expectedTimes.length} unique applied entries.`);
   }
   assertExactNames(applied, expectedTimes, "migration history");
   assertExactNames(tables, EXPECTED_TABLES, "table");

@@ -1,4 +1,6 @@
 import { createUpbitKrwDailyProvider } from "./upbit.mjs";
+import { createOpenDartProvider } from "./opendart.mjs";
+import { createSecEdgarProvider } from "./sec-edgar.mjs";
 
 export const financialProviderCatalog = [
   {
@@ -21,12 +23,27 @@ export const financialProviderCatalog = [
     markets: ["us:issuer-filings"],
     access: "free-public-api",
     apiKeyRequired: false,
-    rightsStatus: "pending-series-and-display-review",
-    publicDisplay: "not-confirmed",
-    databaseRetention: "not-reviewed",
+    rightsStatus: "verified-sec-edgar-public-filings",
+    publicDisplay: "permitted-for-sec-public-filing-content",
+    databaseRetention: "permitted-for-sec-public-filing-content",
     sourceUrl: "https://www.sec.gov/edgar/sec-api-documentation",
-    termsUrl: "https://www.sec.gov/about/privacy-information",
+    termsUrl: "https://www.sec.gov/about/webmaster-frequently-asked-questions",
+    datasetId: "sec-company-facts",
+    createAdapter: createSecEdgarProvider,
+  },
+  {
+    id: "opendart-company-financials",
+    name: "OpenDART Company Financial Statements",
+    markets: ["kr:issuer-filings"],
+    access: "free-public-api",
+    apiKeyRequired: true,
+    rightsStatus: "pending-display-and-retention-review",
+    publicDisplay: "not-confirmed",
+    databaseRetention: "not-confirmed",
+    sourceUrl: "https://opendart.fss.or.kr/intro/main.do",
+    termsUrl: "https://opendart.fss.or.kr/intro/terms.do",
     datasetId: null,
+    createAdapter: createOpenDartProvider,
   },
   {
     id: "binance-spot-market-data",
@@ -46,7 +63,11 @@ export const financialProviderCatalog = [
 export function listFinancialProviders() {
   return financialProviderCatalog.map(({ createAdapter, ...provider }) => {
     void createAdapter;
-    return provider;
+    return {
+      ...provider,
+      configured: provider.id === "opendart-company-financials" ? Boolean(process.env.OPENDART_API_KEY ?? process.env.DART_API_KEY) : true,
+      collectionEnabled: provider.rightsStatus === "verified-sec-edgar-public-filings" || provider.rightsStatus === "verified",
+    };
   });
 }
 

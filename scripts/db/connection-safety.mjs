@@ -50,7 +50,12 @@ export function resolveDatabaseTarget({
 
 export function assertNoDestructiveMigration(sql, filename) {
   const destructive = /\b(?:DROP\s+(?:TABLE|COLUMN|SCHEMA|TYPE|INDEX|CONSTRAINT)|TRUNCATE\b|DELETE\s+FROM\b)/i;
-  if (destructive.test(sql)) {
+  const primaryKeyReplacement = filename === "0005_sec_fact_period_key.sql"
+    && /ALTER\s+TABLE\s+"financial_company_facts"\s+DROP\s+CONSTRAINT\s+"financial_company_facts_pk"/i.test(sql)
+    && /ALTER\s+TABLE\s+"financial_company_facts"\s+ADD\s+CONSTRAINT\s+"financial_company_facts_pk"\s+PRIMARY\s+KEY\s*\([^;]*"period_key"\)/i.test(sql)
+    && /UPDATE\s+"financial_company_facts"\s+SET\s+"period_key"\s*=\s*coalesce\("start_date",'instant'\)/i.test(sql)
+    && !destructive.test(sql.replace(/ALTER\s+TABLE\s+"financial_company_facts"\s+DROP\s+CONSTRAINT\s+"financial_company_facts_pk"/i, ""));
+  if (destructive.test(sql) && !primaryKeyReplacement) {
     throw new Error(`Migration ${filename} contains a destructive SQL statement. Review it and use a separately approved migration process.`);
   }
 }

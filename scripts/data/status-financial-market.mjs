@@ -20,7 +20,14 @@ try {
   if (!counts.length) console.log("No financial assets or daily price observations are stored.");
   else console.table(counts);
   const { rows: [total] } = await pool.query("select count(*)::int as observations from financial_daily_prices");
-  console.log(`Total observations: ${total.observations}`);
+  const { rows: [fundamentals] } = await pool.query(`select count(distinct c.id)::int as companies,count(f.company_id)::int as facts,
+    max(f.end_date) as latest_period,max(f.filed_date) as latest_filed_date
+    from financial_companies c join data_sources s on s.id=c.source_id and s.license_status='verified'
+    left join financial_company_facts f on f.company_id=c.id and f.source_id=c.source_id`);
+  const { rows: [sources] } = await pool.query(`select count(distinct s.id) filter (where s.license_status='verified' and a.id is not null)::int as approved_price_sources,
+    count(*) filter (where s.id='sec-edgar-companyfacts' and s.license_status='verified')::int as sec_approved
+    from data_sources s left join financial_assets a on a.source_id=s.id`);
+  console.log(JSON.stringify({ marketPriceObservations: total.observations, approvedPriceSources: sources.approved_price_sources, secPublicFilingsApproved: sources.sec_approved === 1, secCompanies: fundamentals.companies, secFinancialFacts: fundamentals.facts, latestFiscalPeriod: fundamentals.latest_period, latestFiledDate: fundamentals.latest_filed_date }));
 } catch (error) {
   console.error(error instanceof Error ? error.message : "Financial data status query failed.");
   process.exitCode = 1;

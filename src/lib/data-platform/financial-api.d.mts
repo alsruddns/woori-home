@@ -5,8 +5,9 @@ type FinancialHeatmapQuery = { ok: true; market: string | null; referenceDate: s
 export const FINANCIAL_API_CACHE_CONTROL: "no-store";
 export function parseFinancialListQuery(searchParams: URLSearchParams, type: string): FinancialListQuery | Invalid;
 export function parseFinancialHistoryQuery(searchParams: URLSearchParams, assetId: string): FinancialHistoryQuery | Invalid;
+export function parseFinancialCompanyFactsQuery(searchParams: URLSearchParams): { ok: true; page: number; pageSize: number; offset: number } | Invalid;
 export function parseFinancialHeatmapQuery(searchParams: URLSearchParams, type: string): FinancialHeatmapQuery | Invalid;
 export function financialApiResponse(payload: unknown, status?: number): Response;
-export function financialApiErrorResponse(): Response;
+export function financialApiErrorResponse(reason?: string): Response;
 export function financialRateLimitResponse(retryAfterSeconds: number): Response;
 export function safeErrorCode(error: unknown): string;

@@ -4,8 +4,9 @@ import { calculateGoldConversion, calculateMarketChange, isValidMarketDate, vali
 import { collectFinancialProviderSnapshot, FinancialProviderError } from "../src/lib/data-platform/financial-provider.mjs";
 import { createUpbitKrwDailyProvider, upbitKrwAssets } from "../src/lib/data-platform/providers/upbit.mjs";
 import { getFinancialProvider, listFinancialProviders } from "../src/lib/data-platform/providers/catalog.mjs";
-import { FINANCIAL_API_CACHE_CONTROL, financialApiResponse, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery } from "../src/lib/data-platform/financial-api.mjs";
+import { FINANCIAL_API_CACHE_CONTROL, financialApiErrorResponse, financialApiResponse, parseFinancialCompanyFactsQuery, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery } from "../src/lib/data-platform/financial-api.mjs";
 import { allowFinancialRequest } from "../src/lib/data-platform/financial-rate-limit.mjs";
+import { classifyFinancialDatabaseError } from "../src/lib/data-platform/financial-db-error.mjs";
 
 const providerFixture = (overrides = {}) => ({
   id: "fixture-provider", datasetId: "fixture-daily-prices", licenseStatus: "verified",
@@ -149,15 +150,22 @@ test("Upbit adapter normalizes KRW daily candles without inventing market caps",
 test("provider catalog distinguishes free technical API access from public data rights", () => {
   const providers = listFinancialProviders();
   const upbit = providers.find((item) => item.id === "upbit-quotation");
+  const sec = providers.find((item) => item.id === "sec-edgar-companyfacts");
+  const dart = providers.find((item) => item.id === "opendart-company-financials");
   assert.equal(upbit.access, "free-public-api");
   assert.equal(upbit.rightsStatus, "pending");
   assert.equal(upbit.publicDisplay, "pending");
   assert.equal(upbit.databaseRetention, "pending");
   assert.equal(getFinancialProvider("upbit-quotation").licenseStatus, "unverified");
-  assert.equal(getFinancialProvider("sec-edgar-companyfacts"), null);
+  assert.equal(typeof getFinancialProvider("sec-edgar-companyfacts").collect, "function");
+  assert.equal(sec.rightsStatus, "verified-sec-edgar-public-filings");
+  assert.equal(sec.publicDisplay, "permitted-for-sec-public-filing-content");
+  assert.equal(dart.apiKeyRequired, true);
+  assert.equal(dart.rightsStatus, "pending-display-and-retention-review");
+  assert.equal(dart.configured, Boolean(process.env.OPENDART_API_KEY ?? process.env.DART_API_KEY));
 });
 
-test("financial API parsers bound pagination, validate filters, dates, and identifiers", () => {
+test("financial API parsers bound pagination, validate filters, dates, and identifiers", async () => {
   assert.deepEqual(parseFinancialListQuery(new URLSearchParams("market=krw&page=2&pageSize=500&sort=marketCap&order=desc&q=BTC"), "crypto"), {
     ok: true, page: 2, pageSize: 100, offset: 100, sort: "marketCap", order: "desc", market: "krw", search: "BTC", referenceDate: null,
   });
@@ -168,9 +176,14 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
     ok: true, limit: 1000, from: "2026-01-01", to: "2026-01-31",
   });
   assert.equal(parseFinancialHistoryQuery(new URLSearchParams(), "../../secrets").ok, false);
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("page=2&pageSize=50")), { ok: true, page: 2, pageSize: 50, offset: 50 });
+  assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("page=0")).ok, false);
   assert.deepEqual(parseFinancialHeatmapQuery(new URLSearchParams("market=krw&date=2026-01-01"), "crypto"), { ok: true, market: "krw", referenceDate: "2026-01-01" });
   assert.equal(FINANCIAL_API_CACHE_CONTROL, "no-store");
   assert.equal(financialApiResponse({ ok: true }).headers.get("cache-control"), "no-store");
+  const unavailable = financialApiErrorResponse("financial-db-select-denied");
+  assert.equal(unavailable.status, 503);
+  assert.deepEqual(await unavailable.json(), { error: "financial_data_unavailable", reason: "financial-db-select-denied", message: "Financial market data is temporarily unavailable." });
 });
 
 test("financial endpoints enforce a bounded per-client request window", () => {
@@ -181,4 +194,12 @@ test("financial endpoints enforce a bounded per-client request window", () => {
   assert.equal(limited.allowed, false);
   assert.ok(limited.retryAfterSeconds > 0 && limited.retryAfterSeconds <= 60);
   assert.equal(allowFinancialRequest(client, start + 60_001).allowed, true);
+});
+
+test("financial DB failures distinguish configuration, connection, SELECT, schema and query errors", () => {
+  assert.equal(classifyFinancialDatabaseError({ code: "financial-db-config-missing" }), "financial-db-config-missing");
+  assert.equal(classifyFinancialDatabaseError({ code: "ECONNREFUSED" }), "financial-db-connection-failed");
+  assert.equal(classifyFinancialDatabaseError({ code: "42501" }), "financial-db-select-denied");
+  assert.equal(classifyFinancialDatabaseError({ code: "42P01" }), "financial-db-schema-error");
+  assert.equal(classifyFinancialDatabaseError({ code: "42883" }), "financial-db-query-failed");
 });

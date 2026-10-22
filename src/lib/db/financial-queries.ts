@@ -75,3 +75,44 @@ export async function getFinancialHistory(assetId: string, options: { from?: str
     order by p.reference_date desc limit $4`, [assetId, options.from ?? null, options.to ?? null, options.limit]);
   return result.rows;
 }
+
+export async function getFinancialDataStatus() {
+  const result = await getFinancialReadOnlyPool().query(`select
+    count(distinct a.source_id) filter (where s.license_status='verified' and a.is_active=true)::int as "approvedProviderCount",
+    count(distinct a.id) filter (where s.license_status='verified' and a.is_active=true)::int as "approvedAssetCount",
+    count(p.asset_id) filter (where s.license_status='verified')::int as "priceObservationCount"
+    from data_sources s left join financial_assets a on a.source_id=s.id
+    left join financial_daily_prices p on p.source_id=s.id and p.asset_id=a.id`);
+  const status = result.rows[0];
+  const state = status.approvedProviderCount === 0 ? "no-approved-provider" : status.approvedAssetCount === 0 ? "no-approved-assets" : status.priceObservationCount === 0 ? "no-observations" : "available";
+  return { state, ...status };
+}
+
+export async function listFinancialCompanyFacts(limit = 100, offset = 0) {
+  const result = await getFinancialReadOnlyPool().query(`select c.id,c.ticker,c.name,c.exchange,f.fiscal_year as "fiscalYear",f.fiscal_period as "fiscalPeriod",
+    min(f.start_date) as "startDate",f.end_date as "endDate",f.filed_date as "filedDate",f.form,
+    (array_agg(f.value::text order by case f.concept when 'RevenueFromContractWithCustomerExcludingAssessedTax' then 1 when 'Revenues' then 2 else 3 end,f.concept) filter (where f.concept in ('RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet')))[1] as revenue,
+    max(f.value) filter (where f.concept='OperatingIncomeLoss')::text as "operatingIncome",
+    max(f.value) filter (where f.concept='NetIncomeLoss')::text as "netIncome",
+    max(f.value) filter (where f.concept='Assets')::text as assets,
+    max(f.value) filter (where f.concept='Liabilities')::text as liabilities,
+    max(f.value) filter (where f.concept='NetCashProvidedByUsedInOperatingActivities')::text as "operatingCashFlow",
+    min(f.source_url) as "sourceUrl",s.name as "sourceName",s.attribution
+    from financial_company_facts f join financial_companies c on c.id=f.company_id
+    join data_sources s on s.id=f.source_id and s.license_status='verified'
+    where f.dataset_id='sec-company-facts'
+    group by c.id,c.ticker,c.name,c.exchange,f.fiscal_year,f.fiscal_period,f.start_date,f.end_date,f.filed_date,f.form,f.accession_number,s.name,s.attribution
+    order by f.end_date desc,f.filed_date desc,c.ticker limit $1 offset $2`, [Math.max(1, Math.min(500, Math.trunc(limit))), Math.max(0, Math.trunc(offset))]);
+  return result.rows;
+}
+
+export async function countFinancialCompanyFacts() {
+  const result = await getFinancialReadOnlyPool().query(`select count(*)::int as total from (
+    select c.id,f.end_date,f.filed_date,f.form,f.accession_number,f.start_date,f.fiscal_year,f.fiscal_period
+    from financial_company_facts f join financial_companies c on c.id=f.company_id
+    join data_sources s on s.id=f.source_id and s.license_status='verified'
+    where f.dataset_id='sec-company-facts'
+    group by c.id,f.end_date,f.filed_date,f.form,f.accession_number,f.start_date,f.fiscal_year,f.fiscal_period
+  ) statements`);
+  return result.rows[0]?.total ?? 0;
+}

@@ -182,6 +182,9 @@ test("destructive SQL is blocked before an unapplied migration runs", () => {
   assert.doesNotThrow(() => assertNoDestructiveMigration("CREATE TABLE metrics (id text primary key)", "create.sql"));
   assert.throws(() => assertNoDestructiveMigration("ALTER TABLE metrics DROP COLUMN value", "drop.sql"), /destructive SQL/);
   assert.throws(() => assertNoDestructiveMigration("TRUNCATE TABLE metrics", "truncate.sql"), /destructive SQL/);
+  const periodKeyMigration = "ALTER TABLE \"financial_company_facts\" ADD COLUMN \"period_key\" varchar(10) DEFAULT 'instant' NOT NULL; UPDATE \"financial_company_facts\" SET \"period_key\"=coalesce(\"start_date\",'instant'); ALTER TABLE \"financial_company_facts\" DROP CONSTRAINT \"financial_company_facts_pk\"; ALTER TABLE \"financial_company_facts\" ADD CONSTRAINT \"financial_company_facts_pk\" PRIMARY KEY(\"company_id\",\"period_key\");";
+  assert.doesNotThrow(() => assertNoDestructiveMigration(periodKeyMigration, "0005_sec_fact_period_key.sql"));
+  assert.throws(() => assertNoDestructiveMigration(`${periodKeyMigration} DROP TABLE metrics`, "0005_sec_fact_period_key.sql"), /destructive SQL/);
 });
 
 test("migration status compares Drizzle bigint timestamps without reapplying prior versions", () => {

@@ -25,6 +25,8 @@
     "data:financial:providers": "node scripts/data/financial-market-command.mjs providers",
     "data:financial:collect": "node scripts/data/financial-market-command.mjs collect",
     "data:financial:dry-run": "node scripts/data/financial-market-command.mjs dry-run",
+    "data:financial:sec:collect": "node scripts/data/import-sec-company-facts.mjs",
+    "data:financial:sec:dry-run": "node scripts/data/import-sec-company-facts.mjs --dry-run",
     "build": "next build",
     "start": "node .next/standalone/server.js",
     "lint": "eslint",
