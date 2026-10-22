@@ -11,6 +11,9 @@ const dashboardHome = await readFile(new URL("../src/app/(locale)/[locale]/page.
 const platformHome = await readFile(new URL("../src/app/(locale)/[locale]/platform-home.tsx", import.meta.url), "utf8");
 const categoryRoute = await readFile(new URL("../src/app/(locale)/[locale]/(platform)/[category]/page.tsx", import.meta.url), "utf8");
 const stockPage = await readFile(new URL("../src/app/(locale)/[locale]/stock-market-dashboard.tsx", import.meta.url), "utf8");
+const companyFactsPanel = await readFile(new URL("../src/app/(locale)/[locale]/company-fundamentals-panel.tsx", import.meta.url), "utf8");
+const companyFactsPeriods = await readFile(new URL("../src/lib/data-platform/company-facts-period-copy.ts", import.meta.url), "utf8");
+const platformStyles = await readFile(new URL("../src/app/(locale)/[locale]/platform.css", import.meta.url), "utf8");
 const worldData = await readFile(new URL("../src/app/(locale)/[locale]/world-data.tsx", import.meta.url), "utf8");
 const portalFooter = await readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8");
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
@@ -311,7 +314,24 @@ test("market snapshots are disclosed, accessible, theme-aware, and free of inter
   assert.doesNotMatch(stockPage + worldData + platformHome, /WOORI\.DATA|MARKET SNAPSHOT UI|Market breadth prototype|Snapshot schema preview|Market cap weighted layout|6 mock securities/i);
   assert.doesNotMatch(stockPage, /mockDisclosure|mockLabel|mock-stocks/);
   assert.match(stockPage, /copy\.sourceDisclosure/);
-  assert.match(stockPage, /crypto-heatmap stock-market-heatmap/);
+  assert.match(stockPage, /stock-sector-heatmap/);
+  assert.match(stockPage, /stock-market-index-overview/);
+  assert.match(stockPage, /stock-market-movers/);
+  assert.match(stockPage, /stock-market-filter-heading/);
+  assert.doesNotMatch(stockPage, /crypto-heatmap stock-market-heatmap/);
+  assert.match(stockPage, /stockUnavailableCopy\[locale\]/);
+  assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
+  assert.match(stockPage, /stockUnavailableCopy\[locale\]/);
+  assert.match(companyFactsPanel, /latest: "true"/);
+  assert.match(companyFactsPanel, /ticker: selectedTicker/);
+  assert.match(companyFactsPanel, /notation: "compact"/);
+  assert.match(companyFactsPanel, /company-facts-history-table/);
+  assert.match(platformStyles, /company-facts-summary-grid\{display:grid;grid-template-columns:repeat\(2/);
+  assert.match(platformStyles, /@media\(max-width:760px\)/);
+  assert.match(platformStyles, /company-facts-summary-grid\{grid-template-columns:1fr\}/);
+  for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
+    assert.match(companyFactsPeriods, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{ annual: "[^"]+", quarterly: "[^"]+", annualBasis: "[^"]+", quarterlyBasis: "[^"]+"`), `${locale}: missing company period copy`);
+  }
   assert.doesNotMatch(stockPage, /licensedSource\}/);
 });
 

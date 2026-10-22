@@ -41,8 +41,17 @@ export function parseFinancialHistoryQuery(searchParams, assetId) {
 export function parseFinancialCompanyFactsQuery(searchParams) {
   const page = positiveInteger(searchParams.get("page"), 1, 10000);
   const pageSize = positiveInteger(searchParams.get("pageSize"), 100, 200);
+  const period = searchParams.get("period");
+  const rawTicker = searchParams.get("ticker");
+  const ticker = rawTicker?.trim().toUpperCase() ?? null;
+  const rawLatest = searchParams.get("latest");
+  const latest = rawLatest === "true" || rawLatest === "1";
   if (!page || !pageSize) return { ok: false, status: 400, error: "invalid_pagination" };
-  return { ok: true, page, pageSize, offset: (page - 1) * pageSize };
+  if (period && !["annual", "quarterly"].includes(period)) return { ok: false, status: 400, error: "invalid_period" };
+  if (rawTicker && !/^[A-Z][A-Z0-9.-]{0,9}$/.test(ticker)) return { ok: false, status: 400, error: "invalid_ticker" };
+  if (rawLatest && !["true", "false", "1", "0"].includes(rawLatest)) return { ok: false, status: 400, error: "invalid_latest" };
+  if (latest && (!period || ticker)) return { ok: false, status: 400, error: "invalid_latest_query" };
+  return { ok: true, page, pageSize, offset: (page - 1) * pageSize, period, ticker, latest };
 }
 
 function validDate(value) {
