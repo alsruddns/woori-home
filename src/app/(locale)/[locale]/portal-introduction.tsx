@@ -8,6 +8,8 @@ const monthlyViews: Record<Locale, string> = { ru:"За месяц", ko: "월별
   "tr": "Aylık görüntülenme"
 ,
   "pl": "Wyświetlenia miesięczne"
+,
+  "fil": "Mga view bawat buwan"
 };
 
 export default function PortalIntroduction({ locale }: { locale: Locale }) {

@@ -21,6 +21,7 @@ export const localeConfig = [
   { route: "ru", hreflang: "ru", nativeName: "Русский", ogLocale: "ru_RU" },
   { route: "tr", hreflang: "tr", nativeName: "Türkçe", ogLocale: "tr_TR" },
   { route: "pl", hreflang: "pl", nativeName: "Polski", ogLocale: "pl_PL" },
+  { route: "fil", hreflang: "fil", nativeName: "Filipino", ogLocale: "fil_PH" },
 ] as const;
 export const locales = localeConfig.map((item) => item.route);
 export type Locale = (typeof localeConfig)[number]["route"];
@@ -35,6 +36,8 @@ export const newTabLabels: Record<Locale, string> = {
   "tr": "yeni bir sekmede açılır"
 ,
   "pl": "otwiera się w nowej karcie"
+,
+  "fil": "bubukas sa bagong tab"
 };
 export const uiLabels: Record<Locale, { language: string; primaryNav: string }> = {
   ko: { language: "언어 선택", primaryNav: "주요 탐색" }, en: { language: "Choose language", primaryNav: "Primary navigation" }, ja: { language: "言語を選択", primaryNav: "メインナビゲーション" }, zh: { language: "选择语言", primaryNav: "主要导航" },
@@ -43,6 +46,8 @@ export const uiLabels: Record<Locale, { language: string; primaryNav: string }> 
   "tr": {language:"Dil seçin",primaryNav:"Ana gezinme"}
 ,
   "pl": {language:"Wybierz język",primaryNav:"Nawigacja główna"}
+,
+  "fil": {language:"Pumili ng wika",primaryNav:"Pangunahing nabigasyon"}
 };
 export const sectionLabels: Record<Locale, { calculator: string; tools: string }> = {
   ko: { calculator: "계산기", tools: "온라인 도구" }, en: { calculator: "Calculator", tools: "Online tools" }, ja: { calculator: "計算ツール", tools: "オンラインツール" }, zh: { calculator: "计算器", tools: "在线工具" },
@@ -51,6 +56,8 @@ export const sectionLabels: Record<Locale, { calculator: string; tools: string }
   "tr": {calculator:"Hesap makineleri",tools:"Çevrimiçi araçlar"}
 ,
   "pl": {calculator:"Kalkulatory",tools:"Narzędzia online"}
+,
+  "fil": {calculator:"Mga calculator",tools:"Mga online na tool"}
 };
 export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
 export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;

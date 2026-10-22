@@ -21,4 +21,6 @@ export const datePickerCopy: Record<Locale, { previousMonth: string; nextMonth: 
   "tr": {previousMonth:"Önceki ay",nextMonth:"Sonraki ay",close:"Kapat",calendar:"Takvim",today: "Bugün"}
 ,
   "pl": {previousMonth:"Poprzedni miesiąc",nextMonth:"Następny miesiąc",close:"Zamknij",calendar:"Kalendarz",today: "Dzisiaj"}
+,
+  "fil": {previousMonth:"Nakaraang buwan",nextMonth:"Susunod na buwan",close:"Isara",calendar:"Kalendaryo",today: "Ngayon"}
 };

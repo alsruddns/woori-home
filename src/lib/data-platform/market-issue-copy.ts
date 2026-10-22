@@ -21,4 +21,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
   "tr": {title:"Borsa haberleri",description:"Borsalar, düzenleyiciler ve şirketlerden tarihli duyurular, kullanım izinleri doğrulandıktan sonra yayımlanır.",empty:"Bu tarih için doğrulanmış borsa haberi yok.",published:"Yayınlandı",source:"Kaynak"}
 ,
   "pl": {title:"Wiadomości z rynku akcji",description:"Datowane komunikaty giełd, regulatorów i firm będą publikowane po sprawdzeniu praw do źródeł.",empty:"Brak zweryfikowanych wiadomości giełdowych z tego dnia.",published:"Opublikowano",source:"Źródło"}
+,
+  "fil": {title:"Mga balita sa stock market",description:"Ilalathala ayon sa petsa ang mga pahayag mula sa palitan, regulator at kumpanya kapag napatunayan ang pahintulot sa pinagmulan.",empty:"Walang beripikadong balita sa stock market para sa petsang ito.",published:"Nai-publish",source:"Pinagmulan"}
 };

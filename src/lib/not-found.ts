@@ -21,4 +21,6 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
   "tr": {title:"Sayfa bulunamadı",description:"Aradığınız sayfa mevcut değil veya taşınmış olabilir.",home:"Ana sayfaya dön"}
 ,
   "pl": {title:"Nie znaleziono strony",description:"Ten adres jest niedostępny lub strona została przeniesiona.",home:"Wróć na stronę główną"}
+,
+  "fil": {title:"Hindi makita ang pahina",description:"Maaaring hindi available ang address na ito o nailipat ang pahina.",home:"Bumalik sa home"}
 };

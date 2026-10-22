@@ -22,6 +22,8 @@ const viewLabels: Record<Locale, string> = {
   "tr": "Genel bakış"
 ,
   "pl": "Przegląd"
+,
+  "fil": "Pangkalahatang-ideya"
 };
 
 export function PlatformHome({ locale }: { locale: Locale }) {

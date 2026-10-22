@@ -21,4 +21,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   "tr": "Herkese açık gösterim için doğrulanmış gerçek hisse fiyatları henüz mevcut değil. Kaynak ve kullanım hakları doğrulandıktan sonra veriler sunulacaktır."
 ,
   "pl": "Brak rzeczywistych cen akcji zatwierdzonych do publicznego wyświetlania. Dane zostaną udostępnione po potwierdzeniu źródła i praw do ich wykorzystania."
+,
+  "fil": "Wala pang aktuwal na presyo ng stock na naaprubahan para sa pampublikong pagpapakita. Magiging available ang datos kapag napatunayan ang pinagmulan at mga karapatan sa paggamit."
 };

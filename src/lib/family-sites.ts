@@ -18,6 +18,7 @@ export function familySiteHref(locale: Locale, key: FamilySiteKey) {
 }
 
 export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
+  fil: "Magbubukas sa Ingles ang pahina ng MoneyBook.",
   pl: "Strona MoneyBook otworzy się po angielsku.",
   ru: "Страница MoneyBook откроется на английском.",
   es: "La página de MoneyBook se abrirá en inglés.",
@@ -34,6 +35,7 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
 
   "tr": "MoneyBook sayfası İngilizce açılacaktır."
 ,
+
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -67,4 +69,6 @@ export const familySitesCopy: Record<Locale, {
   "tr": {label:"Aile hizmetleri",sites:{portal:"Portal",calculator:"Hesap makineleri",tools:"Çevrimiçi araçlar",moneyBook:"MoneyBook",docs:"Belgeler",quiz:"Quiz"},docsTitle:"Belge şablonları",docsDescription:"Tutanak, teklif ve haftalık planlar için kullanıma hazır şablonlar.",docsCta:"Belgeleri aç",quizTitle:"Bilgi yarışmaları",quizDescription:"Genel kültür, matematik, coğrafya ve teknoloji konularında kısa quizler.",quizCta:"Quizleri aç",menu:"Hizmet menüsü"}
 ,
   "pl": {label:"Serwisy rodzinne",sites:{portal:"Portal",calculator:"Kalkulatory",tools:"Narzędzia online",moneyBook:"MoneyBook",docs:"Dokumenty",quiz:"Quizy"},docsTitle:"Szablony dokumentów",docsDescription:"Gotowe układy protokołów, ofert i planów tygodniowych.",docsCta:"Otwórz dokumenty",quizTitle:"Quizy wiedzy",quizDescription:"Krótkie quizy z wiedzy ogólnej, matematyki, geografii i technologii.",quizCta:"Otwórz quizy",menu:"Menu usług"}
+,
+  "fil": {label:"Mga serbisyong magkakaugnay",sites:{portal:"Portal",calculator:"Mga calculator",tools:"Mga online na tool",moneyBook:"MoneyBook",docs:"Mga dokumento",quiz:"Quiz"},docsTitle:"Mga template ng dokumento",docsDescription:"Mga handang template para sa tala ng pulong, quotation at lingguhang plano.",docsCta:"Buksan ang mga dokumento",quizTitle:"Mga quiz",quizDescription:"Maiikling quiz tungkol sa kaalaman, matematika, heograpiya at teknolohiya.",quizCta:"Buksan ang mga quiz",menu:"Menu ng serbisyo"}
 };

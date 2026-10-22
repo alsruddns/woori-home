@@ -16,6 +16,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
   "tr": {insights:"Veriler ve analizler",worldStats:"Dünya ekonomisi ve istatistikleri"}
 ,
   "pl": {insights:"Dane i analizy",worldStats:"Gospodarka światowa i statystyki"}
+,
+  "fil": {insights:"Datos at mga pananaw",worldStats:"Pandaigdigang ekonomiya at estadistika"}
 };
 
 export function categoryNavigation(locale: Locale) {

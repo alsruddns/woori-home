@@ -7,4 +7,6 @@ export const paperTitleCopy: Record<Locale, { originalTitle: string; translation
   "tr": {originalTitle:"Özgün başlık",translationDraft:"Başlık çeviri taslağı",translationPending:"Çeviri beklemede · özgün başlık"}
 ,
   "pl": {originalTitle:"Tytuł oryginalny",translationDraft:"Projekt tłumaczenia tytułu",translationPending:"Tłumaczenie oczekuje · tytuł oryginalny"}
+,
+  "fil": {originalTitle:"Orihinal na pamagat",translationDraft:"Draft ng salin ng pamagat",translationPending:"Nakabinbin ang salin · orihinal na pamagat"}
 };
