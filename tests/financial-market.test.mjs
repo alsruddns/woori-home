@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { calculateGoldConversion, calculateMarketChange, isValidMarketDate, validateMarketPriceRecord } from "../src/lib/data-platform/financial-market.mjs";
 import { collectFinancialProviderSnapshot, FinancialProviderError } from "../src/lib/data-platform/financial-provider.mjs";
+import { createUpbitKrwDailyProvider, upbitKrwAssets } from "../src/lib/data-platform/providers/upbit.mjs";
+import { getFinancialProvider, listFinancialProviders } from "../src/lib/data-platform/providers/catalog.mjs";
+import { FINANCIAL_API_CACHE_CONTROL, financialApiResponse, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery } from "../src/lib/data-platform/financial-api.mjs";
+import { allowFinancialRequest } from "../src/lib/data-platform/financial-rate-limit.mjs";
 
 const providerFixture = (overrides = {}) => ({
   id: "fixture-provider", datasetId: "fixture-daily-prices", licenseStatus: "verified",
@@ -99,4 +103,82 @@ test("financial provider rejects duplicates, invalid units, and dates outside th
   await assert.rejects(collectFinancialProviderSnapshot(badTimezone, request), (error) => error.code === "price-timezone-mismatch");
   const outside = providerFixture({ async fetchDailyPrices() { return { ...valid, prices: [{ ...valid.prices[0], referenceDate: "2026-09-30" }] }; } });
   await assert.rejects(collectFinancialProviderSnapshot(outside, request), (error) => error.code === "price-outside-requested-range");
+});
+
+test("Upbit adapter normalizes KRW daily candles without inventing market caps", async () => {
+  const requested = [];
+  const provider = createUpbitKrwDailyProvider({
+    now: () => new Date("2026-10-22T01:00:00.000Z"),
+    wait: async () => {},
+    fetchImpl: async (url) => {
+      requested.push(new URL(url));
+      return {
+        ok: true,
+        status: 200,
+        headers: { get: () => null },
+        async json() {
+          const market = new URL(requested.at(-1)).searchParams.get("market");
+          return [{
+            market,
+            candle_date_time_utc: "2026-10-21T00:00:00",
+            candle_date_time_kst: "2026-10-21T09:00:00",
+            opening_price: 90000000,
+            high_price: 91000000,
+            low_price: 89000000,
+            trade_price: 90500000,
+            candle_acc_trade_volume: 12.3456789,
+          }];
+        },
+      };
+    },
+  });
+  const result = await provider.fetchDailyPrices({ startDate: "2026-10-21", endDate: "2026-10-21", signal: new AbortController().signal });
+  assert.equal(result.assets.length, 8);
+  assert.equal(result.prices.length, 8);
+  assert.equal(result.prices[0].referenceDate, "2026-10-21");
+  assert.equal(result.prices[0].referenceTimezone, "Asia/Seoul");
+  assert.equal(result.prices[0].close, "90500000");
+  assert.equal(result.prices[0].marketCap, null);
+  assert.equal(result.assets[0].currency, "KRW");
+  assert.equal(result.assets[0].venue, "upbit-krw");
+  assert.equal(requested.length, 8);
+  assert.equal(requested[0].searchParams.get("market"), "KRW-BTC");
+  assert.equal(upbitKrwAssets.length, 8);
+});
+
+test("provider catalog distinguishes free technical API access from public data rights", () => {
+  const providers = listFinancialProviders();
+  const upbit = providers.find((item) => item.id === "upbit-quotation");
+  assert.equal(upbit.access, "free-public-api");
+  assert.equal(upbit.rightsStatus, "pending");
+  assert.equal(upbit.publicDisplay, "pending");
+  assert.equal(upbit.databaseRetention, "pending");
+  assert.equal(getFinancialProvider("upbit-quotation").licenseStatus, "unverified");
+  assert.equal(getFinancialProvider("sec-edgar-companyfacts"), null);
+});
+
+test("financial API parsers bound pagination, validate filters, dates, and identifiers", () => {
+  assert.deepEqual(parseFinancialListQuery(new URLSearchParams("market=krw&page=2&pageSize=500&sort=marketCap&order=desc&q=BTC"), "crypto"), {
+    ok: true, page: 2, pageSize: 100, offset: 100, sort: "marketCap", order: "desc", market: "krw", search: "BTC", referenceDate: null,
+  });
+  assert.equal(parseFinancialListQuery(new URLSearchParams("sort=close%20desc"), "stock").ok, false);
+  assert.equal(parseFinancialListQuery(new URLSearchParams("market=usd"), "stock").ok, false);
+  assert.equal(parseFinancialListQuery(new URLSearchParams("date=2026-02-30"), "crypto").ok, false);
+  assert.deepEqual(parseFinancialHistoryQuery(new URLSearchParams("from=2026-01-01&to=2026-01-31&limit=5000"), "00000000-0000-4000-8000-000000000001"), {
+    ok: true, limit: 1000, from: "2026-01-01", to: "2026-01-31",
+  });
+  assert.equal(parseFinancialHistoryQuery(new URLSearchParams(), "../../secrets").ok, false);
+  assert.deepEqual(parseFinancialHeatmapQuery(new URLSearchParams("market=krw&date=2026-01-01"), "crypto"), { ok: true, market: "krw", referenceDate: "2026-01-01" });
+  assert.equal(FINANCIAL_API_CACHE_CONTROL, "no-store");
+  assert.equal(financialApiResponse({ ok: true }).headers.get("cache-control"), "no-store");
+});
+
+test("financial endpoints enforce a bounded per-client request window", () => {
+  const client = `finance-rate-test-${Date.now()}`;
+  const start = 1_800_000_000_000;
+  for (let index = 0; index < 120; index += 1) assert.equal(allowFinancialRequest(client, start + index).allowed, true);
+  const limited = allowFinancialRequest(client, start + 121);
+  assert.equal(limited.allowed, false);
+  assert.ok(limited.retryAfterSeconds > 0 && limited.retryAfterSeconds <= 60);
+  assert.equal(allowFinancialRequest(client, start + 60_001).allowed, true);
 });

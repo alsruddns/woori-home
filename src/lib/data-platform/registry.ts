@@ -15,6 +15,7 @@ export const dataCategories = [
   { id: "papers", label: "Research papers", path: "/papers" },
   { id: "gold", label: "Gold price", path: "/gold" },
   { id: "commodities", label: "Commodities", path: "/commodities" },
+  { id: "finance", label: "Financial markets", path: "/finance" },
 ] as const;
 
 export const indicators: IndicatorDefinition[] = [

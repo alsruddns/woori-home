@@ -55,9 +55,11 @@ try {
     values ($1,$2,now(),'partial',$3,$4,0,$5) returning id`, [runId, input.datasetId, input.snapshotVersion ?? null, checksum, JSON.stringify({ kind: "financial-market", assetCount: input.assets.length, observationCount: input.prices.length, file: path.basename(filePath) })]);
   const assetIds = new Map();
   let inserted = 0, updated = 0, skipped = 0, completedPrices = 0;
+  const client = await pool.connect();
   try {
+    await client.query("begin");
     for (const asset of input.assets) {
-      const { rows: [saved] } = await pool.query(`insert into financial_assets
+      const { rows: [saved] } = await client.query(`insert into financial_assets
         (source_id,source_asset_id,asset_type,symbol,name,venue,country_code,currency,unit,timezone,sector,is_active,metadata,last_updated_at)
         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,now())
         on conflict (source_id,source_asset_id) do update set asset_type=excluded.asset_type,symbol=excluded.symbol,name=excluded.name,venue=excluded.venue,country_code=excluded.country_code,currency=excluded.currency,unit=excluded.unit,timezone=excluded.timezone,sector=excluded.sector,is_active=excluded.is_active,metadata=excluded.metadata,last_updated_at=now()
@@ -66,11 +68,8 @@ try {
     }
     for (let offset = 0; offset < input.prices.length; offset += 250) {
       const batch = input.prices.slice(offset, offset + 250);
-      const client = await pool.connect();
-      try {
-        await client.query("begin");
-        for (const price of batch) {
-          const { rows } = await client.query(`insert into financial_daily_prices
+      for (const price of batch) {
+        const { rows } = await client.query(`insert into financial_daily_prices
             (asset_id,source_id,dataset_id,reference_date,reference_timezone,price_kind,open,high,low,close,volume,market_cap,is_adjusted,fetched_at,source_updated_at,updated_at)
             values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now())
             on conflict (asset_id,source_id,reference_date,price_kind) do update set
@@ -79,21 +78,20 @@ try {
               and (financial_daily_prices.dataset_id,financial_daily_prices.reference_timezone,financial_daily_prices.open,financial_daily_prices.high,financial_daily_prices.low,financial_daily_prices.close,financial_daily_prices.volume,financial_daily_prices.market_cap,financial_daily_prices.is_adjusted,financial_daily_prices.fetched_at,financial_daily_prices.source_updated_at)
               is distinct from (excluded.dataset_id,excluded.reference_timezone,excluded.open,excluded.high,excluded.low,excluded.close,excluded.volume,excluded.market_cap,excluded.is_adjusted,excluded.fetched_at,excluded.source_updated_at)
             returning (xmax=0) as was_inserted`, [assetIds.get(price.sourceAssetId), input.sourceId, input.datasetId, price.referenceDate, price.referenceTimezone, price.priceKind, price.open ?? null, price.high ?? null, price.low ?? null, price.close, price.volume ?? null, price.marketCap ?? null, price.isAdjusted ?? false, price.fetchedAt, price.sourceUpdatedAt ?? null]);
-          if (!rows.length) skipped += 1;
-          else if (rows[0].was_inserted) inserted += 1;
-          else updated += 1;
-          completedPrices += 1;
-        }
-        await client.query("commit");
-      } catch (error) { await client.query("rollback"); throw error; }
-      finally { client.release(); }
+        if (!rows.length) skipped += 1;
+        else if (rows[0].was_inserted) inserted += 1;
+        else updated += 1;
+        completedPrices += 1;
+      }
     }
+    await client.query("commit");
     await pool.query(`update data_collection_runs set finished_at=now(),status=$2,record_count=$3,inserted_count=$4,updated_count=$5,skipped_count=$6,latest_reference_period=$7 where id=$1`, [run.id, inserted + updated === 0 ? "unchanged" : "success", completedPrices, inserted, updated, skipped, input.prices.map((row) => row.referenceDate).sort().at(-1)]);
     console.log(`Import complete: inserted ${inserted}, updated ${updated}, unchanged ${skipped}. Run ${run.id}.`);
   } catch (error) {
-    await pool.query(`update data_collection_runs set finished_at=now(),status='partial',record_count=$2,inserted_count=$3,updated_count=$4,skipped_count=$5,error_category='import-failed',error_message=$6 where id=$1`, [run.id, completedPrices, inserted, updated, skipped, error instanceof Error ? error.message.slice(0, 2000) : "Unknown import error"]).catch(() => {});
+    await client.query("rollback").catch(() => {});
+    await pool.query(`update data_collection_runs set finished_at=now(),status='failed',record_count=$2,inserted_count=0,updated_count=0,skipped_count=0,error_category='import-failed',error_message=$3 where id=$1`, [run.id, completedPrices, error instanceof Error ? error.message.slice(0, 2000) : "Unknown import error"]).catch(() => {});
     throw error;
-  }
+  } finally { client.release(); }
 } catch (error) {
   console.error(error instanceof Error ? error.message : "Financial import failed.");
   process.exitCode = 1;
