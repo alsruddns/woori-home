@@ -282,7 +282,7 @@ jobs:
                 local external_network container_name run_status
                 external_network="$(docker inspect --format='{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' portal | grep -vx compose_database | head -n 1)"
                 test -n "$external_network"
-                container_name="woori-sec-tools-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+                container_name="woori-sec-tools-$(date +%s%N)"
                 docker create --name "$container_name" --network compose_database \
                   --mount type=bind,src=/opt/services/compose/.env.portal,dst=/app/.portal.env,readonly \
                   --mount "type=bind,src=$approval_file,dst=/app/.production-approval,readonly" \
