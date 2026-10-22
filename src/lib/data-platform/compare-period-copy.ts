@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/site";
 
 export const comparePeriodCopy: Record<Locale, { range: string; from: string; to: string; startValue: string; endValue: string; difference: string; percent: string; percentagePoints: string; percentagePointUnit: string }> = {
+  ru:{range:"Изменение за период",from:"Начальный год",to:"Конечный год",startValue:"Начальное значение",endValue:"Конечное значение",difference:"Абсолютное изменение",percent:"Относительное изменение",percentagePoints:"Изменение",percentagePointUnit:"п. п."},
   ko:{range:"기간 변화 비교",from:"시작 연도",to:"종료 연도",startValue:"시작 값",endValue:"종료 값",difference:"변화량",percent:"변화율",percentagePoints:"변화량",percentagePointUnit:"%p"},
   en:{range:"Change over a period",from:"Start year",to:"End year",startValue:"Starting value",endValue:"Ending value",difference:"Absolute change",percent:"Relative change",percentagePoints:"Change",percentagePointUnit:"pp"},
   ja:{range:"期間の変化を比較",from:"開始年",to:"終了年",startValue:"開始値",endValue:"終了値",difference:"変化量",percent:"変化率",percentagePoints:"変化量",percentagePointUnit:"ポイント"},

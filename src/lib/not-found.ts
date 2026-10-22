@@ -16,4 +16,5 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
   it: { title: "Pagina non trovata", description: "Questo indirizzo non è disponibile oppure la pagina è stata spostata.", home: "Torna alla home" },
   nl: { title: "Pagina niet gevonden", description: "Dit adres is niet beschikbaar of de pagina is verplaatst.", home: "Terug naar home" },
   hi: { title: "पृष्ठ नहीं मिला", description: "यह पता उपलब्ध नहीं है या पृष्ठ को स्थानांतरित कर दिया गया है।", home: "होम पर लौटें" },
+  ru: { title: "Страница не найдена", description: "Эта страница недоступна или была перемещена.", home: "На главную" },
 };

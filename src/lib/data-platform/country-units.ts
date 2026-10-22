@@ -5,6 +5,7 @@ import { energyAccessCopy } from "./energy-copy";
 
 type Units = Record<string, string>;
 export const countryUnits: Record<Locale, Units> = {
+  ru:{population:"человек",gdp:"млрд долларов США","gdp-per-capita":"долларов США на человека",fertility:"рождений на женщину","life-expectancy":"лет","population-growth":"% в год"},
   ko:{population:"명",gdp:"당해 연도 US$", "gdp-per-capita":"당해 연도 US$ / 명",fertility:"명 / 여성", "life-expectancy":"년", "population-growth":"% / 년"},
   en:{population:"people",gdp:"current US$", "gdp-per-capita":"current US$ / person",fertility:"births / woman", "life-expectancy":"years", "population-growth":"% / year"},
   ja:{population:"人",gdp:"当年USドル", "gdp-per-capita":"当年USドル / 人",fertility:"人 / 女性", "life-expectancy":"年", "population-growth":"% / 年"},

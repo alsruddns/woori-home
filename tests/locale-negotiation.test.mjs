@@ -14,6 +14,7 @@ test("Chinese script and region preferences select the matching supported varian
 });
 
 test("unsupported browser languages fall back to Korean", () => {
-  assert.equal(negotiateLocale("ru-RU,ar;q=0.9"), "ko");
+  assert.equal(negotiateLocale("ru-RU,ar;q=0.9"), "ru");
+  assert.equal(negotiateLocale("ar,fr;q=0.8"), "fr");
   assert.equal(negotiateLocale("*"), "ko");
 });

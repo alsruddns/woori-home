@@ -12,7 +12,7 @@ require.extensions[".ts"] = (module, filename) => {
 const { locales, localeNames } = require("../src/lib/site.ts");
 const { familySiteHref, familySiteKeys, familySitesCopy, moneyBookFallbackCopy } = require("../src/lib/family-sites.ts");
 
-test("six family sites and Docs/Quiz copy are complete in all 15 locales", () => {
+test("six family sites and Docs/Quiz copy are complete in all supported locales", () => {
   assert.deepEqual(Object.keys(familySitesCopy), locales);
   assert.deepEqual(familySiteKeys, ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"]);
   assert.deepEqual(Object.values(familySitesCopy.ko.sites), ["포탈", "계산기", "온라인 도구", "무료 공유 가계부", "문서·양식", "퀴즈·테스트"]);
@@ -37,7 +37,7 @@ test("header links preserve locale, indicate active service, and expose a mobile
     const segment = { portal: "", calculator: "/calculators", tools: "/tools", moneyBook: "/money", docs: "/docs", quiz: "/quiz" }[key];
     assert.equal(familySiteHref("pt-br", key), key === "moneyBook" ? "/en/money" : `/pt-br${segment}`);
   }
-  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
+  for (const locale of ["es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru"]) {
     assert.ok(moneyBookFallbackCopy[locale], `${locale} MoneyBook language notice`);
     assert.equal(familySiteHref(locale, "moneyBook"), locale === "zh-tw" ? "/zh/money" : "/en/money");
   }

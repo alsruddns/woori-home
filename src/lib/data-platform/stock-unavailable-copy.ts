@@ -16,4 +16,5 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   it: "Non sono ancora disponibili quotazioni azionarie reali autorizzate alla pubblicazione. I dati saranno forniti dopo la verifica della fonte e dei diritti.",
   nl: "Er zijn nog geen echte aandelenkoersen goedgekeurd voor openbare weergave. De gegevens volgen nadat de bron en gebruiksrechten zijn gecontroleerd.",
   hi: "सार्वजनिक प्रदर्शन के लिए स्वीकृत वास्तविक शेयर भाव अभी उपलब्ध नहीं हैं। स्रोत और उपयोग अधिकारों की पुष्टि के बाद डेटा दिया जाएगा।",
+  ru: "Подтверждённых реальных котировок акций для публикации пока нет. Данные появятся после проверки источника и прав на использование.",
 };

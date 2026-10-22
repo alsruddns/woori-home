@@ -1,6 +1,7 @@
 import type { Locale } from "@/lib/site";
 
 export const stockIssueCopy: Record<Locale, { title: string; description: string; empty: string; published: string; source: string }> = {
+  ru: {title:"События фондового рынка",description:"Проверенные публикации по рынку акций с датой и ссылкой на источник.",empty:"Проверенных публикаций за этот период нет.",published:"Опубликовано",source:"Источник"},
   ko:{title:"주식시장 주요 이슈",description:"거래소·규제기관·기업의 공식 발표와 사용 권한이 확인된 자료를 날짜별로 모아 제공할 예정입니다.",empty:"이 날짜에 확인되어 등록된 주식시장 이슈가 없습니다.",published:"발표일",source:"출처"},
   en:{title:"Stock market issues",description:"Dated updates from exchanges, regulators, and companies will appear after source permissions are verified.",empty:"No verified stock market issues are available for this date.",published:"Published",source:"Source"},
   ja:{title:"株式市場の主な発表",description:"取引所・規制当局・企業の公式発表は、利用条件の確認後に日付別で掲載します。",empty:"この日に確認された株式市場の情報はありません。",published:"発表日",source:"出典"},

@@ -15,6 +15,7 @@ export const energyAccessCopy = Object.fromEntries(energyLocales.map((locale, in
 }])) as Record<Locale, { label: string; definition: string; unit: string; source: string; interpretation: string; title: string }>;
 
 export const energyPageCopy: Record<Locale, { intro: string; comparison: string; noData: string; dateLabel: string }> = {
+  ru: {intro:"Сравните доступ к электричеству в разных странах и регионах.",comparison:"Показатель отражает доступность электричества в выбранных местах, а не среднее потребление электроэнергии в стране.",noData:"Для этой страны данных нет.",dateLabel:"Отчётный год"},
   ko: { intro: "전력 접근률은 인구 중 전기를 이용할 수 있는 비율입니다. 전력 소비량과는 다른 지표이며 국가별 기준연도를 함께 확인하세요.", comparison: "국가별 최신 관측값", noData: "선택한 국가에는 공개 관측값이 없습니다.", dateLabel: "기준연도" },
   en: { intro: "Electricity access is the share of people who can use electricity. It is distinct from electricity consumption; compare countries alongside each observation year.", comparison: "Latest observations by country", noData: "No published observation is available for this country.", dateLabel: "Reference year" },
   ja: { intro: "電力アクセス率は、電気を利用できる人口の割合です。電力消費量とは異なる指標です。国ごとの基準年も確認してください。", comparison: "国別の最新観測値", noData: "この国の公開観測値はありません。", dateLabel: "基準年" },

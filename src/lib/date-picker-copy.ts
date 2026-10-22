@@ -16,4 +16,5 @@ export const datePickerCopy: Record<Locale, { previousMonth: string; nextMonth: 
   it: { previousMonth: "Mese precedente", nextMonth: "Mese successivo", close: "Chiudi calendario", calendar: "Apri calendario", today: "Oggi" },
   nl: { previousMonth: "Vorige maand", nextMonth: "Volgende maand", close: "Kalender sluiten", calendar: "Kalender openen", today: "Vandaag" },
   hi: { previousMonth: "पिछला महीना", nextMonth: "अगला महीना", close: "कैलेंडर बंद करें", calendar: "कैलेंडर खोलें", today: "आज" },
+  ru: { previousMonth: "Предыдущий месяц", nextMonth: "Следующий месяц", close: "Закрыть календарь", calendar: "Открыть календарь", today: "Сегодня" },
 };
