@@ -103,7 +103,7 @@ export async function getLatestCountryIndicator(countryIso3: string, indicatorCo
 
 export async function compareWorldBankCountries(indicatorCode: string, countryIso3: string[], yearFrom = 1800, yearTo = 2200) {
   if (!isApprovedIndicator(indicatorCode)) throw new Error("Indicator is outside the reviewed World Bank DB scope");
-  if (countryIso3.length < 2 || countryIso3.length > 5) throw new Error("Country comparison requires 2 to 5 ISO3 codes");
+  if (countryIso3.length < 2 || countryIso3.length > 20) throw new Error("Country comparison requires 2 to 20 ISO3 codes");
   return getDatabase().select({
     countryIso3: observations.countryIso3,
     year: observations.referenceYear,
