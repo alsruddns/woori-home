@@ -134,6 +134,8 @@ test("country comparison defaults to ten countries, caps selections at twenty, a
   assert.match(client, /current\.length < 20/);
   assert.match(client, /draftCountries\.length}\/20/);
   assert.match(api, /rawCodes\.length > 20/);
+  const repository = await read("src/lib/db/world-bank-repository.ts");
+  assert.match(repository, /countryIso3\.length > 20/);
   assert.match(client, /fetch\(`\/portal-api\/world-bank\/compare\?/);
   assert.match(route, /handleWorldBankComparison/);
   assert.match(api, /observationsFor\(indicator\.code, country\.iso3\)/);
