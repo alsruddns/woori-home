@@ -31,6 +31,8 @@ const values = {
   ms: ["Faedah kompaun","Faedah simpanan","Faedah pinjaman","Nisbah pinjaman kepada nilai (LTV)","Peratus","Diskaun","Kadar perubahan","Nisbah","Penukar unit","Indeks jisim badan","Perbezaan tarikh","Kiraan detik","Kiraan aksara","Perbandingan teks","Pemformat JSON","Pengesah JSON","CSV ke JSON","Pengekod dan penyahkod Base64","Ubah saiz imej","Mampatkan imej","PNG ke JPG","HEIC ke JPG","Gabung fail PDF","Pisahkan PDF"]
 ,
   sv: ["Ränta på ränta","Sparränta","Låneränta","Belåningsgrad (LTV)","Procent","Rabatt","Förändringstakt","Förhållande","Enhetsomvandlare","Kroppsmasseindex (BMI)","Datumskillnad","Nedräkning","Teckenräknare","Textjämförelse","JSON-formaterare","JSON-validator","CSV till JSON","Base64-kodning och avkodning","Ändra bildstorlek","Komprimera bild","PNG till JPG","HEIC till JPG","Slå samman PDF-filer","Dela PDF"]
+,
+  cs: ["Složené úročení","Úroky z úspor","Úroky z půjčky","Poměr úvěru k hodnotě (LTV)","Procento","Sleva","Míra změny","Poměr","Převodník jednotek","Index tělesné hmotnosti (BMI)","Rozdíl dat","Odpočet","Počet znaků","Porovnání textu","Formátovač JSON","Validátor JSON","CSV na JSON","Kódování a dekódování Base64","Změnit velikost obrázku","Komprese obrázku","PNG na JPG","HEIC na JPG","Sloučit soubory PDF","Rozdělit PDF"]
 } satisfies Partial<Record<Locale, string[]>>;
 
 export const catalogTranslations = Object.fromEntries(Object.entries(values).map(([locale, labels]) => [locale, Object.fromEntries(slugs.map((slug, index) => [slug, labels[index]]))])) as Partial<Record<Locale, Record<string, string>>>;

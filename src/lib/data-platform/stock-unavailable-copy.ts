@@ -30,4 +30,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   ms: "Belum ada kutipan saham untuk publik. Petikan akan muncul setelah sumber dan hak penggunaan disahkan."
 ,
   sv: "Inga aktiekurser clearade för offentlig visning finns ännu. Citat kommer att visas efter att källan och användarrättigheterna har verifierats."
+,
+  cs: "Dosud nejsou k dispozici žádné akciové uvozovky. Citace se objeví po ověření zdroje a práv na užívání."
 };

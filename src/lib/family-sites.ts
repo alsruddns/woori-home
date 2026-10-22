@@ -39,6 +39,8 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   ms: "MoneyBook akan dibuka dalam bahasa Inggeris."
 ,
   sv: "MoneyBook ?ppnas p? engelska."
+,
+  cs: "MoneyBook se otevře v angličtině."
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -81,4 +83,6 @@ export const familySitesCopy: Record<Locale, {
   ms: {"label":"Situs Keluarga","sites":{"portal":"Portal","calculator":"Kalkulator","tools":"Alatan Daring","moneyBook":"Buku Uang Kongsi Bebas Percuma","docs":"Dokumen-dokumen","quiz":"Uji Quiz &"},"docsTitle":"Dokumen-dokumen","docsDescription":"Keanekagunaan dokumen dan template untuk keperluan sehari-hari.","docsCta":"Dokumen Lungsur","quizTitle":"Uji Quiz &","quizDescription":"Masa istirahat dengan berbagai kuis dan tes yang menyenangkan.","quizCta":"Kuiz Eksplore","menu":"Menu"}
 ,
   sv: {"label":"Familjeplatser","sites":{"portal":"Portal","calculator":"Kalkylatorer","tools":"Onlineverktyg","moneyBook":"Gratis delad pengar bok","docs":"Dokument","quiz":"Quiz och tester"},"docsTitle":"Dokument","docsDescription":"Hitta användbara dokument och mallar för vardagliga behov.","docsCta":"Bläddra i dokument","quizTitle":"Quiz och tester","quizDescription":"Ta en paus med en mängd roliga frågesporter och tester.","quizCta":"Utforska quizzes","menu":"Menyn"}
+,
+  cs: {"label":"Rodinné stránky","sites":{"portal":"Portál","calculator":"Kalkulačky","tools":"Online nástroje","moneyBook":"Volný Sdílené peníze kniha","docs":"Dokumenty","quiz":"Kvíz & testy"},"docsTitle":"Dokumenty","docsDescription":"Najít užitečné dokumenty a šablony pro každodenní potřeby.","docsCta":"Prohlížet dokumenty","quizTitle":"Kvíz & testy","quizDescription":"Vezměte si přestávku s řadou zábavných kvízů a testů.","quizCta":"Prozkoumejte kvízy","menu":"Nabídka"}
 };

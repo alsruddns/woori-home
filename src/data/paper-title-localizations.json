@@ -22,7 +22,8 @@
     "bn": "এক-প্যারামিটারের গতিশীল অন্ধকার শক্তি: দোলনের ইঙ্গিত",
     "uk": "Однопараметрова динамічна темна енергія: Хінти для коливань",
     "ms": "Energi gelap satu-parameter dinamis: Petunjuk untuk osilasi",
-    "sv": "Enparameter dynamisk mörk energi: Tips för oscillationer"
+    "sv": "Enparameter dynamisk mörk energi: Tips för oscillationer",
+    "cs": "Oneparametr dynamická temná energie: rady pro oscilace"
   },
   "10.1021/acs.iecr.6c02154": {
     "ko": "막 오염 예측을 위한 거칠기 보정 계면 기술자를 활용한 물리 기반 머신러닝",
@@ -47,7 +48,8 @@
     "bn": "মেমব্রেন ফাউলিং পূর্বাভাসে রুক্ষতা-সংশোধিত আন্তঃপৃষ্ঠ বর্ণনাসহ পদার্থবিজ্ঞান-নির্দেশিত মেশিন লার্নিং",
     "uk": "Фізико-освітлене машинне навчання з грубістю-виправними міжфазними декрипторами для проведення Membrane Fouling",
     "ms": "Fisika Fisika-Guided Machine Belajar dengan Kekasaran-Terjalin Interfacial Descriptors for Membrane Fouling Prediction",
-    "sv": "Fysikstyrd maskininlärning med grovhetskorrerad interfacial beskrivare för membranfoulering förutsägelse"
+    "sv": "Fysikstyrd maskininlärning med grovhetskorrerad interfacial beskrivare för membranfoulering förutsägelse",
+    "cs": "Fyzika-průvodce stroj učení s Roughness- korigované Interfacial Descriptors pro Membrane Fouling Predikce"
   },
   "10.58797/teras.0501.10": {
     "ko": "물리 교사를 위한 STEM 기반 로봇공학 전문성 개발: 자카르타 MGMP Fisika의 집단 단위 교육 평가",
@@ -72,7 +74,8 @@
     "bn": "পদার্থবিজ্ঞানের শিক্ষকদের জন্য STEM-ভিত্তিক রোবোটিক্স পেশাগত উন্নয়ন: MGMP Fisika Jakarta-তে দলীয় প্রশিক্ষণ মূল্যায়ন",
     "uk": "STEM-Based Robotics Professional Development for Physics Teachers: Група-Level Training Оцінка в MGMP Fisika Jakarta",
     "ms": "Pengembangan Profesional Robotika Berasaskan Fisika untuk Guru: Evaluasi Pelatihan Tingkat Grup di MGMP Fisika Jakarta",
-    "sv": "STEM-Based Robotics Professional Development for Physics Teachers: A Group-Level Training Evaluation in MGMP Fisika Jakarta"
+    "sv": "STEM-Based Robotics Professional Development for Physics Teachers: A Group-Level Training Evaluation in MGMP Fisika Jakarta",
+    "cs": "STEM- based robotics Professional Development for Physics Teachers: A Group- Level Training Evaluation in MGMP Fisika Jakarta"
   },
   "10.3390/membranes16050181": {
     "ko": "폐수 막 생물반응기: 설명 가능한 인공지능과 디지털 트윈 응용에 관한 종합 검토",
@@ -97,7 +100,8 @@
     "bn": "বর্জ্যজলের মেমব্রেন বায়োরিঅ্যাক্টর: ব্যাখ্যাযোগ্য AI ও ডিজিটাল টুইন প্রয়োগের সমন্বিত পর্যালোচনা",
     "uk": "Біореактори відпрацьованих вод: комплексний огляд проблемної штучного інтелекту та цифрових Twin Applications",
     "ms": "Bioreaktor Membbrane Air Limbah: Tinjauan Komprehensif tentang Kecerdasan Terapan yang Dapat Dijelaskan dan Aplikasi Kembar Digital",
-    "sv": "Avloppsvattenmembran Bioreaktorer: En omfattande granskning av förklarande artificiell intelligens och digitala tvillingapplikationer"
+    "sv": "Avloppsvattenmembran Bioreaktorer: En omfattande granskning av förklarande artificiell intelligens och digitala tvillingapplikationer",
+    "cs": "Wastewater Membrane Bioreactors: Komplexní přehled prokazatelné umělé inteligence a digitální Twin aplikace"
   },
   "10.1080/15502783.2026.2630487": {
     "ko": "사이클링 경기력 향상을 위한 운동능력 증진·의학적 보충제 사용 지침: 생리학과 근거에 대한 종합 검토",
@@ -122,7 +126,8 @@
     "bn": "সাইক্লিং পারফরম্যান্স বাড়াতে এরগোজেনিক ও চিকিৎসা-সহায়কের শারীরবৃত্ত এবং প্রমাণের সমন্বিত পর্যালোচনা",
     "uk": "Комплексний огляд фізіології та доказової бази для керівництва використання ергогенних та медичних добавок для підвищення продуктивності велосипедів",
     "ms": "Sebuah tinjauan komprehensif dari fisiologi dan basis bukti untuk membimbing penggunaan ergogenik dan suplemen medis untuk kinerja bersepeda yang ditingkatkan",
-    "sv": "En omfattande översyn av fysiologin och bevisbasen för att styra användningen av ergogena och medicinska kosttillskott för förbättrad cykelprestanda"
+    "sv": "En omfattande översyn av fysiologin och bevisbasen för att styra användningen av ergogena och medicinska kosttillskott för förbättrad cykelprestanda",
+    "cs": "Komplexní přezkum fyziologie a důkazního základu pro použití ergogenních a lékařských doplňků pro zvýšení výkonu cyklistiky"
   },
   "10.3390/membranes15120353": {
     "ko": "재료과학 및 막 기술에서 인공지능과 머신러닝의 발전과 응용: 종합 검토",
@@ -147,7 +152,8 @@
     "bn": "উপাদান বিজ্ঞান ও মেমব্রেন প্রযুক্তিতে AI ও মেশিন লার্নিংয়ের অগ্রগতি ও প্রয়োগ: সমন্বিত পর্যালোচনা",
     "uk": "Потенції та застосування штучного інтелекту та машинного навчання в матеріалі науки та технології Мембрана: комплексний огляд",
     "ms": "Berbagai Kemajuan dan Aplikasi Kecerdasan dan Pembelajaran Mesin Seni Rupa dalam Ilmu Material dan Teknologi Membran: Tinjauan Komprehensif",
-    "sv": "Framsteg och tillämpningar av artificiell intelligens och maskininlärning i materialvetenskap och membranteknik: en omfattande granskning"
+    "sv": "Framsteg och tillämpningar av artificiell intelligens och maskininlärning i materialvetenskap och membranteknik: en omfattande granskning",
+    "cs": "Výstupy a aplikace umělé inteligence a strojového učení v materiálové vědě a membránové technologii: Komplexní přehled"
   },
   "10.3390/en18133245": {
     "ko": "마이크로그리드 에너지 관리 최적화 전략 검토",
@@ -172,7 +178,8 @@
     "bn": "মাইক্রোগ্রিডে শক্তি ব্যবস্থাপনা অপ্টিমাইজেশনের কৌশল পর্যালোচনা",
     "uk": "Огляд стратегій оптимізації енергоменеджменту в мікрогрейдах",
     "ms": "Tinjauan Strategi Optimasi untuk Manajemen Energi dalam Mikrogrid",
-    "sv": "En översyn av optimeringsstrategier för energihantering i Microgrids"
+    "sv": "En översyn av optimeringsstrategier för energihantering i Microgrids",
+    "cs": "Přezkum optimalizačních strategií pro řízení energie v mikrosystémech"
   },
   "10.1038/s41746-025-01699-8": {
     "ko": "인공지능으로 산출한 망막 연령 차이: 여성의 생식 노화 지표",
@@ -197,7 +204,8 @@
     "bn": "নারীদের প্রজনন-বার্ধক্যের সূচক হিসেবে AI-নির্ণীত রেটিনার বয়সের ব্যবধান",
     "uk": "Штучний інтелект-дерективний проміжок віку як маркер для статевого старіння у жінок",
     "ms": "Kecerdasan artifisial kecerdasan-derived retina kesenjangan usia sebagai penanda untuk penuaan reproduksi pada wanita",
-    "sv": "Artificiell intelligenshärledd retinal ålder gap som en markör för reproduktiv åldrande hos kvinnor"
+    "sv": "Artificiell intelligenshärledd retinal ålder gap som en markör för reproduktiv åldrande hos kvinnor",
+    "cs": "Umělá inteligence odvozené věkové mezery sítnice jako marker pro reprodukční stárnutí u žen"
   },
   "10.3390/aerospace12060540": {
     "ko": "물리 정보 신경망을 이용한 자율 공중급유 드로그 위치 예측",
@@ -222,6 +230,7 @@
     "bn": "পদার্থবিজ্ঞান-অবহিত নিউরাল নেটওয়ার্কে স্বয়ংক্রিয় আকাশপথে জ্বালানি ভরার সময় ড্রোগের অবস্থান পূর্বাভাস",
     "uk": "Прогнозування Положення Drogue в Автономній Аеріальні Заправки на основі фізико-інформованої нейромережі",
     "ms": "Prediksi Posisi Drogue dalam Refueling Aerial Otonomi Berdasarkan Jaringan Neural yang Berinformasi Fisika",
-    "sv": "Förutsägelse av Drogue Position i autonom flygrevärme baserat på ett fysikinformerat neuralt nätverk"
+    "sv": "Förutsägelse av Drogue Position i autonom flygrevärme baserat på ett fysikinformerat neuralt nätverk",
+    "cs": "Předpověď pozice drogu v autonomním vzdušném utečeném prostředí na základě fyziky- Informované neurologické sítě"
   }
 }

@@ -25,6 +25,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
   ms: {"insights":"Wawasan Data Data &","worldStats":"Statistik ekonomi dunia Ekonomi dunia &"}
 ,
   sv: {"insights":"Data & insikter","worldStats":"Världsekonomi och statistik"}
+,
+  cs: {"insights":"Údaje a postřehy","worldStats":"Světová ekonomika a statistiky"}
 };
 
 export function categoryNavigation(locale: Locale) {

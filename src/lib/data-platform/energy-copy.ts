@@ -44,4 +44,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
   ms: {"intro":"Akses listrik adalah bagian dari orang yang dapat menggunakan listrik. Hal ini berbeda dengan konsumsi listrik; bandingkan negara - negara di samping setiap tahun pengamatan.","comparison":"Pengamatan terkini oleh negara","noData":"Tidak ada pengamatan yang diterbitkan untuk negara ini.","dateLabel":"Tahun referensi"}
 ,
   sv: {"intro":"Eltillgång är andelen personer som kan använda el. Det skiljer sig från elförbrukningen, jämför länder tillsammans med varje observationsår.","comparison":"Senaste observationer från land","noData":"Ingen publicerad observation är tillgänglig för detta land.","dateLabel":"Referensår"}
+,
+  cs: {"intro":"Přístup k elektrické energii je podíl lidí, kteří mohou používat elektřinu. Odlišuje se od spotřeby elektřiny; porovnává země s každým rokem pozorování.","comparison":"Poslední připomínky podle jednotlivých zemí","noData":"Pro tuto zemi není k dispozici žádné zveřejněné pozorování.","dateLabel":"Referenční rok"}
 };

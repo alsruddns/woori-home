@@ -31,6 +31,8 @@ const viewLabels: Record<Locale, string> = {
   ms: "Data Explore"
 ,
   sv: "Utforska data"
+,
+  cs: "Prozkoumejte data"
 };
 
 export function PlatformHome({ locale }: { locale: Locale }) {

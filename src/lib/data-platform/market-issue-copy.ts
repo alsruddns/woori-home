@@ -30,4 +30,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
   ms: {"title":"saham saham saham saham","description":"Pemutakhiran tanggal dari pertukaran, regulator, dan perusahaan akan muncul setelah izin sumber diverifikasi.","empty":"Tidak ada isu bursa saham terverifikasi yang tersedia untuk tanggal ini.","published":"Diterbitkan","source":"Sumber"}
 ,
   sv: {"title":"Aktiemarknadsfrågor","description":"Daterade uppdateringar från utbyten, tillsynsmyndigheter och företag kommer att visas efter källbehörigheter verifieras.","empty":"Inga verifierade aktiemarknadsfrågor finns tillgängliga för detta datum.","published":"Publicerad","source":"Källa"}
+,
+  cs: {"title":"Emise na akciovém trhu","description":"Datované aktualizace od burz, regulátorů a společností se objeví po ověření zdrojových oprávnění.","empty":"Pro toto datum nejsou k dispozici žádné ověřené emise na akciovém trhu.","published":"Zveřejněno","source":"Zdroj"}
 };
