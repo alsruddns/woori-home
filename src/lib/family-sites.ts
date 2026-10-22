@@ -33,11 +33,8 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   it: "MoneyBook si aprirà in inglese.",
   nl: "MoneyBook wordt in het Engels geopend.",
   hi: "MoneyBook अंग्रेज़ी में खुलेगा।",
-
-  "tr": "MoneyBook sayfası İngilizce açılacaktır."
-,
-
-
+  "tr": "MoneyBook sayfası İngilizce açılacaktır.",
+  uk: "MoneyBook наразі доступний корейською, англійською, японською та китайською мовами. Відкрийте англійську версію."
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -74,5 +71,6 @@ export const familySitesCopy: Record<Locale, {
 ,
   "fil": {label:"Mga serbisyong magkakaugnay",sites:{portal:"Portal",calculator:"Mga calculator",tools:"Mga online na tool",moneyBook:"MoneyBook",docs:"Mga dokumento",quiz:"Quiz"},docsTitle:"Mga template ng dokumento",docsDescription:"Mga handang template para sa tala ng pulong, quotation at lingguhang plano.",docsCta:"Buksan ang mga dokumento",quizTitle:"Mga quiz",quizDescription:"Maiikling quiz tungkol sa kaalaman, matematika, heograpiya at teknolohiya.",quizCta:"Buksan ang mga quiz",menu:"Menu ng serbisyo"}
 ,
-  "bn": {label:"পরিবারের সাইট",sites:{portal:"Portal",calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল",moneyBook:"MoneyBook",docs:"নথি",quiz:"কুইজ"},docsTitle:"নথির টেমপ্লেট",docsDescription:"সভা নোট, কোটেশন ও সাপ্তাহিক পরিকল্পনার প্রস্তুত টেমপ্লেট।",docsCta:"নথি খুলুন",quizTitle:"জ্ঞান যাচাইয়ের কুইজ",quizDescription:"সাধারণ জ্ঞান, গণিত, ভূগোল ও প্রযুক্তি নিয়ে ছোট কুইজ।",quizCta:"কুইজ খুলুন",menu:"সেবা মেনু"}
+  "bn": {label:"পরিবারের সাইট",sites:{portal:"Portal",calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল",moneyBook:"MoneyBook",docs:"নথি",quiz:"কুইজ"},docsTitle:"নথির টেমপ্লেট",docsDescription:"সভা নোট, কোটেশন ও সাপ্তাহিক পরিকল্পনার প্রস্তুত টেমপ্লেট।",docsCta:"নথি খুলুন",quizTitle:"জ্ঞান যাচাইয়ের কুইজ",quizDescription:"সাধারণ জ্ঞান, গণিত, ভূগোল ও প্রযুক্তি নিয়ে ছোট কুইজ।",quizCta:"কুইজ খুলুন",menu:"সেবা মেনু"},
+  uk: {"label":"Сімейні сервіси","sites":{"portal":"Портал","calculator":"Калькулятор","tools":"Інструменти","moneyBook":"MoneyBook","docs":"Документи","quiz":"Вікторини"},"docsTitle":"Документи","docsDescription":"Шаблони документів для повсякденних завдань.","docsCta":"Переглянути шаблони","quizTitle":"Вікторини","quizDescription":"Короткі вікторини для навчання та відпочинку.","quizCta":"Відкрити вікторини","menu":"Меню сервісів"}
 };

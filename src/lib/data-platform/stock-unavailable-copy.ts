@@ -24,5 +24,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
 ,
   "fil": "Wala pang aktuwal na presyo ng stock na naaprubahan para sa pampublikong pagpapakita. Magiging available ang datos kapag napatunayan ang pinagmulan at mga karapatan sa paggamit."
 ,
-  "bn": "সর্বজনীন প্রদর্শনের অনুমোদনসহ প্রকৃত শেয়ারের দাম এখনো নেই। উৎস ও ব্যবহারের অধিকার যাচাই হলে ডেটা দেওয়া হবে।"
+  "bn": "সর্বজনীন প্রদর্শনের অনুমোদনসহ প্রকৃত শেয়ারের দাম এখনো নেই। উৎস ও ব্যবহারের অধিকার যাচাই হলে ডেটা দেওয়া হবে।",
+  uk: "Дані фондового ринку тимчасово недоступні. Спробуйте пізніше."
 };

@@ -49,7 +49,8 @@
         "tr": "Tek parametreli dinamik karanlık enerji: salınım ipuçları",
         "pl": "Ciemna energia o dynamice jednego parametru: wskazówki dotyczące oscylacji",
         "fil": "Madilim na enerhiyang may iisang parameter: mga palatandaan ng oscillation",
-        "bn": "এক-প্যারামিটারের গতিশীল অন্ধকার শক্তি: দোলনের ইঙ্গিত"
+        "bn": "এক-প্যারামিটারের গতিশীল অন্ধকার শক্তি: দোলনের ইঙ্গিত",
+        "uk": "Однопараметрова динамічна темна енергія: Хінти для коливань"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -105,7 +106,8 @@
         "tr": "Membran kirlenmesi tahmini için pürüzlülük düzeltmeli arayüz tanımlayıcılarıyla fizik güdümlü makine öğrenmesi",
         "pl": "Uczenie maszynowe wspomagane fizyką i deskryptory międzyfazowe z korektą chropowatości do prognozowania zanieczyszczenia membran",
         "fil": "Physics-guided machine learning na may mga interfacial descriptor na inayos para sa gaspang upang mahulaan ang fouling ng membrane",
-        "bn": "মেমব্রেন ফাউলিং পূর্বাভাসে রুক্ষতা-সংশোধিত আন্তঃপৃষ্ঠ বর্ণনাসহ পদার্থবিজ্ঞান-নির্দেশিত মেশিন লার্নিং"
+        "bn": "মেমব্রেন ফাউলিং পূর্বাভাসে রুক্ষতা-সংশোধিত আন্তঃপৃষ্ঠ বর্ণনাসহ পদার্থবিজ্ঞান-নির্দেশিত মেশিন লার্নিং",
+        "uk": "Фізико-освітлене машинне навчання з грубістю-виправними міжфазними декрипторами для проведення Membrane Fouling"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -159,7 +161,8 @@
         "tr": "Fizik öğretmenleri için STEM tabanlı robotik mesleki gelişimi: MGMP Fisika Jakarta'da grup eğitimi değerlendirmesi",
         "pl": "Rozwój zawodowy nauczycieli fizyki w robotyce STEM: ocena szkolenia grupowego w MGMP Fisika Jakarta",
         "fil": "STEM-based na propesyonal na pagsasanay sa robotics para sa mga guro ng pisika: pagsusuri ng pagsasanay ng grupo sa MGMP Fisika Jakarta",
-        "bn": "পদার্থবিজ্ঞানের শিক্ষকদের জন্য STEM-ভিত্তিক রোবোটিক্স পেশাগত উন্নয়ন: MGMP Fisika Jakarta-তে দলীয় প্রশিক্ষণ মূল্যায়ন"
+        "bn": "পদার্থবিজ্ঞানের শিক্ষকদের জন্য STEM-ভিত্তিক রোবোটিক্স পেশাগত উন্নয়ন: MGMP Fisika Jakarta-তে দলীয় প্রশিক্ষণ মূল্যায়ন",
+        "uk": "STEM-Based Robotics Professional Development for Physics Teachers: Група-Level Training Оцінка в MGMP Fisika Jakarta"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -205,7 +208,8 @@
         "tr": "Atık su membran biyoreaktörleri: açıklanabilir yapay zekâ ve dijital ikiz uygulamalarına kapsamlı bir bakış",
         "pl": "Bioreaktory membranowe do ścieków: kompleksowy przegląd zastosowań wyjaśnialnej sztucznej inteligencji i cyfrowych bliźniaków",
         "fil": "Mga membrane bioreactor para sa wastewater: komprehensibong pagsusuri ng explainable AI at mga digital twin",
-        "bn": "বর্জ্যজলের মেমব্রেন বায়োরিঅ্যাক্টর: ব্যাখ্যাযোগ্য AI ও ডিজিটাল টুইন প্রয়োগের সমন্বিত পর্যালোচনা"
+        "bn": "বর্জ্যজলের মেমব্রেন বায়োরিঅ্যাক্টর: ব্যাখ্যাযোগ্য AI ও ডিজিটাল টুইন প্রয়োগের সমন্বিত পর্যালোচনা",
+        "uk": "Біореактори відпрацьованих вод: комплексний огляд проблемної штучного інтелекту та цифрових Twin Applications"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -288,7 +292,8 @@
         "tr": "Bisiklet performansını artırmaya yönelik ergojenik ve tıbbi takviyelerin fizyolojisi ve kanıt tabanı üzerine kapsamlı bir inceleme",
         "pl": "Kompleksowy przegląd fizjologii i dowodów dotyczących suplementów ergogenicznych i medycznych poprawiających wyniki w kolarstwie",
         "fil": "Komprehensibong pagsusuri ng pisyolohiya at ebidensiya para sa ergogenic at medikal na supplement na nagpapahusay ng performance sa pagbibisikleta",
-        "bn": "সাইক্লিং পারফরম্যান্স বাড়াতে এরগোজেনিক ও চিকিৎসা-সহায়কের শারীরবৃত্ত এবং প্রমাণের সমন্বিত পর্যালোচনা"
+        "bn": "সাইক্লিং পারফরম্যান্স বাড়াতে এরগোজেনিক ও চিকিৎসা-সহায়কের শারীরবৃত্ত এবং প্রমাণের সমন্বিত পর্যালোচনা",
+        "uk": "Комплексний огляд фізіології та доказової бази для керівництва використання ергогенних та медичних добавок для підвищення продуктивності велосипедів"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -335,7 +340,8 @@
         "tr": "Malzeme bilimi ve membran teknolojisinde yapay zekâ ve makine öğrenmesindeki gelişmeler ve uygulamalar: kapsamlı bir inceleme",
         "pl": "Postępy i zastosowania sztucznej inteligencji i uczenia maszynowego w materiałoznawstwie i technologii membran: przegląd",
         "fil": "Mga pag-unlad at aplikasyon ng AI at machine learning sa materials science at membrane technology: komprehensibong pagsusuri",
-        "bn": "উপাদান বিজ্ঞান ও মেমব্রেন প্রযুক্তিতে AI ও মেশিন লার্নিংয়ের অগ্রগতি ও প্রয়োগ: সমন্বিত পর্যালোচনা"
+        "bn": "উপাদান বিজ্ঞান ও মেমব্রেন প্রযুক্তিতে AI ও মেশিন লার্নিংয়ের অগ্রগতি ও প্রয়োগ: সমন্বিত পর্যালোচনা",
+        "uk": "Потенції та застосування штучного інтелекту та машинного навчання в матеріалі науки та технології Мембрана: комплексний огляд"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -383,7 +389,8 @@
         "tr": "Mikro şebekelerde enerji yönetimi optimizasyon stratejilerinin incelenmesi",
         "pl": "Przegląd strategii optymalizacji zarządzania energią w mikrosieciach",
         "fil": "Pagsusuri sa mga estratehiya ng pag-optimize ng pamamahala ng enerhiya sa mga microgrid",
-        "bn": "মাইক্রোগ্রিডে শক্তি ব্যবস্থাপনা অপ্টিমাইজেশনের কৌশল পর্যালোচনা"
+        "bn": "মাইক্রোগ্রিডে শক্তি ব্যবস্থাপনা অপ্টিমাইজেশনের কৌশল পর্যালোচনা",
+        "uk": "Огляд стратегій оптимізації енергоменеджменту в мікрогрейдах"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -438,7 +445,8 @@
         "tr": "Kadınlarda üreme yaşlanmasının göstergesi olarak yapay zekâ ile hesaplanan retina yaşı farkı",
         "pl": "Wyznaczona przez sztuczną inteligencję różnica wieku siatkówki jako wskaźnik starzenia reprodukcyjnego u kobiet",
         "fil": "Agwat sa edad ng retina na nakuha sa AI bilang pananda ng reproductive aging sa kababaihan",
-        "bn": "নারীদের প্রজনন-বার্ধক্যের সূচক হিসেবে AI-নির্ণীত রেটিনার বয়সের ব্যবধান"
+        "bn": "নারীদের প্রজনন-বার্ধক্যের সূচক হিসেবে AI-নির্ণীত রেটিনার বয়সের ব্যবধান",
+        "uk": "Штучний інтелект-дерективний проміжок віку як маркер для статевого старіння у жінок"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -486,7 +494,8 @@
         "tr": "Fizik bilgili sinir ağıyla otonom havada yakıt ikmali sırasında drogue konumunun tahmini",
         "pl": "Prognozowanie położenia spadochronu hamującego podczas autonomicznego tankowania w powietrzu za pomocą sieci neuronowej uwzględniającej prawa fizyki",
         "fil": "Pagtataya sa posisyon ng drogue sa autonomous aerial refueling gamit ang physics-informed neural network",
-        "bn": "পদার্থবিজ্ঞান-অবহিত নিউরাল নেটওয়ার্কে স্বয়ংক্রিয় আকাশপথে জ্বালানি ভরার সময় ড্রোগের অবস্থান পূর্বাভাস"
+        "bn": "পদার্থবিজ্ঞান-অবহিত নিউরাল নেটওয়ার্কে স্বয়ংক্রিয় আকাশপথে জ্বালানি ভরার সময় ড্রোগের অবস্থান পূর্বাভাস",
+        "uk": "Прогнозування Положення Drogue в Автономній Аеріальні Заправки на основі фізико-інформованої нейромережі"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",

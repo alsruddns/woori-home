@@ -24,7 +24,8 @@ export const comparePeriodCopy: Record<Locale, { range: string; from: string; to
 ,
   "fil": {range:"Pagbabago sa panahon",from:"Taon ng simula",to:"Taon ng pagtatapos",startValue:"Halaga sa simula",endValue:"Halaga sa dulo",difference:"Ganap na pagbabago",percent:"Kaugnay na pagbabago",percentagePoints:"Pagbabago",percentagePointUnit:"puntos ng porsiyento"}
 ,
-  "bn": {range:"সময়ের পরিবর্তন",from:"শুরুর বছর",to:"শেষের বছর",startValue:"শুরুর মান",endValue:"শেষের মান",difference:"পরম পরিবর্তন",percent:"আপেক্ষিক পরিবর্তন",percentagePoints:"পরিবর্তন",percentagePointUnit:"শতাংশ পয়েন্ট"}
+  "bn": {range:"সময়ের পরিবর্তন",from:"শুরুর বছর",to:"শেষের বছর",startValue:"শুরুর মান",endValue:"শেষের মান",difference:"পরম পরিবর্তন",percent:"আপেক্ষিক পরিবর্তন",percentagePoints:"পরিবর্তন",percentagePointUnit:"শতাংশ পয়েন্ট"},
+  "uk": {range:"Зміна за період",from:"Початковий рік",to:"Кінцевий рік",startValue:"Початкове значення",endValue:"Кінцеве значення",difference:"Абсолютна зміна",percent:"Відносна зміна",percentagePoints:"Зміна",percentagePointUnit:"відсоткові пункти"}
 };
 
 export const isRateIndicator = (indicatorId: string) => ["electricity-access", "population-growth", "unemployment"].includes(indicatorId);

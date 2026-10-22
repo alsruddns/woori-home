@@ -19,7 +19,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
 ,
   "fil": {insights:"Datos at mga pananaw",worldStats:"Pandaigdigang ekonomiya at estadistika"}
 ,
-  "bn": {insights:"ডেটা ও বিশ্লেষণ",worldStats:"বিশ্ব অর্থনীতি ও পরিসংখ্যান"}
+  "bn": {insights:"ডেটা ও বিশ্লেষণ",worldStats:"বিশ্ব অর্থনীতি ও পরিসংখ্যান"},
+  "uk": {insights:"Дані й огляди",worldStats:"Світова економіка та статистика"}
 };
 
 export function categoryNavigation(locale: Locale) {

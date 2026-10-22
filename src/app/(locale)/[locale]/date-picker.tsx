@@ -6,7 +6,9 @@ import type { Locale } from "@/lib/site";
 import { datePickerCopy } from "@/lib/date-picker-copy";
 
 type Props = { locale: Locale; label: string; value: string; onChange: (value: string) => void; max?: string; min?: string; today?: string; availableDates?: string[]; id?: string; name?: string };
-const weekdayStart: Partial<Record<Locale, number>> = { en: 0, zh: 0, "zh-tw": 0, ja: 0, th: 0, hi: 0 };
+const weekdayStart: Partial<Record<Locale, number>> = { en: 0, zh: 0, "zh-tw": 0, ja: 0, th: 0, hi: 0 ,
+  uk: 0
+};
 const parseDate = (value: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
   if (!match) return null;

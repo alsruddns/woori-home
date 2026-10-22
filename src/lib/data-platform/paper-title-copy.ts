@@ -10,5 +10,6 @@ export const paperTitleCopy: Record<Locale, { originalTitle: string; translation
 ,
   "fil": {originalTitle:"Orihinal na pamagat",translationDraft:"Draft ng salin ng pamagat",translationPending:"Nakabinbin ang salin · orihinal na pamagat"}
 ,
-  "bn": {originalTitle:"মূল শিরোনাম",translationDraft:"শিরোনামের অনুবাদের খসড়া",translationPending:"অনুবাদ অপেক্ষমাণ · মূল শিরোনাম"}
+  "bn": {originalTitle:"মূল শিরোনাম",translationDraft:"শিরোনামের অনুবাদের খসড়া",translationPending:"অনুবাদ অপেক্ষমাণ · মূল শিরোনাম"},
+  "uk": {originalTitle:"Оригінальна назва",translationDraft:"Чернетка перекладу назви",translationPending:"Переклад очікується · оригінальна назва"}
 };

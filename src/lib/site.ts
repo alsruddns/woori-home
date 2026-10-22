@@ -23,6 +23,7 @@ export const localeConfig = [
   { route: "pl", hreflang: "pl", nativeName: "Polski", ogLocale: "pl_PL" },
   { route: "fil", hreflang: "fil", nativeName: "Filipino", ogLocale: "fil_PH" },
   { route: "bn", hreflang: "bn", nativeName: "বাংলা", ogLocale: "bn_BD" },
+  { route: "uk", hreflang: "uk", nativeName: "Українська", ogLocale: "uk_UA" },
 ] as const;
 export const locales = localeConfig.map((item) => item.route);
 export type Locale = (typeof localeConfig)[number]["route"];
@@ -40,7 +41,8 @@ export const newTabLabels: Record<Locale, string> = {
 ,
   "fil": "bubukas sa bagong tab"
 ,
-  "bn": "নতুন ট্যাবে খোলে"
+  "bn": "নতুন ট্যাবে খোলে",
+  "uk": "відкривається в новій вкладці"
 };
 export const uiLabels: Record<Locale, { language: string; primaryNav: string }> = {
   ko: { language: "언어 선택", primaryNav: "주요 탐색" }, en: { language: "Choose language", primaryNav: "Primary navigation" }, ja: { language: "言語を選択", primaryNav: "メインナビゲーション" }, zh: { language: "选择语言", primaryNav: "主要导航" },
@@ -52,7 +54,8 @@ export const uiLabels: Record<Locale, { language: string; primaryNav: string }> 
 ,
   "fil": {language:"Pumili ng wika",primaryNav:"Pangunahing nabigasyon"}
 ,
-  "bn": {language:"ভাষা নির্বাচন করুন",primaryNav:"প্রধান নেভিগেশন"}
+  "bn": {language:"ভাষা নির্বাচন করুন",primaryNav:"প্রধান নেভিগেশন"},
+  "uk": {language:"Виберіть мову",primaryNav:"Основна навігація"}
 };
 export const sectionLabels: Record<Locale, { calculator: string; tools: string }> = {
   ko: { calculator: "계산기", tools: "온라인 도구" }, en: { calculator: "Calculator", tools: "Online tools" }, ja: { calculator: "計算ツール", tools: "オンラインツール" }, zh: { calculator: "计算器", tools: "在线工具" },
@@ -64,7 +67,8 @@ export const sectionLabels: Record<Locale, { calculator: string; tools: string }
 ,
   "fil": {calculator:"Mga calculator",tools:"Mga online na tool"}
 ,
-  "bn": {calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল"}
+  "bn": {calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল"},
+  "uk": {calculator:"Калькулятори",tools:"Онлайн-інструменти"}
 };
 export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
 export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;
