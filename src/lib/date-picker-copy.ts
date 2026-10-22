@@ -28,4 +28,6 @@ export const datePickerCopy: Record<Locale, { previousMonth: string; nextMonth: 
   uk: { previousMonth: "Попередній місяць", nextMonth: "Наступний місяць", close: "Закрити", calendar: "Відкрити календар", today: "Сьогодні" }
 ,
   ms: { previousMonth: "Bulan sebelumnya", nextMonth: "Bulan seterusnya", close: "Tutup", calendar: "Buka kalendar", today: "Hari ini" }
+,
+  sv: { previousMonth: "F?reg?ende m?nad", nextMonth: "N?sta m?nad", close: "St?ng", calendar: "?ppna kalendern", today: "I dag" }
 };

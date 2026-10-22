@@ -28,4 +28,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   uk: "Дані фондового ринку тимчасово недоступні. Спробуйте пізніше."
 ,
   ms: "Belum ada kutipan saham untuk publik. Petikan akan muncul setelah sumber dan hak penggunaan disahkan."
+,
+  sv: "Inga aktiekurser clearade för offentlig visning finns ännu. Citat kommer att visas efter att källan och användarrättigheterna har verifierats."
 };

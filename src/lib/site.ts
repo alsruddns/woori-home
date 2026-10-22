@@ -25,6 +25,8 @@ export const localeConfig = [
   { route: "bn", hreflang: "bn", nativeName: "বাংলা", ogLocale: "bn_BD" },
   { route: "uk", hreflang: "uk", nativeName: "Українська", ogLocale: "uk_UA" },
   { route: "ms", hreflang: "ms", nativeName: "Bahasa Melayu", ogLocale: "ms_MY" },
+
+  { route: "sv", hreflang: "sv", nativeName: "Svenska", ogLocale: "sv_SE" }
 ] as const;
 export const locales = localeConfig.map((item) => item.route);
 export type Locale = (typeof localeConfig)[number]["route"];
@@ -46,6 +48,8 @@ export const newTabLabels: Record<Locale, string> = {
   "uk": "відкривається в новій вкладці"
 ,
   ms: "Dibuka di tab baru"
+,
+  sv: "Öppnar i en ny flik"
 };
 export const uiLabels: Record<Locale, { language: string; primaryNav: string }> = {
   ko: { language: "언어 선택", primaryNav: "주요 탐색" }, en: { language: "Choose language", primaryNav: "Primary navigation" }, ja: { language: "言語を選択", primaryNav: "メインナビゲーション" }, zh: { language: "选择语言", primaryNav: "主要导航" },
@@ -61,6 +65,8 @@ export const uiLabels: Record<Locale, { language: string; primaryNav: string }> 
   "uk": {language:"Виберіть мову",primaryNav:"Основна навігація"}
 ,
   ms: {"language":"Pilih bahasa","primaryNav":"Pemanduan arah"}
+,
+  sv: {"language":"Välj språk","primaryNav":"Primär navigering"}
 };
 export const sectionLabels: Record<Locale, { calculator: string; tools: string }> = {
   ko: { calculator: "계산기", tools: "온라인 도구" }, en: { calculator: "Calculator", tools: "Online tools" }, ja: { calculator: "計算ツール", tools: "オンラインツール" }, zh: { calculator: "计算器", tools: "在线工具" },
@@ -76,6 +82,8 @@ export const sectionLabels: Record<Locale, { calculator: string; tools: string }
   "uk": {calculator:"Калькулятори",tools:"Онлайн-інструменти"}
 ,
   ms: {"calculator":"Kalkulator","tools":"Tool"}
+,
+  sv: {"calculator":"Kalkylator","tools":"Onlineverktyg"}
 };
 export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
 export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;

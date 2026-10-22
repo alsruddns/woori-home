@@ -28,4 +28,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
   "uk": {title:"Новини фондового ринку",description:"Датовані повідомлення бірж, регуляторів і компаній з’являться після перевірки дозволів на джерела.",empty:"За цю дату перевірених новин фондового ринку немає.",published:"Опубліковано",source:"Джерело"}
 ,
   ms: {"title":"saham saham saham saham","description":"Pemutakhiran tanggal dari pertukaran, regulator, dan perusahaan akan muncul setelah izin sumber diverifikasi.","empty":"Tidak ada isu bursa saham terverifikasi yang tersedia untuk tanggal ini.","published":"Diterbitkan","source":"Sumber"}
+,
+  sv: {"title":"Aktiemarknadsfrågor","description":"Daterade uppdateringar från utbyten, tillsynsmyndigheter och företag kommer att visas efter källbehörigheter verifieras.","empty":"Inga verifierade aktiemarknadsfrågor finns tillgängliga för detta datum.","published":"Publicerad","source":"Källa"}
 };

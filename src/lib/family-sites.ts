@@ -37,6 +37,8 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   uk: "MoneyBook наразі доступний корейською, англійською, японською та китайською мовами. Відкрийте англійську версію."
 ,
   ms: "MoneyBook akan dibuka dalam bahasa Inggeris."
+,
+  sv: "MoneyBook ?ppnas p? engelska."
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -77,4 +79,6 @@ export const familySitesCopy: Record<Locale, {
   uk: {"label":"Сімейні сервіси","sites":{"portal":"Портал","calculator":"Калькулятор","tools":"Інструменти","moneyBook":"MoneyBook","docs":"Документи","quiz":"Вікторини"},"docsTitle":"Документи","docsDescription":"Шаблони документів для повсякденних завдань.","docsCta":"Переглянути шаблони","quizTitle":"Вікторини","quizDescription":"Короткі вікторини для навчання та відпочинку.","quizCta":"Відкрити вікторини","menu":"Меню сервісів"}
 ,
   ms: {"label":"Situs Keluarga","sites":{"portal":"Portal","calculator":"Kalkulator","tools":"Alatan Daring","moneyBook":"Buku Uang Kongsi Bebas Percuma","docs":"Dokumen-dokumen","quiz":"Uji Quiz &"},"docsTitle":"Dokumen-dokumen","docsDescription":"Keanekagunaan dokumen dan template untuk keperluan sehari-hari.","docsCta":"Dokumen Lungsur","quizTitle":"Uji Quiz &","quizDescription":"Masa istirahat dengan berbagai kuis dan tes yang menyenangkan.","quizCta":"Kuiz Eksplore","menu":"Menu"}
+,
+  sv: {"label":"Familjeplatser","sites":{"portal":"Portal","calculator":"Kalkylatorer","tools":"Onlineverktyg","moneyBook":"Gratis delad pengar bok","docs":"Dokument","quiz":"Quiz och tester"},"docsTitle":"Dokument","docsDescription":"Hitta användbara dokument och mallar för vardagliga behov.","docsCta":"Bläddra i dokument","quizTitle":"Quiz och tester","quizDescription":"Ta en paus med en mängd roliga frågesporter och tester.","quizCta":"Utforska quizzes","menu":"Menyn"}
 };

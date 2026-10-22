@@ -51,7 +51,8 @@
         "fil": "Madilim na enerhiyang may iisang parameter: mga palatandaan ng oscillation",
         "bn": "এক-প্যারামিটারের গতিশীল অন্ধকার শক্তি: দোলনের ইঙ্গিত",
         "uk": "Однопараметрова динамічна темна енергія: Хінти для коливань",
-        "ms": "Energi gelap satu-parameter dinamis: Petunjuk untuk osilasi"
+        "ms": "Energi gelap satu-parameter dinamis: Petunjuk untuk osilasi",
+        "sv": "Enparameter dynamisk mörk energi: Tips för oscillationer"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -109,7 +110,8 @@
         "fil": "Physics-guided machine learning na may mga interfacial descriptor na inayos para sa gaspang upang mahulaan ang fouling ng membrane",
         "bn": "মেমব্রেন ফাউলিং পূর্বাভাসে রুক্ষতা-সংশোধিত আন্তঃপৃষ্ঠ বর্ণনাসহ পদার্থবিজ্ঞান-নির্দেশিত মেশিন লার্নিং",
         "uk": "Фізико-освітлене машинне навчання з грубістю-виправними міжфазними декрипторами для проведення Membrane Fouling",
-        "ms": "Fisika Fisika-Guided Machine Belajar dengan Kekasaran-Terjalin Interfacial Descriptors for Membrane Fouling Prediction"
+        "ms": "Fisika Fisika-Guided Machine Belajar dengan Kekasaran-Terjalin Interfacial Descriptors for Membrane Fouling Prediction",
+        "sv": "Fysikstyrd maskininlärning med grovhetskorrerad interfacial beskrivare för membranfoulering förutsägelse"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -165,7 +167,8 @@
         "fil": "STEM-based na propesyonal na pagsasanay sa robotics para sa mga guro ng pisika: pagsusuri ng pagsasanay ng grupo sa MGMP Fisika Jakarta",
         "bn": "পদার্থবিজ্ঞানের শিক্ষকদের জন্য STEM-ভিত্তিক রোবোটিক্স পেশাগত উন্নয়ন: MGMP Fisika Jakarta-তে দলীয় প্রশিক্ষণ মূল্যায়ন",
         "uk": "STEM-Based Robotics Professional Development for Physics Teachers: Група-Level Training Оцінка в MGMP Fisika Jakarta",
-        "ms": "Pengembangan Profesional Robotika Berasaskan Fisika untuk Guru: Evaluasi Pelatihan Tingkat Grup di MGMP Fisika Jakarta"
+        "ms": "Pengembangan Profesional Robotika Berasaskan Fisika untuk Guru: Evaluasi Pelatihan Tingkat Grup di MGMP Fisika Jakarta",
+        "sv": "STEM-Based Robotics Professional Development for Physics Teachers: A Group-Level Training Evaluation in MGMP Fisika Jakarta"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -213,7 +216,8 @@
         "fil": "Mga membrane bioreactor para sa wastewater: komprehensibong pagsusuri ng explainable AI at mga digital twin",
         "bn": "বর্জ্যজলের মেমব্রেন বায়োরিঅ্যাক্টর: ব্যাখ্যাযোগ্য AI ও ডিজিটাল টুইন প্রয়োগের সমন্বিত পর্যালোচনা",
         "uk": "Біореактори відпрацьованих вод: комплексний огляд проблемної штучного інтелекту та цифрових Twin Applications",
-        "ms": "Bioreaktor Membbrane Air Limbah: Tinjauan Komprehensif tentang Kecerdasan Terapan yang Dapat Dijelaskan dan Aplikasi Kembar Digital"
+        "ms": "Bioreaktor Membbrane Air Limbah: Tinjauan Komprehensif tentang Kecerdasan Terapan yang Dapat Dijelaskan dan Aplikasi Kembar Digital",
+        "sv": "Avloppsvattenmembran Bioreaktorer: En omfattande granskning av förklarande artificiell intelligens och digitala tvillingapplikationer"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -298,7 +302,8 @@
         "fil": "Komprehensibong pagsusuri ng pisyolohiya at ebidensiya para sa ergogenic at medikal na supplement na nagpapahusay ng performance sa pagbibisikleta",
         "bn": "সাইক্লিং পারফরম্যান্স বাড়াতে এরগোজেনিক ও চিকিৎসা-সহায়কের শারীরবৃত্ত এবং প্রমাণের সমন্বিত পর্যালোচনা",
         "uk": "Комплексний огляд фізіології та доказової бази для керівництва використання ергогенних та медичних добавок для підвищення продуктивності велосипедів",
-        "ms": "Sebuah tinjauan komprehensif dari fisiologi dan basis bukti untuk membimbing penggunaan ergogenik dan suplemen medis untuk kinerja bersepeda yang ditingkatkan"
+        "ms": "Sebuah tinjauan komprehensif dari fisiologi dan basis bukti untuk membimbing penggunaan ergogenik dan suplemen medis untuk kinerja bersepeda yang ditingkatkan",
+        "sv": "En omfattande översyn av fysiologin och bevisbasen för att styra användningen av ergogena och medicinska kosttillskott för förbättrad cykelprestanda"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -347,7 +352,8 @@
         "fil": "Mga pag-unlad at aplikasyon ng AI at machine learning sa materials science at membrane technology: komprehensibong pagsusuri",
         "bn": "উপাদান বিজ্ঞান ও মেমব্রেন প্রযুক্তিতে AI ও মেশিন লার্নিংয়ের অগ্রগতি ও প্রয়োগ: সমন্বিত পর্যালোচনা",
         "uk": "Потенції та застосування штучного інтелекту та машинного навчання в матеріалі науки та технології Мембрана: комплексний огляд",
-        "ms": "Berbagai Kemajuan dan Aplikasi Kecerdasan dan Pembelajaran Mesin Seni Rupa dalam Ilmu Material dan Teknologi Membran: Tinjauan Komprehensif"
+        "ms": "Berbagai Kemajuan dan Aplikasi Kecerdasan dan Pembelajaran Mesin Seni Rupa dalam Ilmu Material dan Teknologi Membran: Tinjauan Komprehensif",
+        "sv": "Framsteg och tillämpningar av artificiell intelligens och maskininlärning i materialvetenskap och membranteknik: en omfattande granskning"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -397,7 +403,8 @@
         "fil": "Pagsusuri sa mga estratehiya ng pag-optimize ng pamamahala ng enerhiya sa mga microgrid",
         "bn": "মাইক্রোগ্রিডে শক্তি ব্যবস্থাপনা অপ্টিমাইজেশনের কৌশল পর্যালোচনা",
         "uk": "Огляд стратегій оптимізації енергоменеджменту в мікрогрейдах",
-        "ms": "Tinjauan Strategi Optimasi untuk Manajemen Energi dalam Mikrogrid"
+        "ms": "Tinjauan Strategi Optimasi untuk Manajemen Energi dalam Mikrogrid",
+        "sv": "En översyn av optimeringsstrategier för energihantering i Microgrids"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -454,7 +461,8 @@
         "fil": "Agwat sa edad ng retina na nakuha sa AI bilang pananda ng reproductive aging sa kababaihan",
         "bn": "নারীদের প্রজনন-বার্ধক্যের সূচক হিসেবে AI-নির্ণীত রেটিনার বয়সের ব্যবধান",
         "uk": "Штучний інтелект-дерективний проміжок віку як маркер для статевого старіння у жінок",
-        "ms": "Kecerdasan artifisial kecerdasan-derived retina kesenjangan usia sebagai penanda untuk penuaan reproduksi pada wanita"
+        "ms": "Kecerdasan artifisial kecerdasan-derived retina kesenjangan usia sebagai penanda untuk penuaan reproduksi pada wanita",
+        "sv": "Artificiell intelligenshärledd retinal ålder gap som en markör för reproduktiv åldrande hos kvinnor"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",
@@ -504,7 +512,8 @@
         "fil": "Pagtataya sa posisyon ng drogue sa autonomous aerial refueling gamit ang physics-informed neural network",
         "bn": "পদার্থবিজ্ঞান-অবহিত নিউরাল নেটওয়ার্কে স্বয়ংক্রিয় আকাশপথে জ্বালানি ভরার সময় ড্রোগের অবস্থান পূর্বাভাস",
         "uk": "Прогнозування Положення Drogue в Автономній Аеріальні Заправки на основі фізико-інформованої нейромережі",
-        "ms": "Prediksi Posisi Drogue dalam Refueling Aerial Otonomi Berdasarkan Jaringan Neural yang Berinformasi Fisika"
+        "ms": "Prediksi Posisi Drogue dalam Refueling Aerial Otonomi Berdasarkan Jaringan Neural yang Berinformasi Fisika",
+        "sv": "Förutsägelse av Drogue Position i autonom flygrevärme baserat på ett fysikinformerat neuralt nätverk"
       },
       "translationStatus": "draft",
       "translationMethod": "development-draft",

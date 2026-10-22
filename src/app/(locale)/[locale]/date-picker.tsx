@@ -10,6 +10,8 @@ const weekdayStart: Partial<Record<Locale, number>> = { en: 0, zh: 0, "zh-tw": 0
   uk: 0
 ,
   ms: 0
+,
+  sv: 0
 };
 const parseDate = (value: string) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);

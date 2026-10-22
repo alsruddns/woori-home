@@ -23,6 +23,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
   "uk": {insights:"Дані й огляди",worldStats:"Світова економіка та статистика"}
 ,
   ms: {"insights":"Wawasan Data Data &","worldStats":"Statistik ekonomi dunia Ekonomi dunia &"}
+,
+  sv: {"insights":"Data & insikter","worldStats":"Världsekonomi och statistik"}
 };
 
 export function categoryNavigation(locale: Locale) {

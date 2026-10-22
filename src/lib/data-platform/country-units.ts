@@ -32,6 +32,8 @@ export const countryUnits: Record<Locale, Units> = {
   "uk": {population:"осіб",gdp:"поточні долари США",'gdp-per-capita':"поточні долари США на особу",fertility:"народжень на жінку",'life-expectancy':"років",'population-growth':"% на рік"}
 ,
   ms: {"population":"Orang-orang","gdp":"Australia","gdp-per-capita":"Orang saat ini senilai US$ / orang","fertility":"kelahiran / wanita","life-expectancy":"years","population-growth":"% / tahun"}
+,
+  sv: {"population":"människor","gdp":"nuvarande US$","gdp-per-capita":"nuvarande US $ / person","fertility":"Födelse / Kvinna","life-expectancy":"år","population-growth":"%/år"}
 };
 
 export function unitFor(locale: Locale, indicator: IndicatorDefinition) {

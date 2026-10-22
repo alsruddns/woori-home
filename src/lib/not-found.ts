@@ -28,4 +28,6 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
   uk: {"title":"Сторінку не знайдено","description":"Не вдалося знайти сторінку, яку ви шукаєте.","home":"На головну"}
 ,
   ms: {"title":"Halaman tidak ditemukan","description":"Alamat ini mungkin tidak tersedia atau mungkin telah berubah.","home":"Kembali ke rumah"}
+,
+  sv: {"title":"Sidan hittades inte","description":"Denna adress kan vara otillgänglig eller kan ha ändrats.","home":"Återvänd hem"}
 };

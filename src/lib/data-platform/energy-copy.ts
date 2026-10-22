@@ -42,4 +42,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
   "uk": {intro:"Переглядайте джерела виробництва електроенергії та показники чистої енергії за країнами.",comparison:"Порівнюйте опубліковані річні значення; пропущені роки не оцінюються.",noData:"Для цього вибору даних про енергію немає.",dateLabel:"Рік даних"}
 ,
   ms: {"intro":"Akses listrik adalah bagian dari orang yang dapat menggunakan listrik. Hal ini berbeda dengan konsumsi listrik; bandingkan negara - negara di samping setiap tahun pengamatan.","comparison":"Pengamatan terkini oleh negara","noData":"Tidak ada pengamatan yang diterbitkan untuk negara ini.","dateLabel":"Tahun referensi"}
+,
+  sv: {"intro":"Eltillgång är andelen personer som kan använda el. Det skiljer sig från elförbrukningen, jämför länder tillsammans med varje observationsår.","comparison":"Senaste observationer från land","noData":"Ingen publicerad observation är tillgänglig för detta land.","dateLabel":"Referensår"}
 };
