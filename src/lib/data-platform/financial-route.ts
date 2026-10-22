@@ -45,7 +45,8 @@ export async function financialCompanyFactsRoute(request: Request) {
   try {
     const parsed = parseFinancialCompanyFactsQuery(new URL(request.url).searchParams);
     if (!parsed.ok) return financialApiResponse({ error: parsed.error }, parsed.status);
-    const [rows, total] = await Promise.all([listFinancialCompanyFacts(parsed.pageSize, parsed.offset), countFinancialCompanyFacts()]);
+    const filters = { ticker: parsed.ticker, period: parsed.period, latest: parsed.latest };
+    const [rows, total] = await Promise.all([listFinancialCompanyFacts(parsed.pageSize, parsed.offset, filters), countFinancialCompanyFacts(filters)]);
     return financialApiResponse({ data: rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total }, source: rows[0]?.sourceName ?? "U.S. SEC EDGAR Company Facts", asOf: rows[0]?.filedDate ?? null, dataState: total ? "available" : "no-company-facts" });
   } catch (error) {
     const reason = classifyFinancialDatabaseError(error);

@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { calculateGoldConversion, calculateMarketChange, isValidMarketDate, validateMarketPriceRecord } from "../src/lib/data-platform/financial-market.mjs";
 import { collectFinancialProviderSnapshot, FinancialProviderError } from "../src/lib/data-platform/financial-provider.mjs";
 import { createUpbitKrwDailyProvider, upbitKrwAssets } from "../src/lib/data-platform/providers/upbit.mjs";
@@ -176,7 +177,12 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
     ok: true, limit: 1000, from: "2026-01-01", to: "2026-01-31",
   });
   assert.equal(parseFinancialHistoryQuery(new URLSearchParams(), "../../secrets").ok, false);
-  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("page=2&pageSize=50")), { ok: true, page: 2, pageSize: 50, offset: 50 });
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("page=2&pageSize=50")), { ok: true, page: 2, pageSize: 50, offset: 50, period: null, ticker: null, latest: false });
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("period=annual&latest=true&pageSize=20")), { ok: true, page: 1, pageSize: 20, offset: 0, period: "annual", ticker: null, latest: true });
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("period=quarterly&ticker=nvda")), { ok: true, page: 1, pageSize: 100, offset: 0, period: "quarterly", ticker: "NVDA", latest: false });
+  assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("period=monthly")).error, "invalid_period");
+  assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("ticker=NVDA%3Bdrop%20table")).error, "invalid_ticker");
+  assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("latest=true")).error, "invalid_latest_query");
   assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("page=0")).ok, false);
   assert.deepEqual(parseFinancialHeatmapQuery(new URLSearchParams("market=krw&date=2026-01-01"), "crypto"), { ok: true, market: "krw", referenceDate: "2026-01-01" });
   assert.equal(FINANCIAL_API_CACHE_CONTROL, "no-store");
@@ -184,6 +190,16 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
   const unavailable = financialApiErrorResponse("financial-db-select-denied");
   assert.equal(unavailable.status, 503);
   assert.deepEqual(await unavailable.json(), { error: "financial_data_unavailable", reason: "financial-db-select-denied", message: "Financial market data is temporarily unavailable." });
+});
+
+test("SEC comparison query selects one latest statement per company and excludes cumulative quarters", async () => {
+  const querySource = await readFile(new URL("../src/lib/db/financial-queries.ts", import.meta.url), "utf8");
+  assert.match(querySource, /form='10-K' and "fiscalPeriod"='FY' and "durationDays" between 300 and 400/);
+  assert.match(querySource, /form='10-Q' and "fiscalPeriod" in \('Q1','Q2','Q3'\) and "durationDays" between 65 and 110/);
+  assert.match(querySource, /balance\.concept='Assets'.*balance\.start_date is null/);
+  assert.match(querySource, /balance\.concept='Liabilities'.*balance\.start_date is null/);
+  assert.match(querySource, /partition by "companyId" order by "endDate" desc,"filedDate" desc/);
+  assert.match(querySource, /where \(not \$3::boolean or latest_row=1\)/);
 });
 
 test("financial endpoints enforce a bounded per-client request window", () => {

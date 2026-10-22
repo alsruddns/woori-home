@@ -58,6 +58,27 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
     return [{ id: asset.id, symbol: asset.symbol, name: asset.name, currency: asset.currency, close, marketCap }];
   }), [heatmapAssets, dataReady]);
   const heatmap = useMemo(() => cryptoTreemapLayout(heatmapCoins), [heatmapCoins]);
+  const sectorHeatmap = useMemo(() => {
+    if (!dataReady || !heatmap || !heatmapAssets.length) return [];
+    const groups = new Map<string, FinancialAsset[]>();
+    for (const asset of heatmapAssets) {
+      const sector = asset.sector?.trim() || "other";
+      groups.set(sector, [...(groups.get(sector) ?? []), asset]);
+    }
+    const sectorQuotes = [...groups].map(([sector, assets]) => ({
+      id: sector, symbol: sector, name: sector, currency: "USD", close: 1,
+      marketCap: assets.reduce((total, asset) => total + Number(asset.marketCap), 0),
+    }));
+    const sectorRects = cryptoTreemapLayout(sectorQuotes);
+    if (!sectorRects) return [];
+    return [...groups].flatMap(([sector, assets]) => {
+      const sectorRect = sectorRects[sector];
+      const quotes = assets.map((asset) => ({ id: asset.id, symbol: asset.symbol, name: asset.name, currency: asset.currency, close: Number(asset.close), marketCap: Number(asset.marketCap) }));
+      const localRects = cryptoTreemapLayout(quotes);
+      if (!sectorRect || !localRects) return [];
+      return [{ sector, rect: sectorRect, assets: assets.map((asset) => ({ asset, rect: localRects[asset.id] })) }];
+    });
+  }, [dataReady, heatmap, heatmapAssets]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -96,6 +117,33 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
     <header className="platform-page-heading stock-page-heading"><span className="platform-eyebrow">{platform.categories[2]}</span><h1>{platform.categories[2]}</h1><p>{financialOverviewCopy[locale].description}</p></header>
     <p className="market-issues-shortcut"><Link href={`/${locale}/stocks/issues`}>{stockIssueCopy[locale].title} →</Link></p>
 
+    <section className="stock-market-index-overview" aria-label={copy.marketNames.us}>
+      <h2>{copy.marketNames.us}</h2>
+      <div className="stock-market-index-grid">{["S&P 500", "NASDAQ Composite", "Dow Jones"].map((index) => <article key={index} className="stock-market-placeholder-card"><strong>{index}</strong><span>{copy.noSnapshotTitle}</span><small>{stockUnavailableCopy[locale]}</small></article>)}</div>
+    </section>
+
+    <section className="stock-sector-panel" aria-labelledby="stock-sector-heading">
+      <header><h2 id="stock-sector-heading">{copy.sectorLabel} · {copy.marketCapLabel}</h2><p>{stockUnavailableCopy[locale]}</p></header>
+      {sectorHeatmap.length ? <div className="stock-sector-heatmap" role="group" aria-label={`${copy.sectorLabel} · ${copy.marketCapLabel}`}>
+        {sectorHeatmap.map(({ sector, rect, assets }) => <section key={sector} className="stock-sector-region" style={{ left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.width}%`, height: `${rect.height}%` }} aria-label={copy.sectors[sector] ?? sector}>
+          <h3>{copy.sectors[sector] ?? sector}</h3>
+          {assets.map(({ asset, rect: tileRect }) => {
+            const percent = asset.changePercent === null ? null : Number(asset.changePercent);
+            const tone = percent === null ? "is-flat" : percent > 0 ? "is-up" : percent < 0 ? "is-down" : "is-flat";
+            const change = percent === null ? "—" : new Intl.NumberFormat(locale, { style: "percent", signDisplay: "always", maximumFractionDigits: 2 }).format(percent / 100);
+            return <article key={asset.id} className={`crypto-tile stock-sector-tile ${tone}`} style={{ left: `${tileRect.x}%`, top: `${tileRect.y}%`, width: `${tileRect.width}%`, height: `${tileRect.height}%` }} tabIndex={0} aria-label={`${asset.name} (${asset.symbol}) · ${copy.changeLabel}: ${change}`} title={`${asset.name} (${asset.symbol}) · ${change}`}><strong>{asset.symbol}</strong><span>{asset.name}</span><small>{change}</small></article>;
+          })}
+        </section>)}
+      </div> : <div className="stock-market-placeholder" role="status"><p>{copy.noSnapshotTitle}</p><small>{stockUnavailableCopy[locale]}</small></div>}
+      <p className="stock-heatmap-legend"><span className="stock-market-cap-legend">{copy.marketCapLabel}</span><span>{copy.changeLabel}</span></p>
+    </section>
+
+    <section className="stock-market-movers" aria-label={copy.changeLabel}>
+      <h2>{copy.changeLabel}</h2>
+      <div className="stock-market-movers-grid">{[[copy.up, "gainers"], [copy.down, "losers"]].map(([label, key]) => <article key={key} className="stock-market-placeholder-card"><strong>{label}</strong><span>{copy.noSnapshotTitle}</span><small>{stockUnavailableCopy[locale]}</small></article>)}</div>
+    </section>
+
+    <h2 className="stock-market-filter-heading">{copy.marketLabel} · {copy.symbolLabel}</h2>
     <section className="stock-controls" aria-label={copy.title}>
       <label className="stock-control"><span>{copy.marketLabel}</span><select value={market.id} onChange={(event) => {
         const nextMarket = stockMarkets.find((item) => item.id === event.target.value);
@@ -114,14 +162,6 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
       {loading ? <p role="status">{finance.loading}</p> : visibleAssets.length ? <>
         <p className="financial-market-asof">{copy.referenceDate}: {visibleAssets[0].referenceDate ?? "—"}{sourceAsOf ? ` · ${finance.updated}: ${new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(sourceAsOf))}` : ""}</p>
         <FinancialPriceChart assetId={visibleAssets[0].id} locale={locale} currency={visibleAssets[0].currency} title={visibleAssets[0].name} />
-        {heatmap ? <div className="crypto-heatmap stock-market-heatmap" role="group" aria-label={copy.marketCapLabel}>{heatmapCoins.map((coin) => {
-          const asset = heatmapAssets.find((item) => item.id === coin.id)!;
-          const percent = asset.changePercent === null ? null : Number(asset.changePercent);
-          const tone = percent === null ? "is-flat" : percent > 0 ? "is-up" : percent < 0 ? "is-down" : "is-flat";
-          const change = percent === null ? "—" : new Intl.NumberFormat(locale, { style: "percent", signDisplay: "always", maximumFractionDigits: 2 }).format(percent / 100);
-          const rect = heatmap[coin.id];
-          return <article key={coin.id} className={`crypto-tile ${tone}`} style={{ left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.width}%`, height: `${rect.height}%` }} tabIndex={0} aria-label={`${asset.name} (${asset.symbol}) · ${finance.price}: ${asset.close} ${asset.currency} · ${copy.changeLabel}: ${change}`}><strong>{asset.symbol}</strong><span>{asset.name}</span><small>{change}</small></article>;
-        })}</div> : null}
         <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{copy.symbolLabel}</th><th>{copy.companyLabel}</th><th>{copy.venueLabel}</th><th>{finance.price}</th><th>{copy.changeLabel}</th><th>{finance.volume}</th><th>{copy.marketCapLabel}</th><th>{copy.sourceLabel}</th></tr></thead><tbody>{visibleAssets.map((asset) => <tr key={asset.id}>
           <th scope="row">{asset.symbol}</th><td>{asset.name}</td><td>{asset.venue}</td>
           <td>{asset.close === null ? "—" : new Intl.NumberFormat(locale, { style: "currency", currency: asset.currency, maximumFractionDigits: 8 }).format(Number(asset.close))}</td>
