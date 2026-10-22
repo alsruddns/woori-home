@@ -104,6 +104,8 @@ test("language selection preserves each supported page path", async () => {
   assert.equal(getLocalePath("/ko/privacy", "es"), "/es/privacy");
   assert.equal(getLocalePath("/es/terms", "de"), "/de/terms");
   assert.equal(getLocalePath("/ja", "hi"), "/hi");
+  for (const locale of siteData.locales) assert.equal(getLocalePath(`/${locale}/countries/us`, "pt-br"), "/pt-br/countries/us");
+  assert.equal(getLocalePath("/countries/us", "nl"), "/nl/countries/us");
   const selector = require("node:fs").readFileSync(new URL("../src/app/(locale)/[locale]/language-selector.tsx", import.meta.url), "utf8");
   assert.match(selector, /aria-label=\{uiLabels\[locale\]\.language\}/);
   assert.match(selector, /value=\{locale\}/);

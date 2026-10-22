@@ -44,9 +44,8 @@ export const publicDataPaths = ["/world", "/economy", "/countries", "/population
 export const localizedDataPaths = ["/economy/gdp", "/economy/gdp-per-capita", "/economy/unemployment", "/population/fertility", "/population/life-expectancy", "/population/population-growth"] as const;
 export function getLocalePath(pathname: string, locale: Locale) {
   const segments = pathname.split("/").filter(Boolean);
-  const suffix = segments.slice(1).join("/");
-  const supportedPage = ["", "privacy", "terms"].includes(suffix);
-  return `/${locale}${supportedPage && suffix ? `/${suffix}` : ""}`;
+  const pathSegments = isLocale(segments[0] ?? "") ? segments.slice(1) : segments;
+  return `/${locale}${pathSegments.length ? `/${pathSegments.join("/")}` : ""}`;
 }
 
 export const messages = {

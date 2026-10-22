@@ -11,7 +11,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## WOORI.TODAY Portal rules
 
 - The portal uses the Next.js App Router without `basePath`. The production service listens on port 3003 and builds with standalone output.
-- Public portal pages use locale-first paths for exactly `ko`, `en`, `ja`, and `zh`. Do not infer a locale from `Accept-Language`.
+- Public portal pages use locale-first paths for `ko`, `en`, `ja`, `zh`, `es`, `pt-br`, `de`, `fr`, `vi`, `id`, `th`, `zh-tw`, `it`, `nl`, and `hi`. At `/`, honor an explicit saved locale or negotiate the browser's `Accept-Language`; never redirect an already localized URL.
+- Preserve the existing service forwarding for `/portal-api/`, `/api/`, `/calculators/`, `/tools/`, `/quiz/`, and `/docs/`. Keep the shared Nginx `map $uri $valid_locale` unchanged; Portal-owned Nginx additions must be limited to their dedicated location snippets.
+- Merge to `main` and trigger the GitHub Actions production deployment only after all 26 languages and the mobile UI improvements are complete and verified. Do not deploy while either completion condition is unmet.
 - Use `https://www.woori.today` as the only SEO origin. Canonicals, Open Graph URLs, JSON-LD, robots, and sitemaps must not use the apex domain or localhost.
 - Link to services only through `/{locale}/money`, `/{locale}/calculators`, and `/{locale}/tools`; detail links include the real service slug. Never introduce `/calculator`, `/tools`, or `/money` as service URLs.
 - Keep portal sitemap ownership to portal pages only. Calculator, Tools, and MoneyBook maintain their own sitemap endpoints.

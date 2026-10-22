@@ -77,7 +77,8 @@ test("energy and science data copy covers all 15 locales without an English-only
   }
   assert.match(energy, /distinct from electricity consumption/i);
   assert.match(route, /category === "energy" \|\| category === "science"/);
-  assert.match(sitemap, /energyDetails/);
+  assert.match(sitemap, /publicPortalPaths/);
+  assert.doesNotMatch(sitemap, /energyDetails|publicDataPaths|localizedDataPaths/);
   assert.doesNotMatch(route, /indicator\.definition\[locale\] \?\? platformCopy\[locale\]\.sourceNote/);
 });
 
@@ -169,6 +170,6 @@ test("country trend charts leave gaps disconnected and provide keyboard-accessib
   assert.match(chart, /tabIndex=\{0\}/);
   assert.match(dashboard, /Dataset/);
   assert.match(dashboard, /SP\.POP\.TOTL/);
-  assert.match(sitemap, /dataCountries\.map/);
-  assert.match(sitemap, /countries\/\$\{code\}/);
+  assert.match(sitemap, /publicPortalPaths/);
+  assert.doesNotMatch(sitemap, /dataCountries|countries\/\$\{code\}/);
 });

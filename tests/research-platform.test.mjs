@@ -163,7 +163,8 @@ test("papers are daily Crossref metadata, article detail remains noindex, and co
   assert.match(workflow, /ref: develop/);
   assert.match(workflow, /git push origin develop/);
   assert.match(publish, /branches: \[main\]/);
-  assert.match(sitemap, /publicDataPaths/);
+  assert.match(sitemap, /publicPortalPaths/);
+  assert.doesNotMatch(sitemap, /publicDataPaths|localizedDataPaths|dataCountries|energyDetails/);
   assert.doesNotMatch(sitemap, /commodities/);
   assert.match(commodityPage, /index: false/);
   assert.match(commodityPage, /mineralCopy/);
