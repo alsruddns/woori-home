@@ -109,6 +109,8 @@ jobs:
             rollback_tag=""
             override=""
             approval_file=""
+            smoke_body=""
+            smoke_headers=""
 
             on_exit() {
               status=$?
@@ -137,6 +139,12 @@ jobs:
               fi
               if [ -n "$approval_file" ] && ! rm -f "$approval_file"; then
                 printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary approval file.\n' >&2
+              fi
+              if [ -n "$smoke_body" ] && ! rm -f "$smoke_body"; then
+                printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary smoke-test body.\n' >&2
+              fi
+              if [ -n "$smoke_headers" ] && ! rm -f "$smoke_headers"; then
+                printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary smoke-test headers.\n' >&2
               fi
               exit "$status"
             }
@@ -284,5 +292,18 @@ jobs:
             stage="HTTP smoke test"
             printf '[DEPLOY 9] %s\n' "$stage"
             curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
+            smoke_body="$(mktemp /tmp/woori-portal-smoke-body.XXXXXX)"
+            smoke_headers="$(mktemp /tmp/woori-portal-smoke-headers.XXXXXX)"
+            curl --fail --silent --show-error --max-time 20 --dump-header "$smoke_headers" --output "$smoke_body" 'https://www.woori.today/portal-api/world-bank/compare?countries=kr%2Cus&indicator=unemployment'
+            jq -e '.source == "db" and .indicator == "unemployment" and (.series | length == 2)' "$smoke_body" >/dev/null
+            grep -Eiq '^cache-control:[[:space:]]*no-store' "$smoke_headers"
+            : > "$smoke_body"
+            : > "$smoke_headers"
+            curl --fail --silent --show-error --max-time 20 --dump-header "$smoke_headers" --output "$smoke_body" 'https://www.woori.today/portal-api/world-bank/compare?countries=kr%2Cus&indicator=population'
+            jq -e '.source == "json" and .indicator == "population" and (.series | length == 2)' "$smoke_body" >/dev/null
+            grep -Eiq '^cache-control:[[:space:]]*public, max-age=3600, stale-while-revalidate=86400' "$smoke_headers"
+            rm -f "$smoke_body" "$smoke_headers"
+            smoke_body=""
+            smoke_headers=""
             deploy_started=0
-            echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained."
+            echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained; World Bank DB/JSON source smoke tests passed."

@@ -108,19 +108,21 @@ test("development stock fixtures stay out of the public dashboard until licensed
   assert.doesNotMatch(productionSnapshot, /DEVELOPMENT MOCK|schema preview|market breadth prototype/i);
 });
 
-test("country route codes map one-to-one to all 15 countries present in the snapshot", async () => {
+test("country detail routes cover observed countries while comparisons support 20 valid countries", async () => {
   const [registry, route] = await Promise.all([read("src/lib/data-platform/countries.ts"), read("src/app/(locale)/[locale]/(platform)/countries/[countryCode]/page.tsx")]);
   const codes = [...registry.matchAll(/\{ code: "([a-z]{2})", iso3: "([A-Z]{3})" \}/g)].map((match) => ({ alpha2: match[1], alpha3: match[2] }));
   const observed = new Set(snapshot.observations.filter((row) => row.country !== "WLD").map((row) => row.country));
-  assert.equal(codes.length, 15);
-  assert.equal(new Set(codes.map((item) => item.alpha3)).size, 15);
-  assert.deepEqual(new Set(codes.map((item) => item.alpha3)), observed);
+  assert.equal(codes.length, 20);
+  assert.equal(new Set(codes.map((item) => item.alpha3)).size, 20);
+  assert.ok([...observed].every((country) => codes.some((item) => item.alpha3 === country)));
+  assert.match(registry, /export const dataCountries/);
+  assert.match(route, /dataCountries\.map/);
   assert.match(route, /dynamicParams = false/);
   assert.match(route, /generateStaticParams/);
   assert.match(route, /notFound\(\)/);
 });
 
-test("country comparison enforces 2–5 countries and reads the local snapshot only", async () => {
+test("country comparison defaults to ten countries, caps selections at twenty, and keeps source routing", async () => {
   const [client, api, route, copy] = await Promise.all([
     read("src/app/(locale)/[locale]/country-comparison.tsx"),
     read("src/lib/db/world-bank-comparison-handler.ts"),
@@ -128,11 +130,16 @@ test("country comparison enforces 2–5 countries and reads the local snapshot o
     read("src/lib/data-platform/country-copy.ts"),
   ]);
   assert.match(client, /draftCountries\.length < 2/);
-  assert.match(client, /draftCountries\.length > 5/);
+  assert.match(client, /draftCountries\.length > 20/);
+  assert.match(client, /current\.length < 20/);
+  assert.match(client, /draftCountries\.length}\/20/);
+  assert.match(api, /rawCodes\.length > 20/);
   assert.match(client, /fetch\(`\/portal-api\/world-bank\/compare\?/);
   assert.match(route, /handleWorldBankComparison/);
   assert.match(api, /observationsFor\(indicator\.code, country\.iso3\)/);
   assert.doesNotMatch(api, /fetch\(/);
+  const worldData = await read("src/app/(locale)/[locale]/world-data.tsx");
+  assert.match(worldData, /\["kr", "us", "jp", "cn", "de", "gb", "fr", "in", "ca", "au"\]/);
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]) {
     assert.match(copy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}): \\{`));
   }
@@ -148,6 +155,6 @@ test("country trend charts leave gaps disconnected and provide keyboard-accessib
   assert.match(chart, /tabIndex=\{0\}/);
   assert.match(dashboard, /Dataset/);
   assert.match(dashboard, /SP\.POP\.TOTL/);
-  assert.match(sitemap, /supportedCountries\.map/);
+  assert.match(sitemap, /dataCountries\.map/);
   assert.match(sitemap, /countries\/\$\{code\}/);
 });

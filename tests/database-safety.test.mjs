@@ -119,6 +119,10 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.doesNotMatch(workflow, /^\s*(?:printenv|env)(?:\s|$)/m);
   assert.doesNotMatch(workflow, /^\s*echo\s+.*(?:DATABASE_URL|DB_IMPORT_URL|DB_MIGRATION_URL)/m);
   assert.match(workflow, /up -d --no-deps portal/);
+  assert.match(workflow, /\.source == "db" and \.indicator == "unemployment"/);
+  assert.match(workflow, /\.source == "json" and \.indicator == "population"/);
+  assert.match(workflow, /stale-while-revalidate=86400/);
+  assert.match(workflow, /Could not remove the temporary smoke-test body/);
   assert.match(workflow, /rollback_tag/);
   assert.match(workflow, /environment: production/);
   assert.match(workflow, /--mount type=bind,src=\/opt\/services\/compose\/\.env\.portal,dst=\/app\/\.portal\.env,readonly/);

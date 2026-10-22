@@ -1,5 +1,7 @@
 # Financial data source review
 
+Latest recheck: 2026-10-22. See the dated update under “Decision boundary” for current official terms.
+
 Reviewed 2026-10-21 against each provider's official pages. This is a product-use review, not a legal opinion or a substitute for an executed data agreement. “Commercial display” does not automatically grant bulk redistribution, downloadable datasets, an API, white-label use, or indefinite database retention.
 
 | Area / provider | Status | Public display | DB storage / history | Cost and limits | Decision |
@@ -44,5 +46,19 @@ Reviewed 2026-10-21 against each provider's official pages. This is a product-us
 - World Bank terms (existing pipeline): https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
 
 ## Decision boundary
+
+Review update: 2026-10-22. The current EIA API terms permit services that display and analyze EIA API data, require source identification, and prohibit implying EIA endorsement. This general permission does not clear third-party series content. CoinGecko's current terms make commercial display dependent on a paid plan and prominent attribution; standard plans do not grant API/data redistribution, and stored data must be refreshed at least every 24 hours and deleted when API access ends. Free Demo/public access is not sufficient for commercial use. No CoinGecko or EIA market-price series is approved for the portal's long-lived daily snapshot store or API without the required plan- or series-specific confirmation. Korean Financial Services Commission/KRX index and commodity quote APIs on Data.go.kr explicitly identify Public Nuri Type 4 restrictions: commercial use is prohibited and third-party redistribution is restricted. They are rejected for a public commercial quote board unless licensed through KRX.
+
+Official pages rechecked:
+
+- EIA API terms: https://www.eia.gov/opendata/terms-of-service.php
+- EIA data reuse and third-party rights: https://www.eia.gov/about/copyrights_reuse.php
+- CoinGecko API terms (version dated 2025-09-05): https://www.coingecko.com/en/api_terms
+- CoinGecko commercial/custom licensing guidance: https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses
+- Financial Services Commission/KRX index quote API rights: https://www.data.go.kr/data/15094807/openapi.do
+- Financial Services Commission/KRX commodity quote API rights: https://www.data.go.kr/data/15094805/openapi.do
+- Bank of Korea business survey API listing: https://www.data.go.kr/data/15059630/openapi.do
+
+No provider credentials were added, no subscription was purchased, and no financial price rows were imported. Pricing and terms can change; confirm the exact plan, endpoint, fields, storage duration, and display/reuse rights again before activation.
 
 EIA API metadata/data access was probed read-only with EIA's public demo credential over 2016-10-21 through 2026-10-21: WTI returned 2,500 rows, Brent 2,531, and Henry Hub spot 2,512; each ended on 2026-10-14. No financial observations were written to PostgreSQL. These API counts establish technical availability only, not downstream rights. No user EIA key is configured in `.env.local`; no EIA account was registered. The exact requested daily spot series are blocked pending written confirmation of Refinitiv/LSEG rights for commercial display and long-term database storage. EIA public-domain terms alone do not clear third-party data. Do not set a source to `verified` or import these rows until the specific third-party rights are confirmed.

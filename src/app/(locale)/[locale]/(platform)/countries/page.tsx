@@ -11,10 +11,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: `${title}`, description, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title}`, description, url }, twitter: { card: "summary", title: `${title}`, description } };
 }
 
-export default async function CountriesPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ countries?: string | string[] }> }) {
+export default async function CountriesPage({ params, searchParams }: { params: Promise<{ locale: string }>; searchParams: Promise<{ countries?: string | string[]; indicator?: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const selected = (await searchParams).countries;
-  const requestedCountries = typeof selected === "string" ? selected.split(",").slice(0, 5) : [];
-  return <CountryComparison locale={locale} requestedCountries={requestedCountries} />;
+  const query = await searchParams;
+  const selected = query.countries;
+  const requestedCountries = typeof selected === "string" ? selected.split(",").slice(0, 21) : [];
+  const indicator = query.indicator;
+  return <CountryComparison locale={locale} requestedCountries={requestedCountries} requestedIndicator={indicator} />;
 }
