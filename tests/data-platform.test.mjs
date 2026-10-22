@@ -147,6 +147,18 @@ test("country comparison defaults to ten countries, caps selections at twenty, a
   }
 });
 
+test("mobile briefing overrides follow desktop component rules and keep metric cards readable", async () => {
+  const css = await read("src/app/(locale)/[locale]/platform.css");
+  const mobileRules = css.slice(css.lastIndexOf("/* Keep the responsive overrides after component rules"));
+  assert.ok(mobileRules.length > 0);
+  assert.match(mobileRules, /@media\(max-width:900px\)\{[\s\S]*?\.global-briefing-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(mobileRules, /@media\(max-width:600px\)\{[\s\S]*?\.global-briefing-metrics\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(mobileRules, /\.global-briefing-metrics strong\{[^}]*word-break:keep-all/);
+  assert.match(mobileRules, /\.global-briefing-paper-list a\{[^}]*-webkit-line-clamp:3/);
+  assert.match(mobileRules, /\.platform-controls\{display:flex;flex:1 1 100%/);
+  assert.doesNotMatch(mobileRules, /overflow-x:hidden/);
+});
+
 test("country trend charts leave gaps disconnected and provide keyboard-accessible data points", async () => {
   const [chart, dashboard, sitemap] = await Promise.all([
     read("src/app/(locale)/[locale]/country-charts.tsx"),

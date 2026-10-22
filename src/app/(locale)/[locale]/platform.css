@@ -168,3 +168,35 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
 .market-issue-original-label{display:block;margin:-3px 0 8px;color:var(--platform-muted);font-size:10px}
 .market-issues-shortcut{margin:0 0 13px;font-size:12px}
 @media(max-width:600px){.crypto-market-controls,.market-issue-controls{align-items:stretch}.crypto-market-controls label,.market-issue-controls label{min-width:100%}.crypto-market-controls input,.crypto-market-controls button,.market-issue-controls input{min-height:42px;width:100%}}
+
+/* Keep the responsive overrides after component rules so the cascade cannot restore desktop grids on phones. */
+@media(max-width:900px){
+  .global-briefing-grid{grid-template-columns:minmax(0,1fr)}
+  .global-briefing-panel{min-width:0;width:100%}
+  .neo-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:600px){
+  .platform-shell,.platform-header,.platform-frame,.platform-main{box-sizing:border-box;min-width:0;max-width:100%;width:100%}
+  .platform-header{flex-wrap:wrap;gap:8px;padding:10px 14px}
+  .platform-brand{flex:1 1 auto;min-width:0}
+  .platform-controls{display:flex;flex:1 1 100%;min-width:0;flex-wrap:wrap;gap:6px}
+  .platform-controls select,.platform-theme-toggle,.platform-mobile-toggle{min-height:42px}
+  .platform-controls select{max-width:100%;min-width:0}
+  .global-briefing,.global-briefing-grid,.global-briefing-panel{box-sizing:border-box;min-width:0;max-width:100%;width:100%}
+  .global-briefing{padding:13px}
+  .global-briefing-heading,.global-briefing-panel-heading,.global-briefing-minerals{align-items:flex-start;flex-direction:column;min-width:0}
+  .global-briefing-heading h2,.global-briefing-panel h3,.global-briefing-panel p{min-width:0;overflow-wrap:anywhere}
+  .global-briefing-updated{text-align:left;overflow-wrap:anywhere}
+  .global-briefing-metrics{grid-template-columns:minmax(0,1fr)}
+  .global-briefing-metrics>div{grid-template-columns:minmax(0,1fr);min-width:0}
+  .global-briefing-metrics strong{grid-column:auto;grid-row:auto;min-width:0;max-width:100%;overflow-wrap:normal;word-break:keep-all;font-size:clamp(17px,5vw,22px)}
+  .global-briefing-metrics span,.global-briefing-metrics small{overflow-wrap:anywhere;word-break:normal}
+  .global-briefing-paper-list,.global-briefing-neo-list{min-width:0;max-width:100%}
+  .global-briefing-paper-list li,.global-briefing-neo-list li{min-width:0;max-width:100%;overflow-wrap:anywhere}
+  .global-briefing-paper-list a{display:-webkit-box;min-width:0;max-width:100%;white-space:normal;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;overflow-wrap:anywhere;word-break:normal}
+  .global-briefing-paper-list time,.global-briefing-paper-list li>span,.global-briefing-neo-list span{overflow-wrap:anywhere;word-break:normal}
+  .platform-home-summary,.platform-home-grid{grid-template-columns:minmax(0,1fr)}
+  .platform-home-card,.platform-home-summary>article{min-width:0;width:100%}
+  .platform-home-card h3,.platform-home-card p{overflow-wrap:anywhere;word-break:normal}
+  .platform-table-scroll{max-width:100%;overscroll-behavior-inline:contain}
+}
