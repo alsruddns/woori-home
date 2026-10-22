@@ -22,6 +22,8 @@ const translatedPending: Record<Locale, string> = {
 ,
   "bn": "অনুবাদের খসড়া",
   "uk": "Чернетка перекладу"
+,
+  ms: "Comment"
 };
 const originalTitleLabels: Record<Locale, string> = {
   ru:"Оригинальное название",
@@ -35,6 +37,8 @@ const originalTitleLabels: Record<Locale, string> = {
 ,
   "bn": "মূল শিরোনাম",
   "uk": "Оригінальна назва"
+,
+  ms: "Judul asli"
 };
 
 export function MarketIssueExplorer({ locale, market }: { locale: Locale; market: "crypto" | "stocks" }) {

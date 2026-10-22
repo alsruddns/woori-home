@@ -26,4 +26,6 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
 ,
   "bn": {title:"পাতা পাওয়া যায়নি",description:"ঠিকানাটি অনুপলভ্য বা পাতাটি সরানো হয়ে থাকতে পারে।",home:"হোমে ফিরুন"},
   uk: {"title":"Сторінку не знайдено","description":"Не вдалося знайти сторінку, яку ви шукаєте.","home":"На головну"}
+,
+  ms: {"title":"Halaman tidak ditemukan","description":"Alamat ini mungkin tidak tersedia atau mungkin telah berubah.","home":"Kembali ke rumah"}
 };

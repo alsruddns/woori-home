@@ -26,4 +26,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
 ,
   "bn": {title:"শেয়ারবাজারের খবর",description:"উৎস ব্যবহারের অনুমতি যাচাই হলে এক্সচেঞ্জ, নিয়ন্ত্রক ও কোম্পানির তারিখভিত্তিক ঘোষণা দেখানো হবে।",empty:"এই তারিখে যাচাইকৃত শেয়ারবাজারের খবর নেই।",published:"প্রকাশিত",source:"উৎস"},
   "uk": {title:"Новини фондового ринку",description:"Датовані повідомлення бірж, регуляторів і компаній з’являться після перевірки дозволів на джерела.",empty:"За цю дату перевірених новин фондового ринку немає.",published:"Опубліковано",source:"Джерело"}
+,
+  ms: {"title":"saham saham saham saham","description":"Pemutakhiran tanggal dari pertukaran, regulator, dan perusahaan akan muncul setelah izin sumber diverifikasi.","empty":"Tidak ada isu bursa saham terverifikasi yang tersedia untuk tanggal ini.","published":"Diterbitkan","source":"Sumber"}
 };

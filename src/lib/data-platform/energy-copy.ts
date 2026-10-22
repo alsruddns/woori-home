@@ -40,4 +40,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
 ,
   "bn": {intro:"দেশভিত্তিক বিদ্যুৎ উৎপাদনের উৎস ও পরিচ্ছন্ন জ্বালানির সূচক দেখুন।",comparison:"প্রকাশিত বার্ষিক মান তুলনা করুন; অনুপস্থিত বছরের মান অনুমান করা হয় না।",noData:"এই নির্বাচনের জন্য জ্বালানির ডেটা নেই।",dateLabel:"ডেটার বছর"},
   "uk": {intro:"Переглядайте джерела виробництва електроенергії та показники чистої енергії за країнами.",comparison:"Порівнюйте опубліковані річні значення; пропущені роки не оцінюються.",noData:"Для цього вибору даних про енергію немає.",dateLabel:"Рік даних"}
+,
+  ms: {"intro":"Akses listrik adalah bagian dari orang yang dapat menggunakan listrik. Hal ini berbeda dengan konsumsi listrik; bandingkan negara - negara di samping setiap tahun pengamatan.","comparison":"Pengamatan terkini oleh negara","noData":"Tidak ada pengamatan yang diterbitkan untuk negara ini.","dateLabel":"Tahun referensi"}
 };

@@ -26,4 +26,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
 ,
   "bn": "সর্বজনীন প্রদর্শনের অনুমোদনসহ প্রকৃত শেয়ারের দাম এখনো নেই। উৎস ও ব্যবহারের অধিকার যাচাই হলে ডেটা দেওয়া হবে।",
   uk: "Дані фондового ринку тимчасово недоступні. Спробуйте пізніше."
+,
+  ms: "Belum ada kutipan saham untuk publik. Petikan akan muncul setelah sumber dan hak penggunaan disahkan."
 };

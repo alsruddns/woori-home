@@ -27,6 +27,8 @@ const values = {
 
   bn: ["চক্রবৃদ্ধি সুদ","সঞ্চয়ের সুদ","ঋণের কিস্তি","LTV ক্যালকুলেটর","শতাংশ","ছাড়","শতাংশের পরিবর্তন","অনুপাত","একক রূপান্তরকারী","BMI","তারিখের ব্যবধান","কাউন্টডাউন","অক্ষর গণনা","লেখা তুলনা","JSON সাজান","JSON যাচাই","CSV থেকে JSON","Base64 এনকোড ও ডিকোড","ছবির আকার বদল","ছবি সংকুচিত করুন","PNG থেকে JPG","HEIC থেকে JPG","PDF একত্র করুন","PDF ভাগ করুন"],
   uk: ["Складні відсотки","Відсотки за заощадженнями","Відсотки за кредитом","Співвідношення кредиту до вартості (LTV)","Відсотки","Знижка","Зміна у відсотках","Співвідношення","Конвертер одиниць","Індекс маси тіла","Різниця між датами","Зворотний відлік","Підрахунок символів","Порівняння тексту","Форматування JSON","Перевірка JSON","Перетворення CSV у JSON","Кодування й декодування Base64","Зміна розміру зображень","Стиснення зображень","PNG у JPG","HEIC у JPG","Об’єднання PDF","Розділення PDF"]
+,
+  ms: ["Faedah kompaun","Faedah simpanan","Faedah pinjaman","Nisbah pinjaman kepada nilai (LTV)","Peratus","Diskaun","Kadar perubahan","Nisbah","Penukar unit","Indeks jisim badan","Perbezaan tarikh","Kiraan detik","Kiraan aksara","Perbandingan teks","Pemformat JSON","Pengesah JSON","CSV ke JSON","Pengekod dan penyahkod Base64","Ubah saiz imej","Mampatkan imej","PNG ke JPG","HEIC ke JPG","Gabung fail PDF","Pisahkan PDF"]
 } satisfies Partial<Record<Locale, string[]>>;
 
 export const catalogTranslations = Object.fromEntries(Object.entries(values).map(([locale, labels]) => [locale, Object.fromEntries(slugs.map((slug, index) => [slug, labels[index]]))])) as Partial<Record<Locale, Record<string, string>>>;

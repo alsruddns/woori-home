@@ -35,6 +35,8 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   hi: "MoneyBook अंग्रेज़ी में खुलेगा।",
   "tr": "MoneyBook sayfası İngilizce açılacaktır.",
   uk: "MoneyBook наразі доступний корейською, англійською, японською та китайською мовами. Відкрийте англійську версію."
+,
+  ms: "MoneyBook akan dibuka dalam bahasa Inggeris."
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -73,4 +75,6 @@ export const familySitesCopy: Record<Locale, {
 ,
   "bn": {label:"পরিবারের সাইট",sites:{portal:"Portal",calculator:"ক্যালকুলেটর",tools:"অনলাইন টুল",moneyBook:"MoneyBook",docs:"নথি",quiz:"কুইজ"},docsTitle:"নথির টেমপ্লেট",docsDescription:"সভা নোট, কোটেশন ও সাপ্তাহিক পরিকল্পনার প্রস্তুত টেমপ্লেট।",docsCta:"নথি খুলুন",quizTitle:"জ্ঞান যাচাইয়ের কুইজ",quizDescription:"সাধারণ জ্ঞান, গণিত, ভূগোল ও প্রযুক্তি নিয়ে ছোট কুইজ।",quizCta:"কুইজ খুলুন",menu:"সেবা মেনু"},
   uk: {"label":"Сімейні сервіси","sites":{"portal":"Портал","calculator":"Калькулятор","tools":"Інструменти","moneyBook":"MoneyBook","docs":"Документи","quiz":"Вікторини"},"docsTitle":"Документи","docsDescription":"Шаблони документів для повсякденних завдань.","docsCta":"Переглянути шаблони","quizTitle":"Вікторини","quizDescription":"Короткі вікторини для навчання та відпочинку.","quizCta":"Відкрити вікторини","menu":"Меню сервісів"}
+,
+  ms: {"label":"Situs Keluarga","sites":{"portal":"Portal","calculator":"Kalkulator","tools":"Alatan Daring","moneyBook":"Buku Uang Kongsi Bebas Percuma","docs":"Dokumen-dokumen","quiz":"Uji Quiz &"},"docsTitle":"Dokumen-dokumen","docsDescription":"Keanekagunaan dokumen dan template untuk keperluan sehari-hari.","docsCta":"Dokumen Lungsur","quizTitle":"Uji Quiz &","quizDescription":"Masa istirahat dengan berbagai kuis dan tes yang menyenangkan.","quizCta":"Kuiz Eksplore","menu":"Menu"}
 };

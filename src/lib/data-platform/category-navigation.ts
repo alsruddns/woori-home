@@ -21,6 +21,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
 ,
   "bn": {insights:"ডেটা ও বিশ্লেষণ",worldStats:"বিশ্ব অর্থনীতি ও পরিসংখ্যান"},
   "uk": {insights:"Дані й огляди",worldStats:"Світова економіка та статистика"}
+,
+  ms: {"insights":"Wawasan Data Data &","worldStats":"Statistik ekonomi dunia Ekonomi dunia &"}
 };
 
 export function categoryNavigation(locale: Locale) {

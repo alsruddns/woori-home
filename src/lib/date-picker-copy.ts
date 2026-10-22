@@ -26,4 +26,6 @@ export const datePickerCopy: Record<Locale, { previousMonth: string; nextMonth: 
 ,
   "bn": {previousMonth:"আগের মাস",nextMonth:"পরের মাস",close:"বন্ধ করুন",calendar:"ক্যালেন্ডার",today: "আজ"},
   uk: { previousMonth: "Попередній місяць", nextMonth: "Наступний місяць", close: "Закрити", calendar: "Відкрити календар", today: "Сьогодні" }
+,
+  ms: { previousMonth: "Bulan sebelumnya", nextMonth: "Bulan seterusnya", close: "Tutup", calendar: "Buka kalendar", today: "Hari ini" }
 };
