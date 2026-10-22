@@ -19,7 +19,7 @@ const pool = new pg.Pool({ connectionString: target.url, max: 2, connectionTimeo
 const client = await pool.connect();
 try {
   await client.query("begin");
-  const { rows: [source] } = await client.query("select license_status from data_sources where id=$1 for share", [SEC_SOURCE_ID]);
+  const { rows: [source] } = await client.query("select license_status from data_sources where id=$1", [SEC_SOURCE_ID]);
   if (!source || source.license_status !== "verified") throw new Error("SEC provider license gate is not verified.");
   const { rows: [dataset] } = await client.query("select id from datasets where id=$1 and source_id=$2", [SEC_DATASET_ID, SEC_SOURCE_ID]);
   if (!dataset) throw new Error("SEC company-facts dataset is missing; apply the development migration first.");

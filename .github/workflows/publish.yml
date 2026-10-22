@@ -5,11 +5,41 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      apply_database_changes:
-        description: Apply production migrations and the reviewed World Bank import after backup
+      deploy_portal:
+        description: Deploy the Portal image and run Portal HTTP checks
         type: boolean
         required: true
         default: false
+      preflight_database:
+        description: Run read-only production DB and SEC schema preflight
+        type: boolean
+        required: true
+        default: false
+      apply_migrations:
+        description: Apply pending Portal migrations after approved backup validation
+        type: boolean
+        required: true
+        default: false
+      import_world_bank:
+        description: Import and verify the reviewed World Bank snapshot
+        type: boolean
+        required: true
+        default: false
+      import_sec:
+        description: Collect, import, and verify SEC Company Facts
+        type: boolean
+        required: true
+        default: false
+      confirm_production_db_write:
+        description: Explicitly approve the selected production database write for this run
+        type: boolean
+        required: true
+        default: false
+      restore_validation_reference:
+        description: Reference to the separately verified isolated restore procedure (required for DB writes)
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -27,7 +57,7 @@ jobs:
 
   image:
     needs: release-guard
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -68,7 +98,7 @@ jobs:
 
   deploy:
     needs: image
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
     runs-on: ubuntu-latest
     environment: production
     concurrency:
@@ -92,15 +122,23 @@ jobs:
           RELEASE_SHA: ${{ github.sha }}
           PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
-          APPLY_DATABASE_CHANGES: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes || 'false' }}
-          PRODUCTION_OPERATION_APPROVAL: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
+          DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal }}
+          PREFLIGHT_DATABASE: ${{ github.event_name == 'workflow_dispatch' && inputs.preflight_database || 'false' }}
+          APPLY_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_migrations || 'false' }}
+          IMPORT_WORLD_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.import_world_bank || 'false' }}
+          IMPORT_SEC: ${{ github.event_name == 'workflow_dispatch' && inputs.import_sec || 'false' }}
+          CONFIRM_PRODUCTION_DB_WRITE: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write || 'false' }}
+          RESTORE_VALIDATION_REFERENCE: ${{ inputs.restore_validation_reference || '' }}
+          EXPECTED_RESTORE_VALIDATION_REFERENCE: ${{ vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE }}
+          PRODUCTION_OPERATION_APPROVAL: ${{ github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec) && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
           PRODUCTION_DB_ALLOWED_HOSTS: ${{ secrets.PRODUCTION_DB_ALLOWED_HOSTS }}
           PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
+          SEC_EDGAR_USER_AGENT: ${{ github.event_name == 'workflow_dispatch' && inputs.import_sec && secrets.SEC_EDGAR_USER_AGENT || '' }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,APPLY_DATABASE_CHANGES,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL
+          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT
           script: |
             set -Eeuo pipefail
             umask 077
@@ -111,6 +149,25 @@ jobs:
             approval_file=""
             smoke_body=""
             smoke_headers=""
+            backup_reference=""
+            database_write_requested=false
+            database_operation_requested=false
+            operation_count=0
+            for selected in "$DEPLOY_PORTAL" "$PREFLIGHT_DATABASE" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC"; do
+              case "$selected" in true) operation_count=$((operation_count + 1));; false) :;; *) echo "Invalid operation selector." >&2; exit 2;; esac
+            done
+            if [ "$operation_count" -gt 1 ]; then
+              echo "Select one operation per protected run; each result and approval must remain independent." >&2
+              exit 2
+            fi
+            [ "$PREFLIGHT_DATABASE" = "true" ] && database_operation_requested=true
+            [ "$APPLY_MIGRATIONS" = "true" ] && database_write_requested=true && database_operation_requested=true
+            [ "$IMPORT_WORLD_BANK" = "true" ] && database_write_requested=true && database_operation_requested=true
+            [ "$IMPORT_SEC" = "true" ] && database_write_requested=true && database_operation_requested=true
+            if [ "$database_write_requested" = "true" ] && [ "$CONFIRM_PRODUCTION_DB_WRITE" != "true" ]; then
+              echo "Production database writes require the explicit confirm_production_db_write input." >&2
+              exit 2
+            fi
 
             on_exit() {
               status=$?
@@ -204,27 +261,7 @@ jobs:
               exit 1
             fi
 
-            stage="Verify current Portal and create a database backup"
-            printf '[DEPLOY 4] %s\n' "$stage"
-            current_health="$(docker inspect --format='{{.State.Health.Status}}' portal)"
-            test "$current_health" = healthy
-            curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
-            before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
-            if /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1; then
-              :
-            else
-              backup_status=$?
-              printf '[DEPLOY ERROR] Backup command failed with exit code: %s\n' "$backup_status" >&2
-              exit "$backup_status"
-            fi
-            after_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
-            after="${after_entry#* }"
-            after_time="${after_entry%% *}"
-            test -n "$after" && test -s "$after"
-            if [ "$after" = "${before_entry#* }" ] && [ "$after_time" = "${before_entry%% *}" ]; then echo "Backup file did not change." >&2; exit 1; fi
-            backup_reference="$(basename "$after")"
-
-            if [ "$APPLY_DATABASE_CHANGES" = "true" ]; then
+            if [ "$database_operation_requested" = "true" ]; then
               test -n "${PRODUCTION_OPERATION_APPROVAL:-}"
               test -n "${PRODUCTION_DB_ALLOWED_HOSTS:-}"
               approval_file="$(mktemp /tmp/woori-db-approval.XXXXXX)"
@@ -237,32 +274,120 @@ jobs:
                   --mount "type=bind,src=$approval_file,dst=/app/.production-approval,readonly" \
                   -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
                   -e PRODUCTION_OPERATION_APPROVAL_FILE=/app/.production-approval -e PRODUCTION_DB_ALLOWED_HOSTS \
-                  -e PRODUCTION_BACKUP_CONFIRMED=true -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
+                  -e PRODUCTION_BACKUP_CONFIRMED="${backup_reference:+true}" -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
+                  -e SEC_EDGAR_USER_AGENT \
                   "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env "$@"
               }
               stage="Preflight approved production database operation"
               printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/preflight-production.mjs
+              preflight_args=""
+              if [ "$APPLY_MIGRATIONS" = "true" ] || [ "$IMPORT_SEC" = "true" ]; then preflight_args="--allow-pending-sec-grants"; fi
+              preflight_report="$(db_tools_run scripts/db/preflight-financial-production.mjs $preflight_args)"
+              printf '%s\n' "$preflight_report" | jq -e '.blockers | length == 0' >/dev/null
+              if [ "$IMPORT_SEC" = "true" ] && [ "$APPLY_MIGRATIONS" != "true" ]; then
+                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 6' >/dev/null
+              fi
               stage="Check production database migration status"
               printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/status-production.mjs
-              stage="Dry-run approved World Bank import"
-              printf '[DEPLOY DB] %s\n' "$stage"
-              db_tools_run scripts/data/import-world-bank-production.mjs --dry-run
-              stage="Apply production database migrations"
-              printf '[DEPLOY DB] %s\n' "$stage"
-              db_tools_run scripts/db/migrate-production.mjs --apply --backup-reference="$backup_reference"
-              stage="Verify production database migration status"
-              printf '[DEPLOY DB] %s\n' "$stage"
-              db_tools_run scripts/db/status-production.mjs
-              stage="Import approved World Bank observations"
-              printf '[DEPLOY DB] %s\n' "$stage"
-              db_tools_run scripts/data/import-world-bank-production.mjs --apply --backup-reference="$backup_reference"
-              stage="Verify production World Bank import"
-              printf '[DEPLOY DB] %s\n' "$stage"
-              db_tools_run scripts/data/verify-world-bank-production.mjs
+              if [ "$database_write_requested" = "true" ]; then
+                test -n "$RESTORE_VALIDATION_REFERENCE"
+                test "$RESTORE_VALIDATION_REFERENCE" = "$EXPECTED_RESTORE_VALIDATION_REFERENCE"
+                [[ "$RESTORE_VALIDATION_REFERENCE" =~ ^[A-Za-z0-9][A-Za-z0-9._/:+-]{2,255}$ ]]
+                stage="Verify current Portal and create a database backup"
+                printf '[DEPLOY DB] %s\n' "$stage"
+                current_health="$(docker inspect --format='{{.State.Health.Status}}' portal)"
+                test "$current_health" = healthy
+                curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
+                backup_size="$(printf '%s' "$preflight_report" | jq -er '.databaseSizeBytes | tonumber')"
+                available_kb="$(df -Pk /opt/backups/woori-portal | awk 'NR==2 {print $4}')"
+                test -n "$available_kb"
+                test "$available_kb" -ge "$(( (backup_size + 1023) / 1024 ))"
+                command -v pg_restore >/dev/null
+                before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
+                if /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1; then :; else
+                  backup_status=$?
+                  printf '[DEPLOY ERROR] Backup command failed with exit code: %s\n' "$backup_status" >&2
+                  exit "$backup_status"
+                fi
+                after_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
+                after="${after_entry#* }"
+                after_time="${after_entry%% *}"
+                test -n "$after" && test -s "$after"
+                if [ "$after" = "${before_entry#* }" ] && [ "$after_time" = "${before_entry%% *}" ]; then echo "Backup file did not change." >&2; exit 1; fi
+                chmod 600 "$after"
+                pg_restore --list "$after" >/dev/null
+                sha256sum "$after" > "$after.sha256"
+                chmod 600 "$after.sha256"
+                sha256sum --check "$after.sha256" >/dev/null
+                backup_reference="$(basename "$after")"
+              fi
+              if [ "$APPLY_MIGRATIONS" = "true" ]; then
+                stage="Apply approved production migrations"
+                db_tools_run scripts/db/migrate-production.mjs --apply --backup-reference="$backup_reference"
+                stage="Verify migration status after migration"
+                migration_status="$(db_tools_run scripts/db/status-production.mjs)"
+                printf '%s\n' "$migration_status"
+                printf '%s\n' "$migration_status" | grep -Eq '6 applied, 0 pending'
+                stage="Grant and verify Runtime SELECT-only access to SEC tables"
+                db_tools_run scripts/db/grant-financial-runtime-read-production.mjs --apply --backup-reference="$backup_reference"
+                stage="Grant and verify restricted SEC Import access"
+                db_tools_run scripts/db/grant-financial-import-production.mjs --apply --backup-reference="$backup_reference"
+                stage="Recheck production schema and SEC grants"
+                verified_preflight="$(db_tools_run scripts/db/preflight-financial-production.mjs)"
+                printf '%s\n' "$verified_preflight" | jq -e '(.blockers | length) == 0 and (.permissionFindings | length) == 0' >/dev/null
+              fi
+              if [ "$IMPORT_WORLD_BANK" = "true" ]; then
+                stage="Dry-run World Bank import"
+                db_tools_run scripts/data/import-world-bank-production.mjs --dry-run
+                stage="Import selected World Bank snapshot"
+                db_tools_run scripts/data/import-world-bank-production.mjs --apply --backup-reference="$backup_reference"
+                stage="Verify World Bank import"
+                db_tools_run scripts/data/verify-world-bank-production.mjs
+              fi
+              if [ "$IMPORT_SEC" = "true" ]; then
+                test -n "${SEC_EDGAR_USER_AGENT:-}"
+                if [ "$APPLY_MIGRATIONS" != "true" ]; then
+                  stage="Grant and verify Runtime SELECT-only access to SEC tables"
+                  db_tools_run scripts/db/grant-financial-runtime-read-production.mjs --apply --backup-reference="$backup_reference"
+                  stage="Grant and verify restricted SEC Import access"
+                  db_tools_run scripts/db/grant-financial-import-production.mjs --apply --backup-reference="$backup_reference"
+                  stage="Recheck production schema and SEC grants"
+                  verified_preflight="$(db_tools_run scripts/db/preflight-financial-production.mjs)"
+                  printf '%s\n' "$verified_preflight" | jq -e '(.blockers | length) == 0 and (.permissionFindings | length) == 0' >/dev/null
+                fi
+                stage="Verify SEC production schema and Runtime grants"
+                db_tools_run scripts/data/financial-sec-production.mjs verify
+                stage="Collect SEC facts and validate production dry run"
+                db_tools_run scripts/data/import-sec-company-facts-production.mjs --dry-run
+                stage="Import SEC Company Facts"
+                db_tools_run scripts/data/import-sec-company-facts-production.mjs --apply --backup-reference="$backup_reference"
+                stage="Verify SEC Company Facts after import"
+                db_tools_run scripts/data/financial-sec-production.mjs verify
+              fi
             fi
 
+            if [ "$DEPLOY_PORTAL" = "true" ]; then
+            if [ -z "$backup_reference" ]; then
+              stage="Verify current Portal and create deployment backup"
+              current_health="$(docker inspect --format='{{.State.Health.Status}}' portal)"
+              test "$current_health" = healthy
+              curl --fail --silent --show-error --max-time 15 "$PORTAL_HEALTH_URL" >/dev/null
+              before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
+              /usr/local/bin/backup-woori-portal.sh >/dev/null 2>&1
+              after_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
+              after="${after_entry#* }"
+              test -n "$after" && test -s "$after"
+              if [ "$after" = "${before_entry#* }" ] && [ "${after_entry%% *}" = "${before_entry%% *}" ]; then echo "Backup file did not change." >&2; exit 1; fi
+              chmod 600 "$after"
+              command -v pg_restore >/dev/null
+              pg_restore --list "$after" >/dev/null
+              sha256sum "$after" > "$after.sha256"
+              chmod 600 "$after.sha256"
+              sha256sum --check "$after.sha256" >/dev/null
+              backup_reference="$(basename "$after")"
+            fi
             stage="Validate GHCR image access"
             printf '[DEPLOY 5] %s\n' "$stage"
             docker pull "ghcr.io/alsruddns/woori-home@${PORTAL_DIGEST}"
@@ -302,8 +427,15 @@ jobs:
             curl --fail --silent --show-error --max-time 20 --dump-header "$smoke_headers" --output "$smoke_body" 'https://www.woori.today/portal-api/world-bank/compare?countries=kr%2Cus&indicator=population'
             jq -e '.source == "json" and .indicator == "population" and (.series | length == 2)' "$smoke_body" >/dev/null
             grep -Eiq '^cache-control:[[:space:]]*public, max-age=3600, stale-while-revalidate=86400' "$smoke_headers"
+            : > "$smoke_body"
+            : > "$smoke_headers"
+            curl --fail --silent --show-error --max-time 20 --dump-header "$smoke_headers" --output "$smoke_body" 'https://www.woori.today/portal-api/finance/companies?pageSize=1'
+            jq -e '.dataState == "available" and .pagination.total > 0 and (.data | length == 1)' "$smoke_body" >/dev/null
+            grep -Eiq '^cache-control:[[:space:]]*no-store' "$smoke_headers"
             rm -f "$smoke_body" "$smoke_headers"
             smoke_body=""
             smoke_headers=""
             deploy_started=0
             echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained; World Bank DB/JSON source smoke tests passed."
+            fi
+            echo "Database operations: preflight=${PREFLIGHT_DATABASE}, migrations=${APPLY_MIGRATIONS}, world_bank=${IMPORT_WORLD_BANK}, sec=${IMPORT_SEC}; Portal deploy=${DEPLOY_PORTAL}."
