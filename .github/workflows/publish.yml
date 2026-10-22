@@ -375,8 +375,8 @@ jobs:
                   verified_preflight="$(db_tools_run scripts/db/preflight-financial-production.mjs)"
                   printf '%s\n' "$verified_preflight" | jq -e '(.blockers | length) == 0 and (.permissionFindings | length) == 0' >/dev/null
                 fi
-                stage="Verify SEC production schema and Runtime grants"
-                db_tools_run scripts/data/financial-sec-production.mjs verify
+                stage="Inspect SEC production schema and Runtime grants before import"
+                db_tools_run scripts/data/financial-sec-production.mjs status
                 stage="Collect SEC facts and validate production dry run"
                 db_tools_run scripts/data/import-sec-company-facts-production.mjs --dry-run
                 stage="Import SEC Company Facts"
