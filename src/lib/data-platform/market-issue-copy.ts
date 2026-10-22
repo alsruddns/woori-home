@@ -19,4 +19,6 @@ export const stockIssueCopy: Record<Locale, { title: string; description: string
   hi:{title:"शेयर बाज़ार की प्रमुख घोषणाएँ",description:"उपयोग की शर्तें सत्यापित होने के बाद एक्सचेंज, नियामकों और कंपनियों की आधिकारिक घोषणाएँ तारीख के अनुसार दी जाएँगी।",empty:"इस तारीख के लिए कोई सत्यापित शेयर बाज़ार सूचना उपलब्ध नहीं है।",published:"प्रकाशित",source:"स्रोत"},
 
   "tr": {title:"Borsa haberleri",description:"Borsalar, düzenleyiciler ve şirketlerden tarihli duyurular, kullanım izinleri doğrulandıktan sonra yayımlanır.",empty:"Bu tarih için doğrulanmış borsa haberi yok.",published:"Yayınlandı",source:"Kaynak"}
+,
+  "pl": {title:"Wiadomości z rynku akcji",description:"Datowane komunikaty giełd, regulatorów i firm będą publikowane po sprawdzeniu praw do źródeł.",empty:"Brak zweryfikowanych wiadomości giełdowych z tego dnia.",published:"Opublikowano",source:"Źródło"}
 };

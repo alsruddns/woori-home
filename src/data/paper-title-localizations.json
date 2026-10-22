@@ -16,7 +16,8 @@
     "nl": "Eénparameterige dynamische donkere energie: aanwijzingen voor oscillaties",
     "hi": "एक-पैरामीटर गतिशील डार्क एनर्जी: दोलनों के संकेत",
     "ru": "Динамическая тёмная энергия с одним параметром: признаки осцилляций",
-    "tr": "Tek parametreli dinamik karanlık enerji: salınım ipuçları"
+    "tr": "Tek parametreli dinamik karanlık enerji: salınım ipuçları",
+    "pl": "Ciemna energia o dynamice jednego parametru: wskazówki dotyczące oscylacji"
   },
   "10.1021/acs.iecr.6c02154": {
     "ko": "막 오염 예측을 위한 거칠기 보정 계면 기술자를 활용한 물리 기반 머신러닝",
@@ -35,7 +36,8 @@
     "nl": "Natuurkundig gestuurd machine learning met voor ruwheid gecorrigeerde grensvlakbeschrijvingen voor het voorspellen van membraanvervuiling",
     "hi": "मेम्ब्रेन फाउलिंग के पूर्वानुमान हेतु खुरदरापन-संशोधित अंतरापृष्ठीय वर्णकों के साथ भौतिकी-निर्देशित मशीन लर्निंग",
     "ru": "Машинное обучение с учётом физики и межфазные дескрипторы с поправкой на шероховатость для прогнозирования загрязнения мембран",
-    "tr": "Membran kirlenmesi tahmini için pürüzlülük düzeltmeli arayüz tanımlayıcılarıyla fizik güdümlü makine öğrenmesi"
+    "tr": "Membran kirlenmesi tahmini için pürüzlülük düzeltmeli arayüz tanımlayıcılarıyla fizik güdümlü makine öğrenmesi",
+    "pl": "Uczenie maszynowe wspomagane fizyką i deskryptory międzyfazowe z korektą chropowatości do prognozowania zanieczyszczenia membran"
   },
   "10.58797/teras.0501.10": {
     "ko": "물리 교사를 위한 STEM 기반 로봇공학 전문성 개발: 자카르타 MGMP Fisika의 집단 단위 교육 평가",
@@ -54,7 +56,8 @@
     "nl": "Professionele ontwikkeling in STEM-robotica voor natuurkundeleraren: evaluatie van een groepstraining bij MGMP Fisika Jakarta",
     "hi": "भौतिकी शिक्षकों के लिए STEM-आधारित रोबोटिक्स व्यावसायिक विकास: जकार्ता MGMP Fisika में समूह-स्तरीय प्रशिक्षण का मूल्यांकन",
     "ru": "Профессиональная подготовка учителей физики по робототехнике на основе STEM: оценка группового обучения в MGMP Fisika Jakarta",
-    "tr": "Fizik öğretmenleri için STEM tabanlı robotik mesleki gelişimi: MGMP Fisika Jakarta'da grup eğitimi değerlendirmesi"
+    "tr": "Fizik öğretmenleri için STEM tabanlı robotik mesleki gelişimi: MGMP Fisika Jakarta'da grup eğitimi değerlendirmesi",
+    "pl": "Rozwój zawodowy nauczycieli fizyki w robotyce STEM: ocena szkolenia grupowego w MGMP Fisika Jakarta"
   },
   "10.3390/membranes16050181": {
     "ko": "폐수 막 생물반응기: 설명 가능한 인공지능과 디지털 트윈 응용에 관한 종합 검토",
@@ -73,7 +76,8 @@
     "nl": "Membraanbioreactoren voor afvalwater: uitgebreid overzicht van toepassingen van verklaarbare kunstmatige intelligentie en digitale tweelingen",
     "hi": "अपशिष्ट जल मेम्ब्रेन बायोरिएक्टर: व्याख्यायोग्य कृत्रिम बुद्धिमत्ता और डिजिटल ट्विन अनुप्रयोगों की व्यापक समीक्षा",
     "ru": "Мембранные биореакторы для сточных вод: обзор объяснимого искусственного интеллекта и цифровых двойников",
-    "tr": "Atık su membran biyoreaktörleri: açıklanabilir yapay zekâ ve dijital ikiz uygulamalarına kapsamlı bir bakış"
+    "tr": "Atık su membran biyoreaktörleri: açıklanabilir yapay zekâ ve dijital ikiz uygulamalarına kapsamlı bir bakış",
+    "pl": "Bioreaktory membranowe do ścieków: kompleksowy przegląd zastosowań wyjaśnialnej sztucznej inteligencji i cyfrowych bliźniaków"
   },
   "10.1080/15502783.2026.2630487": {
     "ko": "사이클링 경기력 향상을 위한 운동능력 증진·의학적 보충제 사용 지침: 생리학과 근거에 대한 종합 검토",
@@ -92,7 +96,8 @@
     "nl": "Uitgebreid overzicht van fysiologie en bewijs voor het gebruik van prestatiebevorderende en medische supplementen bij betere fietsprestaties",
     "hi": "साइकिलिंग प्रदर्शन बढ़ाने के लिए एर्गोजेनिक और चिकित्सीय सप्लीमेंट के उपयोग हेतु शरीर-विज्ञान और साक्ष्यों की व्यापक समीक्षा",
     "ru": "Комплексный обзор физиологии и доказательной базы добавок для повышения спортивных результатов и медицинских целей в велоспорте",
-    "tr": "Bisiklet performansını artırmaya yönelik ergojenik ve tıbbi takviyelerin fizyolojisi ve kanıt tabanı üzerine kapsamlı bir inceleme"
+    "tr": "Bisiklet performansını artırmaya yönelik ergojenik ve tıbbi takviyelerin fizyolojisi ve kanıt tabanı üzerine kapsamlı bir inceleme",
+    "pl": "Kompleksowy przegląd fizjologii i dowodów dotyczących suplementów ergogenicznych i medycznych poprawiających wyniki w kolarstwie"
   },
   "10.3390/membranes15120353": {
     "ko": "재료과학 및 막 기술에서 인공지능과 머신러닝의 발전과 응용: 종합 검토",
@@ -111,7 +116,8 @@
     "nl": "Vooruitgang en toepassingen van kunstmatige intelligentie en machine learning in materiaalkunde en membraantechnologie: uitgebreid overzicht",
     "hi": "पदार्थ विज्ञान और मेम्ब्रेन प्रौद्योगिकी में कृत्रिम बुद्धिमत्ता और मशीन लर्निंग की प्रगति एवं अनुप्रयोग: व्यापक समीक्षा",
     "ru": "Достижения и применение искусственного интеллекта и машинного обучения в материаловедении и мембранных технологиях: обзор",
-    "tr": "Malzeme bilimi ve membran teknolojisinde yapay zekâ ve makine öğrenmesindeki gelişmeler ve uygulamalar: kapsamlı bir inceleme"
+    "tr": "Malzeme bilimi ve membran teknolojisinde yapay zekâ ve makine öğrenmesindeki gelişmeler ve uygulamalar: kapsamlı bir inceleme",
+    "pl": "Postępy i zastosowania sztucznej inteligencji i uczenia maszynowego w materiałoznawstwie i technologii membran: przegląd"
   },
   "10.3390/en18133245": {
     "ko": "마이크로그리드 에너지 관리 최적화 전략 검토",
@@ -130,7 +136,8 @@
     "nl": "Overzicht van optimalisatiestrategieën voor energiebeheer in microgrids",
     "hi": "माइक्रोग्रिड में ऊर्जा प्रबंधन के लिए अनुकूलन रणनीतियों की समीक्षा",
     "ru": "Обзор стратегий оптимизации управления энергией в микросетях",
-    "tr": "Mikro şebekelerde enerji yönetimi optimizasyon stratejilerinin incelenmesi"
+    "tr": "Mikro şebekelerde enerji yönetimi optimizasyon stratejilerinin incelenmesi",
+    "pl": "Przegląd strategii optymalizacji zarządzania energią w mikrosieciach"
   },
   "10.1038/s41746-025-01699-8": {
     "ko": "인공지능으로 산출한 망막 연령 차이: 여성의 생식 노화 지표",
@@ -149,7 +156,8 @@
     "nl": "Met kunstmatige intelligentie afgeleide retinale leeftijdskloof als marker voor reproductieve veroudering bij vrouwen",
     "hi": "महिलाओं में प्रजनन संबंधी उम्र बढ़ने के संकेतक के रूप में कृत्रिम बुद्धिमत्ता से निकला रेटिना आयु-अंतर",
     "ru": "Рассчитанный с помощью искусственного интеллекта разрыв между возрастом сетчатки и хронологическим возрастом как маркер репродуктивного старения женщин",
-    "tr": "Kadınlarda üreme yaşlanmasının göstergesi olarak yapay zekâ ile hesaplanan retina yaşı farkı"
+    "tr": "Kadınlarda üreme yaşlanmasının göstergesi olarak yapay zekâ ile hesaplanan retina yaşı farkı",
+    "pl": "Wyznaczona przez sztuczną inteligencję różnica wieku siatkówki jako wskaźnik starzenia reprodukcyjnego u kobiet"
   },
   "10.3390/aerospace12060540": {
     "ko": "물리 정보 신경망을 이용한 자율 공중급유 드로그 위치 예측",
@@ -168,6 +176,7 @@
     "nl": "Voorspelling van de droguepositie bij autonome bijtanking in de lucht met een natuurkundig geïnformeerd neuraal netwerk",
     "hi": "भौतिकी-सूचित न्यूरल नेटवर्क पर आधारित स्वायत्त हवाई ईंधन भरने में ड्रोग की स्थिति का पूर्वानुमान",
     "ru": "Прогнозирование положения тормозного парашюта при автономной дозаправке самолётов на основе физически информированной нейронной сети",
-    "tr": "Fizik bilgili sinir ağıyla otonom havada yakıt ikmali sırasında drogue konumunun tahmini"
+    "tr": "Fizik bilgili sinir ağıyla otonom havada yakıt ikmali sırasında drogue konumunun tahmini",
+    "pl": "Prognozowanie położenia spadochronu hamującego podczas autonomicznego tankowania w powietrzu za pomocą sieci neuronowej uwzględniającej prawa fizyki"
   }
 }

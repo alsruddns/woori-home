@@ -14,6 +14,8 @@ const localizedLabels: Record<Locale, { insights: string; worldStats: string }> 
   it: { insights: "Dati e approfondimenti", worldStats: "Economia e statistiche mondiali" }, nl: { insights: "Data & inzichten", worldStats: "Wereldeconomie & statistieken" }, hi: { insights: "डेटा और जानकारी", worldStats: "विश्व अर्थव्यवस्था और आँकड़े" }, ru: { insights:"Данные и аналитика",worldStats:"Мировая экономика и статистика" },
 
   "tr": {insights:"Veriler ve analizler",worldStats:"Dünya ekonomisi ve istatistikleri"}
+,
+  "pl": {insights:"Dane i analizy",worldStats:"Gospodarka światowa i statystyki"}
 };
 
 export function categoryNavigation(locale: Locale) {

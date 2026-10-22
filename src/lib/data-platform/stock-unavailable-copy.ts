@@ -19,4 +19,6 @@ export const stockUnavailableCopy: Record<Locale, string> = {
   ru: "Подтверждённых реальных котировок акций для публикации пока нет. Данные появятся после проверки источника и прав на использование.",
 
   "tr": "Herkese açık gösterim için doğrulanmış gerçek hisse fiyatları henüz mevcut değil. Kaynak ve kullanım hakları doğrulandıktan sonra veriler sunulacaktır."
+,
+  "pl": "Brak rzeczywistych cen akcji zatwierdzonych do publicznego wyświetlania. Dane zostaną udostępnione po potwierdzeniu źródła i praw do ich wykorzystania."
 };

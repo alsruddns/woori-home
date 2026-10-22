@@ -6,6 +6,8 @@ const serviceHrefs = { money: (locale: Locale) => familySiteHref(locale, "moneyB
 const serviceIcons = { money: "↗", calculators: "∑", tools: "⌘", docs: "▤", quiz: "?" };
 const monthlyViews: Record<Locale, string> = { ru:"За месяц", ko: "월별 관리", en: "Monthly view", ja: "月ごとの管理", zh: "按月管理", es: "Vista mensual", "pt-br": "Visão mensal", de: "Monatsübersicht", fr: "Vue mensuelle", vi: "Theo dõi theo tháng", id: "Tampilan bulanan", th: "มุมมองรายเดือน", "zh-tw": "每月檢視", it: "Vista mensile", nl: "Maandoverzicht", hi: "मासिक दृश्य" ,
   "tr": "Aylık görüntülenme"
+,
+  "pl": "Wyświetlenia miesięczne"
 };
 
 export default function PortalIntroduction({ locale }: { locale: Locale }) {

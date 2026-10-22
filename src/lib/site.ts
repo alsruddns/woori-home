@@ -20,6 +20,7 @@ export const localeConfig = [
   { route: "hi", hreflang: "hi", nativeName: "हिन्दी", ogLocale: "hi_IN" },
   { route: "ru", hreflang: "ru", nativeName: "Русский", ogLocale: "ru_RU" },
   { route: "tr", hreflang: "tr", nativeName: "Türkçe", ogLocale: "tr_TR" },
+  { route: "pl", hreflang: "pl", nativeName: "Polski", ogLocale: "pl_PL" },
 ] as const;
 export const locales = localeConfig.map((item) => item.route);
 export type Locale = (typeof localeConfig)[number]["route"];
@@ -32,18 +33,24 @@ export const newTabLabels: Record<Locale, string> = {
   it: "si apre in una nuova scheda", nl: "opent in een nieuw tabblad", hi: "नए टैब में खुलेगा", ru: "откроется в новой вкладке",
 
   "tr": "yeni bir sekmede açılır"
+,
+  "pl": "otwiera się w nowej karcie"
 };
 export const uiLabels: Record<Locale, { language: string; primaryNav: string }> = {
   ko: { language: "언어 선택", primaryNav: "주요 탐색" }, en: { language: "Choose language", primaryNav: "Primary navigation" }, ja: { language: "言語を選択", primaryNav: "メインナビゲーション" }, zh: { language: "选择语言", primaryNav: "主要导航" },
   es: { language: "Elegir idioma", primaryNav: "Navegación principal" }, "pt-br": { language: "Escolher idioma", primaryNav: "Navegação principal" }, de: { language: "Sprache auswählen", primaryNav: "Hauptnavigation" }, fr: { language: "Choisir la langue", primaryNav: "Navigation principale" }, vi: { language: "Chọn ngôn ngữ", primaryNav: "Điều hướng chính" }, id: { language: "Pilih bahasa", primaryNav: "Navigasi utama" }, th: { language: "เลือกภาษา", primaryNav: "เมนูหลัก" }, "zh-tw": { language: "選擇語言", primaryNav: "主要導覽" }, it: { language: "Scegli la lingua", primaryNav: "Navigazione principale" }, nl: { language: "Taal kiezen", primaryNav: "Hoofdnavigatie" }, hi: { language: "भाषा चुनें", primaryNav: "मुख्य नेविगेशन" }, ru: { language: "Выбрать язык", primaryNav: "Основная навигация" },
 
   "tr": {language:"Dil seçin",primaryNav:"Ana gezinme"}
+,
+  "pl": {language:"Wybierz język",primaryNav:"Nawigacja główna"}
 };
 export const sectionLabels: Record<Locale, { calculator: string; tools: string }> = {
   ko: { calculator: "계산기", tools: "온라인 도구" }, en: { calculator: "Calculator", tools: "Online tools" }, ja: { calculator: "計算ツール", tools: "オンラインツール" }, zh: { calculator: "计算器", tools: "在线工具" },
   es: { calculator: "Calculadoras", tools: "Herramientas en línea" }, "pt-br": { calculator: "Calculadoras", tools: "Ferramentas online" }, de: { calculator: "Rechner", tools: "Online-Tools" }, fr: { calculator: "Calculatrices", tools: "Outils en ligne" }, vi: { calculator: "Máy tính", tools: "Công cụ trực tuyến" }, id: { calculator: "Kalkulator", tools: "Alat online" }, th: { calculator: "เครื่องคำนวณ", tools: "เครื่องมือออนไลน์" }, "zh-tw": { calculator: "計算機", tools: "線上工具" }, it: { calculator: "Calcolatori", tools: "Strumenti online" }, nl: { calculator: "Calculators", tools: "Online tools" }, hi: { calculator: "कैलकुलेटर", tools: "ऑनलाइन टूल" }, ru: { calculator: "Калькуляторы", tools: "Онлайн-инструменты" },
 
   "tr": {calculator:"Hesap makineleri",tools:"Çevrimiçi araçlar"}
+,
+  "pl": {calculator:"Kalkulatory",tools:"Narzędzia online"}
 };
 export const ogLocaleFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.ogLocale;
 export const hreflangFor = (locale: Locale) => localeConfig.find((item) => item.route === locale)!.hreflang;

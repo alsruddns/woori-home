@@ -18,6 +18,7 @@ export function familySiteHref(locale: Locale, key: FamilySiteKey) {
 }
 
 export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
+  pl: "Strona MoneyBook otworzy się po angielsku.",
   ru: "Страница MoneyBook откроется на английском.",
   es: "La página de MoneyBook se abrirá en inglés.",
   "pt-br": "A página do MoneyBook será aberta em inglês.",
@@ -32,6 +33,7 @@ export const moneyBookFallbackCopy: Partial<Record<Locale, string>> = {
   hi: "MoneyBook अंग्रेज़ी में खुलेगा।",
 
   "tr": "MoneyBook sayfası İngilizce açılacaktır."
+,
 };
 
 export const familySitesCopy: Record<Locale, {
@@ -63,4 +65,6 @@ export const familySitesCopy: Record<Locale, {
   ru: { label:"Сервисы WOORI.TODAY",sites:{portal:"Портал",calculator:"Калькуляторы",tools:"Инструменты",moneyBook:"Общий семейный бюджет",docs:"Документы и шаблоны",quiz:"Викторины и тесты"},docsTitle:"Документы и шаблоны",docsDescription:"Практичные документы и шаблоны для повседневных задач.",docsCta:"Открыть документы",quizTitle:"Викторины и тесты",quizDescription:"Попробуйте разные интересные викторины и тесты.",quizCta:"К викторинам",menu:"Меню" },
 
   "tr": {label:"Aile hizmetleri",sites:{portal:"Portal",calculator:"Hesap makineleri",tools:"Çevrimiçi araçlar",moneyBook:"MoneyBook",docs:"Belgeler",quiz:"Quiz"},docsTitle:"Belge şablonları",docsDescription:"Tutanak, teklif ve haftalık planlar için kullanıma hazır şablonlar.",docsCta:"Belgeleri aç",quizTitle:"Bilgi yarışmaları",quizDescription:"Genel kültür, matematik, coğrafya ve teknoloji konularında kısa quizler.",quizCta:"Quizleri aç",menu:"Hizmet menüsü"}
+,
+  "pl": {label:"Serwisy rodzinne",sites:{portal:"Portal",calculator:"Kalkulatory",tools:"Narzędzia online",moneyBook:"MoneyBook",docs:"Dokumenty",quiz:"Quizy"},docsTitle:"Szablony dokumentów",docsDescription:"Gotowe układy protokołów, ofert i planów tygodniowych.",docsCta:"Otwórz dokumenty",quizTitle:"Quizy wiedzy",quizDescription:"Krótkie quizy z wiedzy ogólnej, matematyki, geografii i technologii.",quizCta:"Otwórz quizy",menu:"Menu usług"}
 };

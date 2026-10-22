@@ -19,4 +19,6 @@ export const datePickerCopy: Record<Locale, { previousMonth: string; nextMonth: 
   ru: { previousMonth: "Предыдущий месяц", nextMonth: "Следующий месяц", close: "Закрыть календарь", calendar: "Открыть календарь", today: "Сегодня" },
 
   "tr": {previousMonth:"Önceki ay",nextMonth:"Sonraki ay",close:"Kapat",calendar:"Takvim",today: "Bugün"}
+,
+  "pl": {previousMonth:"Poprzedni miesiąc",nextMonth:"Następny miesiąc",close:"Zamknij",calendar:"Kalendarz",today: "Dzisiaj"}
 };

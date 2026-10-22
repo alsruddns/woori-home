@@ -33,4 +33,6 @@ export const energyPageCopy: Record<Locale, { intro: string; comparison: string;
   hi: { intro: "बिजली तक पहुंच उन लोगों का अनुपात है जो बिजली का उपयोग कर सकते हैं। यह बिजली की खपत से अलग है; देशों की तुलना में संदर्भ वर्ष भी देखें।", comparison: "देश के अनुसार नवीनतम अवलोकन", noData: "इस देश के लिए कोई प्रकाशित अवलोकन उपलब्ध नहीं है।", dateLabel: "संदर्भ वर्ष" },
 
   "tr": {intro:"Ülkelerin elektrik kaynaklarını ve temiz enerji göstergelerini inceleyin.",comparison:"Yayımlanan yıllık değerleri karşılaştırın; eksik yıllar için tahmin yapılmaz.",noData:"Bu seçim için enerji verisi yok.",dateLabel:"Veri yılı"}
+,
+  "pl": {intro:"Sprawdź źródła energii elektrycznej i wskaźniki czystej energii w poszczególnych krajach.",comparison:"Porównuj opublikowane wartości roczne; brakujące lata nie są szacowane.",noData:"Brak danych o energii dla tego wyboru.",dateLabel:"Rok danych"}
 };

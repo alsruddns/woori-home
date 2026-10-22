@@ -19,4 +19,6 @@ export const notFoundMessages: Record<Locale, { title: string; description: stri
   ru: { title: "Страница не найдена", description: "Эта страница недоступна или была перемещена.", home: "На главную" },
 
   "tr": {title:"Sayfa bulunamadı",description:"Aradığınız sayfa mevcut değil veya taşınmış olabilir.",home:"Ana sayfaya dön"}
+,
+  "pl": {title:"Nie znaleziono strony",description:"Ten adres jest niedostępny lub strona została przeniesiona.",home:"Wróć na stronę główną"}
 };
