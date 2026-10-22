@@ -125,6 +125,7 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /Could not remove the temporary smoke-test body/);
   assert.match(workflow, /rollback_tag/);
   assert.match(workflow, /environment: production/);
+  assert.match(workflow, /PRODUCTION_DB_ALLOWED_HOSTS: \$\{\{ secrets\.PRODUCTION_DB_ALLOWED_HOSTS \}\}/);
   assert.match(workflow, /--mount type=bind,src=\/opt\/services\/compose\/\.env\.portal,dst=\/app\/\.portal\.env,readonly/);
   assert.match(workflow, /\/app\/\.production-approval,readonly/);
   assert.match(workflow, /PRODUCTION_OPERATION_APPROVAL_FILE=\/app\/\.production-approval/);

@@ -94,7 +94,7 @@ jobs:
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
           APPLY_DATABASE_CHANGES: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes || 'false' }}
           PRODUCTION_OPERATION_APPROVAL: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
-          PRODUCTION_DB_ALLOWED_HOSTS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_database_changes && secrets.PRODUCTION_DB_ALLOWED_HOSTS || '' }}
+          PRODUCTION_DB_ALLOWED_HOSTS: ${{ secrets.PRODUCTION_DB_ALLOWED_HOSTS }}
           PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
         with:
           host: ${{ secrets.SERVER_HOST }}
