@@ -149,7 +149,7 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /PRODUCTION_RESTORE_VALIDATION_REFERENCE/);
   assert.match(workflow, /Select one operation per protected run/);
   assert.match(workflow, /default: false/);
-  assert.match(workflow, /pg_restore --list/);
+  assert.match(workflow, /--entrypoint pg_restore/);
   assert.match(workflow, /sha256sum --check/);
   assert.match(workflow, /Check current Portal container health/);
   assert.match(workflow, /Check production backup disk capacity/);

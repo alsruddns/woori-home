@@ -278,6 +278,12 @@ jobs:
                   -e SEC_EDGAR_USER_AGENT \
                   "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env "$@"
               }
+              validate_backup_archive() {
+                docker run --rm \
+                  --mount "type=bind,src=$1,dst=/tmp/production.dump,readonly" \
+                  --entrypoint pg_restore \
+                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" --list /tmp/production.dump >/dev/null
+              }
               stage="Preflight approved production database operation"
               printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/preflight-production.mjs
@@ -313,7 +319,7 @@ jobs:
                 printf '[DEPLOY DB CHECK] Required DB size bytes: %s; available backup space KiB: %s\n' "$backup_size" "$available_kb"
                 test "$available_kb" -ge "$(( (backup_size + 1023) / 1024 ))"
                 stage="Check PostgreSQL archive validation tool"
-                command -v pg_restore >/dev/null
+                docker run --rm --entrypoint pg_restore "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" --version >/dev/null
                 stage="Create fresh pre-write database backup"
                 printf '[DEPLOY DB] %s\n' "$stage"
                 before_entry="$(find /opt/backups/woori-portal -maxdepth 1 -type f -printf '%T@ %p\n' | sort -nr | sed -n '1p')"
@@ -329,7 +335,7 @@ jobs:
                 if [ "$after" = "${before_entry#* }" ] && [ "$after_time" = "${before_entry%% *}" ]; then echo "Backup file did not change." >&2; exit 1; fi
                 chmod 600 "$after"
                 stage="Validate fresh production backup archive"
-                pg_restore --list "$after" >/dev/null
+                validate_backup_archive "$after"
                 sha256sum "$after" > "$after.sha256"
                 chmod 600 "$after.sha256"
                 sha256sum --check "$after.sha256" >/dev/null
@@ -393,8 +399,8 @@ jobs:
               test -n "$after" && test -s "$after"
               if [ "$after" = "${before_entry#* }" ] && [ "${after_entry%% *}" = "${before_entry%% *}" ]; then echo "Backup file did not change." >&2; exit 1; fi
               chmod 600 "$after"
-              command -v pg_restore >/dev/null
-              pg_restore --list "$after" >/dev/null
+              docker run --rm --entrypoint pg_restore "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" --version >/dev/null
+              docker run --rm --mount "type=bind,src=$after,dst=/tmp/production.dump,readonly" --entrypoint pg_restore "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" --list /tmp/production.dump >/dev/null
               sha256sum "$after" > "$after.sha256"
               chmod 600 "$after.sha256"
               sha256sum --check "$after.sha256" >/dev/null
