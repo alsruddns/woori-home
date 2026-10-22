@@ -200,3 +200,5 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
   .platform-home-card h3,.platform-home-card p{overflow-wrap:anywhere;word-break:normal}
   .platform-table-scroll{max-width:100%;overscroll-behavior-inline:contain}
 }
+
+.paper-card h2{overflow-wrap:anywhere;word-break:normal}.platform-table-scroll{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch}.platform-table{min-width:100%;width:max-content}@media(max-width:600px){.paper-filters select{width:100%;min-width:0;max-width:100%;box-sizing:border-box}}

@@ -66,11 +66,12 @@ test("NASA NeoWs snapshot is validated, date-scoped, and kept independent of vis
   assert.match(audit, /APOD image and video embedding remains deferred/);
 });
 
-test("energy and science data copy covers all 20 locales without an English-only fallback", async () => {
+test("energy and science data copy covers all 26 locales without an English-only fallback", async () => {
   const [energy, science, route, sitemap] = await Promise.all([
     read("src/lib/data-platform/energy-copy.ts"), read("src/lib/data-platform/science-copy.ts"),
     read("src/app/(locale)/[locale]/(platform)/[category]/page.tsx"), read("src/app/sitemap.ts"),
   ]);
+  assert.match(energy, /export const energyLocales: Locale\[\] = \["ko","en","ja","zh","es","pt-br","de","fr","vi","id","th","zh-tw","it","nl","hi","ru","tr","pl","fil","bn","uk","ms","sv","cs","ro","el"\]/);
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.match(energy, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing energy content`);
     assert.match(science, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{`), `${locale}: missing science content`);
@@ -158,6 +159,9 @@ test("mobile briefing overrides follow desktop component rules and keep metric c
   assert.match(mobileRules, /\.global-briefing-paper-list a\{[^}]*-webkit-line-clamp:3/);
   assert.match(mobileRules, /\.platform-controls\{display:flex;flex:1 1 100%/);
   assert.doesNotMatch(mobileRules, /overflow-x:hidden/);
+  assert.match(css, /\.paper-filters select\{[^}]*min-width:0/);
+  assert.match(css, /\.platform-table-scroll\{[^}]*overflow-x:auto/);
+  assert.match(css, /\.paper-card h2\{overflow-wrap:anywhere/);
 });
 
 test("country trend charts leave gaps disconnected and provide keyboard-accessible data points", async () => {

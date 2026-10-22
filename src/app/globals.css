@@ -80,3 +80,5 @@ html,body{max-width:100%;overflow-x:clip}
 .service-locale-note{display:block;margin-top:-11px;color:#7a6851;font-size:11px;line-height:1.6}.nav-fallback-note{font-size:10px;color:#7a6851}
 @media(max-width:1100px){.service-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.service-card,.service-card:nth-child(n+4){grid-column:span 1}}
 @media(max-width:680px){.portal-about,.portal-why{grid-template-columns:1fr;gap:28px;padding-top:56px;padding-bottom:57px}.portal-audience,.portal-privacy{padding:22px}.services{padding-top:5px}.service-grid{grid-template-columns:1fr}.service-card,.service-card:nth-child(n+4){grid-column:span 1;min-height:0}.portal-how,.portal-updates{padding:56px 0}.portal-steps,.portal-updates ol{grid-template-columns:1fr;gap:10px}.portal-steps li,.portal-updates li{padding:19px 21px}.portal-faq{padding-top:57px;padding-bottom:65px}}
+
+.legal-heading h1{overflow-wrap:anywhere;word-break:normal}

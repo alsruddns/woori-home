@@ -408,17 +408,17 @@ const termsIntro: Record<Exclude<Locale, "ko" | "en" | "ja" | "zh">, [string, st
 ,
   "bn": ["WOORI.TODAY ব্যবহারের শর্ত","WOORI.TODAY-এর ক্যালকুলেটর, অনলাইন টুল ও সংশ্লিষ্ট সেবার শর্ত।","এই শর্ত WOORI.TODAY পোর্টাল, ক্যালকুলেটর, অনলাইন টুল ও সংশ্লিষ্ট সেবায় প্রযোজ্য। সেবা ব্যবহারের আগে পড়ুন।","গোপনীয়তা নীতি পড়ুন"]
 ,
-  uk: ["ВОРІ. Умови використання","Умови використання для WOORI. Калькулятори ДНІ, онлайн інструменти та супутні послуги.","Ці умови застосовуються до WOORI. Портал TODAY, калькулятори, онлайн інструменти та супутні послуги. Будь ласка, ознайомтеся з нашими послугами.","Читати нашу Політику конфіденційності"]
+  uk: ["Умови використання WOORI.TODAY","Умови використання для WOORI. Калькулятори ДНІ, онлайн інструменти та супутні послуги.","Ці умови застосовуються до WOORI. Портал TODAY, калькулятори, онлайн інструменти та супутні послуги. Будь ласка, ознайомтеся з нашими послугами.","Читати нашу Політику конфіденційності"]
 ,
-  ms: ["WOORI. Istilah Penggunaan pada Hari Ini","Ketentuan mengenai penggunaan untuk WOORI. KISAH kalkulator, alat daring, dan layanan terkait.","Istilah-istilah ini berlaku untuk WOORI. TODAY portal, kalkulator, alat daring, dan layanan terkait. Tolong bacakan sebelum menggunakan jasa kami.","Kerahsiaan Kita"]
+  ms: ["Terma Penggunaan WOORI.TODAY","Ketentuan mengenai penggunaan untuk WOORI. KISAH kalkulator, alat daring, dan layanan terkait.","Istilah-istilah ini berlaku untuk WOORI. TODAY portal, kalkulator, alat daring, dan layanan terkait. Tolong bacakan sebelum menggunakan jasa kami.","Kerahsiaan Kita"]
 ,
-  sv: ["WOORI. Idag Användarvillkor","Användarvillkor för WOORI. Idag räknare, onlineverktyg och relaterade tjänster.","Dessa villkor gäller för WOORI. Idag portal, räknare, onlineverktyg och relaterade tjänster. Läs dem innan du använder våra tjänster.","Läs vår sekretesspolicy"]
+  sv: ["Användarvillkor för WOORI.TODAY","Användarvillkor för WOORI. Idag räknare, onlineverktyg och relaterade tjänster.","Dessa villkor gäller för WOORI. Idag portal, räknare, onlineverktyg och relaterade tjänster. Läs dem innan du använder våra tjänster.","Läs vår sekretesspolicy"]
 ,
-  cs: ["Páni. DNES Podmínky použití","Podmínky použití pro WOORI. Dnes kalkulačky, online nástroje a související služby.","Tyto podmínky platí pro WOORI. DNES portál, kalkulačky, online nástroje a související služby. Před použitím našich služeb si je prosím přečtěte.","Přečtěte si naše zásady ochrany osobních údajů"]
+  cs: ["Podmínky použití WOORI.TODAY","Podmínky použití pro WOORI. Dnes kalkulačky, online nástroje a související služby.","Tyto podmínky platí pro WOORI. DNES portál, kalkulačky, online nástroje a související služby. Před použitím našich služeb si je prosím přečtěte.","Přečtěte si naše zásady ochrany osobních údajů"]
 ,
-  ro: ["Woori. ZILELE DE UTILIZARE DE AZI","Termeni de utilizare pentru WOORI. AZI calculatoare, instrumente online şi servicii conexe.","Acești termeni se aplică WOORI. AZI portal, calculatoare, instrumente online și servicii conexe. Vă rugăm să le citiți înainte de a utiliza serviciile noastre.","Citiți politica noastră de confidențialitate"]
+  ro: ["Termeni de utilizare WOORI.TODAY","Termeni de utilizare pentru WOORI. AZI calculatoare, instrumente online şi servicii conexe.","Acești termeni se aplică WOORI. AZI portal, calculatoare, instrumente online și servicii conexe. Vă rugăm să le citiți înainte de a utiliza serviciile noastre.","Citiți politica noastră de confidențialitate"]
 ,
-  el: ["Γουάρι. ΣΗΜΕΡΑ Όροι Χρήσης","Όροι χρήσης του WOORI. ΣΗΜΕΡΑ αριθμομηχανές, ηλεκτρονικά εργαλεία και συναφείς υπηρεσίες.","Οι όροι αυτοί ισχύουν για το WOORI. ΣΗΜΕΡΑ πύλη, αριθμομηχανές, online εργαλεία και συναφείς υπηρεσίες. Παρακαλώ διαβάστε τα πριν χρησιμοποιήσετε τις υπηρεσίες μας.","Διαβάστε την Πολιτική Απορρήτου μας"]
+  el: ["Όροι χρήσης WOORI.TODAY","Όροι χρήσης του WOORI. ΣΗΜΕΡΑ αριθμομηχανές, ηλεκτρονικά εργαλεία και συναφείς υπηρεσίες.","Οι όροι αυτοί ισχύουν για το WOORI. ΣΗΜΕΡΑ πύλη, αριθμομηχανές, online εργαλεία και συναφείς υπηρεσίες. Παρακαλώ διαβάστε τα πριν χρησιμοποιήσετε τις υπηρεσίες μας.","Διαβάστε την Πολιτική Απορρήτου μας"]
 };
 
 const labels: Record<Exclude<Locale, "ko" | "en" | "ja" | "zh">, [string, string, string, string, string]> = {

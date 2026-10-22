@@ -28,11 +28,11 @@ export const localeConfig = [
 
   { route: "sv", hreflang: "sv", nativeName: "Svenska", ogLocale: "sv_SE" }
 ,
-  { route: "cs", hreflang: "cs", nativeName: "?e?tina", ogLocale: "cs_CZ" }
+  { route: "cs", hreflang: "cs", nativeName: "Čeština", ogLocale: "cs_CZ" }
 ,
-  { route: "ro", hreflang: "ro", nativeName: "Rom?n?", ogLocale: "ro_RO" }
+  { route: "ro", hreflang: "ro", nativeName: "Română", ogLocale: "ro_RO" }
 ,
-  { route: "el", hreflang: "el", nativeName: "????????", ogLocale: "el_GR" }
+  { route: "el", hreflang: "el", nativeName: "Ελληνικά", ogLocale: "el_GR" }
 ] as const;
 export const locales = localeConfig.map((item) => item.route);
 export type Locale = (typeof localeConfig)[number]["route"];
