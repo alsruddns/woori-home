@@ -79,7 +79,7 @@ export async function collectFinancialProviderSnapshot(provider, request, option
         }, timeoutMs);
       });
       response = await Promise.race([
-        provider.fetchDailyPrices({ startDate: request.startDate, endDate: request.endDate, signal: controller.signal }),
+        provider.fetchDailyPrices({ startDate: request.startDate, endDate: request.endDate, signal: controller.signal, limit: request.limit }),
         timeoutPromise,
       ]);
       break;

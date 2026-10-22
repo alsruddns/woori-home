@@ -4,8 +4,9 @@ import { platformCopy } from "./locales";
 import { goldCopy } from "./gold-copy";
 import { cryptoCopy } from "./crypto-copy";
 import { localizedNewCategories } from "./research-copy";
+import { financialOverviewCopy } from "./financial-overview-copy";
 
-export const categoryNavigationOrder = ["stocks", "crypto", "gold", "commodities", "economy", "science", "world", "population", "countries", "energy", "papers"] as const;
+export const categoryNavigationOrder = ["finance", "stocks", "crypto", "gold", "commodities", "economy", "science", "world", "population", "countries", "energy", "papers"] as const;
 
 const localizedLabels: Record<Locale, { insights: string; worldStats: string }> = {
   ko: { insights: "데이터·인사이트", worldStats: "세계 경제·통계" }, en: { insights: "Data & insights", worldStats: "World economy & statistics" }, ja: { insights: "データ・インサイト", worldStats: "世界経済・統計" }, zh: { insights: "数据与洞察", worldStats: "世界经济与统计" },
@@ -44,6 +45,7 @@ export function categoryNavigation(locale: Locale) {
       : id === "commodities" ? localizedNewCategories[locale].commodities
       : id === "gold" ? goldCopy[locale].title
       : id === "crypto" ? cryptoCopy[locale].nav
+      : id === "finance" ? financialOverviewCopy[locale].title
       : platformCopy[locale].categories[index > 2 ? index - 1 : index];
     return [{ id, path: category.path, label }];
   });

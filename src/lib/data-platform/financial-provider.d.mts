@@ -37,7 +37,7 @@ export type FinancialProvider = {
   licenseStatus: "verified" | "pending" | "restricted" | "rejected";
   attribution: string;
   sourceUrl: string;
-  fetchDailyPrices(input: { startDate: string; endDate: string; signal: AbortSignal }): Promise<{
+  fetchDailyPrices(input: { startDate: string; endDate: string; signal: AbortSignal; limit?: number }): Promise<{
     snapshotVersion?: string;
     assets: FinancialProviderAsset[];
     prices: FinancialProviderPrice[];
@@ -60,6 +60,6 @@ export class FinancialProviderError extends Error {
 
 export function collectFinancialProviderSnapshot(
   provider: FinancialProvider,
-  request: { startDate: string; endDate: string; marketTimezone?: string },
+  request: { startDate: string; endDate: string; marketTimezone?: string; limit?: number },
   options?: { maxAttempts?: number; timeoutMs?: number; baseDelayMs?: number; maxDelayMs?: number; maxRecords?: number; now?: Date; sleep?: (milliseconds: number) => Promise<void> },
 ): Promise<FinancialProviderSnapshot>;

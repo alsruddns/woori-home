@@ -1,0 +1,12 @@
+type Invalid = { ok: false; status: number; error: string };
+type FinancialListQuery = { ok: true; page: number; pageSize: number; offset: number; sort: string; order: "asc" | "desc"; market: string | null; search: string; referenceDate: string | null };
+type FinancialHistoryQuery = { ok: true; limit: number; from: string | null; to: string | null };
+type FinancialHeatmapQuery = { ok: true; market: string | null; referenceDate: string | null };
+export const FINANCIAL_API_CACHE_CONTROL: "no-store";
+export function parseFinancialListQuery(searchParams: URLSearchParams, type: string): FinancialListQuery | Invalid;
+export function parseFinancialHistoryQuery(searchParams: URLSearchParams, assetId: string): FinancialHistoryQuery | Invalid;
+export function parseFinancialHeatmapQuery(searchParams: URLSearchParams, type: string): FinancialHeatmapQuery | Invalid;
+export function financialApiResponse(payload: unknown, status?: number): Response;
+export function financialApiErrorResponse(): Response;
+export function financialRateLimitResponse(retryAfterSeconds: number): Response;
+export function safeErrorCode(error: unknown): string;

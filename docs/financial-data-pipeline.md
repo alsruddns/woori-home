@@ -1,6 +1,6 @@
 # Financial data pipeline
 
-Status: common PostgreSQL storage and read primitives are implemented. EIA's general terms allow use of EIA-owned public-domain material, but EIA attributes the requested daily WTI, Brent and Henry Hub spot series to Refinitiv/LSEG. Rights to retain and commercially redisplay those third-party observations have not been confirmed. No EIA observations have been imported; existing JSON/mock/disabled behavior remains the default. This pipeline never runs during Next.js build or page startup.
+Status: PostgreSQL storage, a gated Upbit KRW daily-candle HTTP adapter, a shared bounded collector, transactional import, read-only finance APIs, and localized market/overview UI are implemented. Provider access and the right to republish, retain, cache, or redistribute that data are separate. Upbit's public Quotation endpoints are technically callable, but the reviewed terms do not confirm commercial republishing or persistent storage. No live market API request or price import was made; all price displays remain empty until the exact provider/dataset has a `verified` rights record. This pipeline never runs during Next.js build or page startup.
 
 ## Shape and policy
 
@@ -21,11 +21,27 @@ Current migrations: `0000_init_data_catalog`, `0001_worldbank_collection_counts`
 
 ## Ingestion and access
 
-Create a source and dataset only after review recorded in `docs/financial-data-sources.md`. Keep `data_sources.license_status` non-verified until the exact endpoint, plan, regions, retention, derivation, external display, attribution and any download/API restrictions are approved. Never write unlicensed data. `pnpm data:financial:import -- --file=<reviewed-export.json> [--dry-run]` accepts normalized JSON (`schemaVersion`, `sourceId`, `datasetId`, `snapshotVersion`, `assets`, `prices`), refuses unverified sources and duplicate/malformed rows, checks every referenced asset, and upserts observations on the composite key in 250-row transactions. It records checksum, scope, counts and partial failures in `data_collection_runs`. Identical observations are skipped; changed values update. Retries must respect documented per-provider limits. Scheduler adapters are manual/local only; no GitHub Actions, production cron, production API credentials or build-time fetch.
+Create a source and dataset only after review recorded in `docs/financial-data-sources.md`. Keep `data_sources.license_status` non-verified until the exact endpoint, plan, regions, retention, derivation, external display, attribution and any download/API restrictions are approved. Never write unlicensed data.
+
+`src/lib/data-platform/providers/upbit.mjs` calls Upbit's official daily-candle endpoint, keeps KRW venue/pair identity, uses Asia/Seoul dates, paginates at the documented 200-candle cap, applies a per-request delay, and leaves market capitalization null because Upbit candles do not supply it. The adapter defaults to `unverified`. The collector checks the exact `data_sources` and `datasets` rows before making a network request; an unverified source therefore fails before any HTTP call. Only that one KRW crypto adapter is implemented. SEC/OpenDART fundamentals and Binance quotes remain cataloged as candidates; none is enabled.
+
+Commands:
+
+- `pnpm data:financial:providers` prints current technical access and separate display/storage rights states without opening a DB connection.
+- `pnpm data:financial:collect -- --provider=upbit-quotation --market=krw [--date=YYYY-MM-DD | --start-date=YYYY-MM-DD --end-date=YYYY-MM-DD] [--limit=1..8] [--verbose]` collects only after the local development source and dataset are marked `verified` with attribution and source URL. It delegates writes to the existing import contract.
+- `pnpm data:financial:dry-run -- --provider=upbit-quotation --market=krw [options]` validates an authorized collection and records a dry-run execution without writing prices.
+- `pnpm data:financial:import -- --file=<reviewed-export.json> [--dry-run]` accepts normalized JSON (`schemaVersion`, `sourceId`, `datasetId`, `snapshotVersion`, `assets`, `prices`), refuses unverified sources and duplicate/malformed rows, checks every referenced asset, and upserts on `(asset_id, source_id, reference_date, price_kind)` inside one transaction. A failure rolls back all asset and price writes while the run log records the failure. It records checksum, scope, counts, and status in `data_collection_runs`.
+- `pnpm data:financial:status` reports local asset/observation freshness; `pnpm data:financial:verify` performs the existing local transaction-only numeric/UPSERT/FK verification and rolls back.
+
+Retry behavior is bounded, honors `Retry-After` up to the configured ceiling, and never logs provider responses or credentials. No recurring workflow, production collection credential, migration, or production DB write is configured. Future automatic collection requires an independently authorized provider rights record and operational DB role.
+
+Public read API routes are under `/portal-api/finance/`: `overview`, `stocks`, `crypto`, `stocks/heatmap`, `crypto/heatmap`, `assets/{uuid}/history`, and `providers`. Listing APIs validate market/sort/search/date/page filters and cap page size at 100; history caps at 1,000 rows. A bounded 120-request-per-minute in-process client limit returns 429 with `Retry-After`; shared edge-level limits can be added independently. Responses use `Cache-Control: no-store` until caching rights are explicitly modeled. Financial reads require a separate `FINANCIAL_READONLY_DATABASE_URL`; the PostgreSQL connection sets `default_transaction_read_only=on`, a 5-second statement timeout, and a dedicated application name. Only joins to sources whose `license_status='verified'` can return assets or prices. Missing DB configuration returns a generic 503 and exposes no connection details.
+
+The localized `/finance`, `/stocks`, and `/crypto` dashboards use those APIs. The stock page filters/searches/sorts verified assets and renders a market-cap treemap only when the returned rows are complete and share one venue/currency. The crypto page distinguishes KRW and USD quotes and only renders a treemap when all required market caps belong to one venue/currency. Prices, volume, market cap, date and source are localized for all 26 locales. Empty states remain explicit and never substitute mock values.
 
 The importer refuses an observation whose effective provider revision time (`source_updated_at`, otherwise `fetched_at`) is older than the stored version for that asset/date/kind. `pnpm data:financial:verify` exercises this stale-write guard and numeric/UPSERT/FK checks inside a local development transaction that is rolled back. A periodic scheduler remains disabled until at least one provider and exact series are approved and credentials/limits are verified.
 
-Server-only `src/lib/db/financial-repository.ts` exposes verified sources only and bounds history queries. It is not wired into public UI until at least one provider is approved and populated. There is no new public API endpoint. The existing market pages keep their JSON, disabled or clearly labeled mock states; no mock value is presented as an actual quote.
+Server-only `src/lib/db/financial-repository.ts` remains a verified-only read helper for consumers outside the new parameterized finance query module. JSON/sample snapshots remain disabled and no mock value is presented as an actual quote.
 
 ## Current data and next steps
 

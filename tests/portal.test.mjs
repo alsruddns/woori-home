@@ -51,6 +51,8 @@ const { categoryNavigation: getCategoryNavigation } = require("../src/lib/data-p
 const { classifyStockDate, adjacentAvailableDates } = require("../src/lib/data-platform/stock-selection.ts");
 const { snapshotDatesForMarket, stockSnapshotForDate } = require("../src/lib/data-platform/published-stocks.ts");
 const { stockMarkets } = require("../src/lib/data-platform/registry.ts");
+const { financialOverviewCopy } = require("../src/lib/data-platform/financial-overview-copy.ts");
+const { financialUiCopy } = require("../src/lib/data-platform/financial-ui-copy.ts");
 
 test("portal defines all supported locales and localized home content", () => {
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) assert.ok(site.includes(`route: "${locale}"`), `missing locale config: ${locale}`);
@@ -90,13 +92,23 @@ test("all locale dictionaries, legal pages, and service names are complete witho
   assert.deepEqual(errors, [], errors.join("\n"));
 });
 
-test("sitemap has 78 canonical portal URLs with 26 hreflang entries and x-default", () => {
+test("sitemap has 104 canonical portal URLs with 26 hreflang entries and x-default", () => {
   const entries = siteData.locales.flatMap((locale) => siteData.publicPortalPaths.map((path) => ({ url: `${siteData.origin}/${locale}${path}`, languages: siteData.alternates(path).languages })));
-  assert.equal(entries.length, 78);
-  assert.equal(new Set(entries.map((entry) => entry.url)).size, 78);
+  assert.equal(entries.length, 104);
+  assert.equal(new Set(entries.map((entry) => entry.url)).size, 104);
   for (const entry of entries) {
     assert.equal(Object.keys(entry.languages).length, 27);
     assert.equal(entry.languages["x-default"], entry.url.replace(/^https:\/\/www\.woori\.today\/(?:[^/]+)(.*)$/, "https://www.woori.today/ko$1"));
+  }
+});
+
+test("financial dashboard and market labels are translated for every locale", () => {
+  assert.deepEqual(Object.keys(financialOverviewCopy).sort(), [...siteData.locales].sort());
+  assert.deepEqual(Object.keys(financialUiCopy).sort(), [...siteData.locales].sort());
+  for (const locale of siteData.locales) {
+    for (const [key, value] of Object.entries(financialOverviewCopy[locale])) assert.ok(value.trim(), `${locale}: missing finance overview ${key}`);
+    for (const [key, value] of Object.entries(financialUiCopy[locale])) assert.ok(value.trim(), `${locale}: missing financial UI ${key}`);
+    if (locale !== "en") assert.notEqual(financialOverviewCopy[locale].title, financialOverviewCopy.en.title, `${locale}: English fallback in finance page`);
   }
 });
 
@@ -195,7 +207,7 @@ test("the new localized data home keeps the portal guide at about and preserves 
   assert.doesNotMatch(platformHome, /is-unavailable/);
   assert.doesNotMatch(platformHome, /mockStockSnapshots|mockDisclosure/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
-  assert.match(categoryRoute, /const index = category === "about" \|\| category === "economy" \|\| category === "population"/);
+  assert.match(categoryRoute, /const index = category === "finance" \|\| category === "about" \|\| category === "economy"/);
   assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
   assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/energy", "\/science", "\/papers", "\/about"\]/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
@@ -204,7 +216,7 @@ test("the new localized data home keeps the portal guide at about and preserves 
 test("about remains available by URL and in the footer but is omitted from category menus", () => {
   assert.match(platformControls, /categoryNavigation\(locale\)/);
   assert.match(platformSidebar, /categoryNavigation\(locale\)/);
-  assert.match(categoryNavigation, /"stocks", "crypto", "gold", "commodities", "economy", "science", "world"/);
+  assert.match(categoryNavigation, /"finance", "stocks", "crypto", "gold", "commodities", "economy", "science", "world"/);
   assert.doesNotMatch(categoryNavigation, /"about"/);
   assert.match(platformLayout, /href=\{`\/\$\{locale\}\/about`\}>\{copy\.categories\[7\]\}/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
@@ -245,7 +257,7 @@ test("theme is initialized once before hydration and uses a narrow root suppress
   assert.equal(unavailableStorageHtml.dataset.theme, "dark");
 });
 
-test("stock markets have translated names and every visible control in all 20 locales", () => {
+test("stock markets have translated labels and live data controls in all 26 locales", () => {
   const expectedLocales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"];
   assert.deepEqual(Object.keys(stockCopy).sort(), [...expectedLocales].sort());
   for (const locale of expectedLocales) {
@@ -272,10 +284,12 @@ test("stock markets have translated names and every visible control in all 20 lo
   assert.match(stockPage, /router\.push\(`\/\$\{locale\}\/stocks\?/);
   assert.match(stockPage, /setSelection\(nextMarket\.id, rawDate \?\? undefined\)/);
   assert.match(stockPage, /useSnapshotQueryDate/);
-  assert.match(stockPage, /classifyStockDate/);
+  assert.match(stockPage, /fetch\(`\/portal-api\/finance\/stocks\?/);
+  assert.match(stockPage, /\/portal-api\/finance\/stocks\/heatmap/);
+  assert.match(stockPage, /financialUiCopy\[locale\]/);
   assert.match(stockPage, /max=\{today\}/);
   assert.match(categoryRoute, /<Suspense fallback=\{<StockMarketLoading locale=\{locale\} \/>\}>/);
-  assert.match(categoryRoute, /const index = category === "about" \|\| category === "economy" \|\| category === "population"/);
+  assert.match(categoryRoute, /const index = category === "finance" \|\| category === "about" \|\| category === "economy"/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
 });
 
@@ -296,7 +310,7 @@ test("market snapshots are disclosed, accessible, theme-aware, and free of inter
   assert.doesNotMatch(stockPage + worldData + platformHome, /WOORI\.DATA|MARKET SNAPSHOT UI|Market breadth prototype|Snapshot schema preview|Market cap weighted layout|6 mock securities/i);
   assert.doesNotMatch(stockPage, /mockDisclosure|mockLabel|mock-stocks/);
   assert.match(stockPage, /copy\.sourceDisclosure/);
-  assert.doesNotMatch(stockPage, /platform-treemap|platform-stock-tile/);
+  assert.match(stockPage, /crypto-heatmap stock-market-heatmap/);
   assert.doesNotMatch(stockPage, /licensedSource\}/);
 });
 
@@ -317,8 +331,8 @@ test("shared calendar opens from both controls, uses localized Intl dates, and a
   assert.match(rootProxy, /accept-language/);
   assert.match(rootProxy, /woori-locale/);
   assert.match(rootProxy, /crawler/);
-  assert.match(stockPage, /rawDate \?\? selectedDate/);
-  const order = ["stocks", "crypto", "gold", "commodities", "economy", "science", "world"];
+  assert.match(stockPage, /const date = rawDate \?\? ""/);
+  const order = ["finance", "stocks", "crypto", "gold", "commodities", "economy", "science", "world"];
   for (const locale of siteData.locales) {
     const entries = getCategoryNavigation(locale);
     assert.deepEqual(entries.slice(0, order.length).map((entry) => entry.id), order);
