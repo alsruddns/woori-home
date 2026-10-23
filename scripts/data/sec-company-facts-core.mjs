@@ -40,23 +40,33 @@ export async function collectChangedSecCompanies(provider, companies, existing =
   return { updated, unchanged, failed };
 }
 
+async function ensureLegacyIssuer(client, company, sourceId) {
+  if (!company.rekeyFromCik) return null;
+  const cik = company.rekeyFromCik;
+  const ticker = `CIK${Number(cik)}`;
+  const { rows: [legacy] } = await client.query("select id,ticker from financial_companies where source_id=$1 and cik=$2", [sourceId, cik]);
+  if (legacy) {
+    if (legacy.ticker !== ticker) {
+      const { rows: [collision] } = await client.query("select id from financial_companies where source_id=$1 and ticker=$2 and id<>$3", [sourceId, ticker, legacy.id]);
+      if (collision) throw new Error(`Cannot preserve legacy SEC issuer ${cik}: archive ticker ${ticker} is already in use.`);
+      await client.query("update financial_companies set ticker=$2,updated_at=now() where id=$1 and source_id=$3", [legacy.id, ticker, sourceId]);
+    }
+    return { id: legacy.id, ticker };
+  }
+  const sourceUrl = `https://www.sec.gov/edgar/browse/?CIK=${Number(cik)}&owner=exclude`;
+  const { rows: [saved] } = await client.query(`insert into financial_companies
+      (source_id,provider_company_id,cik,ticker,name,exchange,country_code,source_url,updated_at)
+    values ($1,$2,$2,$3,$4,null,'US',$5,now()) returning id`,
+  [sourceId, cik, ticker, company.rekeyFromName ?? `SEC issuer CIK ${Number(cik)}`, sourceUrl]);
+  return { id: saved.id, ticker };
+}
+
 export async function persistSecCompanyFacts(client, { updated, unchanged }, { sourceId, datasetId }) {
   const companyIds = new Map();
+  let reclassifiedFacts = 0;
   for (const item of [...unchanged, ...updated]) {
     const company = item.company;
-    if (company.rekeyFromCik) {
-      await client.query(`update financial_companies as old_company set
-          cik=$4,provider_company_id=$4,name=$5,exchange=$6,sector=$7,sic_code=$8,industry=$9,
-          last_submission_accession=coalesce($10,old_company.last_submission_accession),
-          last_submission_filed_date=coalesce($11,old_company.last_submission_filed_date),
-          last_submission_form=coalesce($12,old_company.last_submission_form),
-          country_code='US',source_url=$13,updated_at=now()
-        where old_company.source_id=$1 and old_company.ticker=$2 and old_company.cik=$3
-          and not exists (select 1 from financial_companies current_company where current_company.source_id=$1 and current_company.cik=$4)`,
-      [sourceId, company.ticker, company.rekeyFromCik, company.cik, company.name, company.exchange, company.sector ?? "other", company.sicCode,
-        company.industry, item.profile.latestFiling?.accessionNumber ?? null, item.profile.latestFiling?.filedDate ?? null,
-        item.profile.latestFiling?.form ?? null, company.sourceUrl]);
-    }
+    const legacy = await ensureLegacyIssuer(client, company, sourceId);
     const { rows: [saved] } = await client.query(`insert into financial_companies
         (source_id,provider_company_id,cik,ticker,name,exchange,sector,sic_code,industry,last_submission_accession,last_submission_filed_date,last_submission_form,country_code,source_url,updated_at)
       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'US',$13,now())
@@ -69,6 +79,12 @@ export async function persistSecCompanyFacts(client, { updated, unchanged }, { s
       returning id`, [sourceId, company.cik, company.cik, company.ticker, company.name, company.exchange, company.sector ?? "other", company.sicCode, company.industry,
       item.profile.latestFiling?.accessionNumber ?? null, item.profile.latestFiling?.filedDate ?? null, item.profile.latestFiling?.form ?? null, company.sourceUrl]);
     companyIds.set(company.ticker, saved.id);
+    if (legacy) {
+      const sourceCikPath = `/data/${Number(company.rekeyFromCik)}/`;
+      const moved = await client.query(`update financial_company_facts set company_id=$2
+        where company_id=$1 and source_id=$3 and position($4 in source_url)>0`, [saved.id, legacy.id, sourceId, sourceCikPath]);
+      reclassifiedFacts += moved.rowCount ?? 0;
+    }
   }
 
   let insertedFacts = 0;
@@ -108,5 +124,5 @@ export async function persistSecCompanyFacts(client, { updated, unchanged }, { s
     insertedFacts += rows.filter((row) => row.inserted).length;
     updatedFacts += rows.length - rows.filter((row) => row.inserted).length;
   }
-  return { companies: companyIds.size, facts: facts.length, insertedFacts, updatedFacts };
+  return { companies: companyIds.size, facts: facts.length, insertedFacts, updatedFacts, reclassifiedFacts };
 }
