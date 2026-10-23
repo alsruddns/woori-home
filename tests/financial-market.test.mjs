@@ -205,6 +205,10 @@ test("SEC comparison query selects one latest statement per company and excludes
   assert.match(querySource, /where \(not \$3::boolean or latest_row=1\)/);
   assert.match(querySource, /partition by "companyId","endDate","fiscalYear","fiscalPeriod" order by "filedDate" desc,case when form in \('10-K\/A','10-Q\/A'\) then 1 else 0 end desc/);
   assert.match(querySource, /c\.ticker=any\(\$4::text\[\]\)/);
+  const countQuerySource = querySource.slice(querySource.indexOf("export async function countFinancialCompanyFacts"));
+  assert.match(countQuerySource, /group by c\.id,f\.end_date,f\.fiscal_year,f\.fiscal_period/);
+  assert.doesNotMatch(countQuerySource, /\$\{companyFactsRowsCte\} select count\(\*\)::int as total from ranked/);
+  assert.match(countQuerySource, /count\(distinct c\.id\)::int as total/);
 });
 
 test("financial endpoints enforce a bounded per-client request window", () => {
