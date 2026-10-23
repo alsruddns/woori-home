@@ -25,6 +25,18 @@ export function validateMarketPriceRecord(record) {
     if (totalDigits > 30 || fraction.length > 10) return { ok: false, reason: `precision-${field}` };
     if (["volume", "marketCap"].includes(field) && value.startsWith("-")) return { ok: false, reason: `negative-${field}` };
   }
+  if (record.quoteChangePercent != null && (typeof record.quoteChangePercent !== "string" || !DECIMAL_RE.test(record.quoteChangePercent) || record.quoteWindow !== "24h" && record.quoteWindow !== "session")) return { ok: false, reason: "invalid-quote-change" };
+  if (record.quoteWindow != null && !["24h", "session"].includes(record.quoteWindow)) return { ok: false, reason: "invalid-quote-window" };
+  if (record.quoteChangePercent != null && record.quoteChangePercent.replace(/^-/, "").split(".")[1]?.length > 10) return { ok: false, reason: "precision-quote-change" };
+  if (record.priceKind === "quote-24h" && record.quoteWindow !== "24h" || record.priceKind === "quote-session" && record.quoteWindow !== "session") return { ok: false, reason: "quote-kind-mismatch" };
+  for (const field of ["open", "high", "low", "close"]) {
+    if (record[field] !== null && record[field] !== undefined && Number(record[field]) <= 0) return { ok: false, reason: `nonpositive-${field}` };
+  }
+  if (record.low != null && record.high != null && Number(record.low) > Number(record.high)) return { ok: false, reason: "low-above-high" };
+  if (record.open != null && record.low != null && Number(record.open) < Number(record.low)) return { ok: false, reason: "open-below-low" };
+  if (record.open != null && record.high != null && Number(record.open) > Number(record.high)) return { ok: false, reason: "open-above-high" };
+  if (record.close != null && record.low != null && Number(record.close) < Number(record.low)) return { ok: false, reason: "close-below-low" };
+  if (record.close != null && record.high != null && Number(record.close) > Number(record.high)) return { ok: false, reason: "close-above-high" };
   if (!Number.isFinite(Date.parse(record.fetchedAt))) return { ok: false, reason: "invalid-fetched-at" };
   return { ok: true, record };
 }

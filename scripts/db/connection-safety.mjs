@@ -55,7 +55,11 @@ export function assertNoDestructiveMigration(sql, filename) {
     && /ALTER\s+TABLE\s+"financial_company_facts"\s+ADD\s+CONSTRAINT\s+"financial_company_facts_pk"\s+PRIMARY\s+KEY\s*\([^;]*"period_key"\)/i.test(sql)
     && /UPDATE\s+"financial_company_facts"\s+SET\s+"period_key"\s*=\s*coalesce\("start_date",'instant'\)/i.test(sql)
     && !destructive.test(sql.replace(/ALTER\s+TABLE\s+"financial_company_facts"\s+DROP\s+CONSTRAINT\s+"financial_company_facts_pk"/i, ""));
-  if (destructive.test(sql) && !primaryKeyReplacement) {
+  const financialRightsCheckReplacement = filename === "0007_graceful_cerise.sql"
+    && /^\s*ALTER TABLE "data_sources" DROP CONSTRAINT "data_sources_financial_rights_check";--> statement-breakpoint\s*ALTER TABLE "data_sources" ADD CONSTRAINT "data_sources_financial_rights_check" CHECK \(jsonb_typeof\("data_sources"\."financial_rights"\) = 'object' and "data_sources"\."financial_rights" \?& array\['apiAccess','publicDisplay','dbStorage','longTermRetention','userApi','csvRedistribution','derivedVisualization'\].*\);\s*$/s.test(sql);
+  const financialCurrencyWidening = filename === "0008_acoustic_loki.sql"
+    && /^\s*ALTER TABLE "financial_assets" DROP CONSTRAINT "financial_assets_currency_check";--> statement-breakpoint\s*ALTER TABLE "financial_assets" ALTER COLUMN "currency" SET DATA TYPE varchar\(8\) USING btrim\("currency"\)::varchar\(8\);--> statement-breakpoint\s*ALTER TABLE "financial_assets" ADD CONSTRAINT "financial_assets_currency_check" CHECK \("financial_assets"\."currency" ~ '\^\[A-Z\]\{3,8\}\$'\);\s*$/s.test(sql);
+  if (destructive.test(sql) && !primaryKeyReplacement && !financialRightsCheckReplacement && !financialCurrencyWidening) {
     throw new Error(`Migration ${filename} contains a destructive SQL statement. Review it and use a separately approved migration process.`);
   }
 }

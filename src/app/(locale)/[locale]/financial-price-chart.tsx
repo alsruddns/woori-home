@@ -34,7 +34,9 @@ export function FinancialPriceChart({ assetId, locale, currency, title }: { asse
 
   if (!ready || !points) return null;
   const formatDate = (value: string) => new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T12:00:00Z`));
-  const formatPrice = (value: number) => new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 8 }).format(value);
+  const formatPrice = (value: number) => currency === "USDT"
+    ? `${new Intl.NumberFormat(locale, { maximumFractionDigits: 8 }).format(value)} USDT`
+    : new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 8 }).format(value);
   const accessibleLabel = `${title}. ${formatDate(points.first.referenceDate)}: ${formatPrice(points.first.value)}. ${formatDate(points.last.referenceDate)}: ${formatPrice(points.last.value)}.`;
   return <figure className="financial-price-chart">
     <figcaption><strong>{title}</strong><span>{formatDate(points.first.referenceDate)} – {formatDate(points.last.referenceDate)}</span></figcaption>

@@ -24,6 +24,13 @@ export const dataSources = pgTable("data_sources", {
   licenseStatus: varchar("license_status", { length: 24 }).notNull().default("unknown"),
   licenseName: text("license_name"),
   licenseUrl: text("license_url"),
+  financialRights: jsonb("financial_rights").$type<Record<string, "confirmed" | "pending" | "restricted" | "denied">>().notNull().default({
+    apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending",
+    userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending",
+  }),
+  termsVersion: text("terms_version"),
+  reviewDueAt: timestamp("review_due_at", { withTimezone: true, mode: "date" }),
+  collectionEnabled: boolean("collection_enabled").notNull().default(false),
   attribution: text("attribution"),
   rightsNote: text("rights_note"),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true, mode: "date" }),
@@ -31,6 +38,7 @@ export const dataSources = pgTable("data_sources", {
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 }, (table) => [
   check("data_sources_license_status_check", sql`${table.licenseStatus} in ('verified', 'conditional', 'restricted', 'unknown')`),
+  check("data_sources_financial_rights_check", sql`jsonb_typeof(${table.financialRights}) = 'object' and ${table.financialRights} ?& array['apiAccess','publicDisplay','dbStorage','longTermRetention','userApi','csvRedistribution','derivedVisualization'] and ${table.financialRights}->>'apiAccess' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'publicDisplay' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'dbStorage' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'longTermRetention' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'userApi' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'csvRedistribution' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'derivedVisualization' in ('confirmed','pending','restricted','denied')`),
 ]);
 
 export const datasets = pgTable("datasets", {
@@ -123,7 +131,7 @@ export const financialAssets = pgTable("financial_assets", {
   name: text("name").notNull(),
   venue: varchar("venue", { length: 80 }).notNull().default("global"),
   countryCode: char("country_code", { length: 2 }),
-  currency: char("currency", { length: 3 }).notNull(),
+  currency: varchar("currency", { length: 8 }).notNull(),
   unit: varchar("unit", { length: 40 }).notNull(),
   timezone: varchar("timezone", { length: 64 }).notNull(),
   sector: text("sector"),
@@ -136,7 +144,7 @@ export const financialAssets = pgTable("financial_assets", {
   index("financial_assets_type_active_idx").on(table.assetType, table.isActive),
   check("financial_assets_type_check", sql`${table.assetType} in ('stock', 'crypto', 'metal', 'energy', 'agriculture', 'fx', 'rate', 'index')`),
   check("financial_assets_symbol_check", sql`length(trim(${table.symbol})) > 0`),
-  check("financial_assets_currency_check", sql`${table.currency} ~ '^[A-Z]{3}$'`),
+  check("financial_assets_currency_check", sql`${table.currency} ~ '^[A-Z]{3,8}$'`),
   check("financial_assets_timezone_check", sql`length(trim(${table.timezone})) > 0`),
 ]);
 
@@ -153,6 +161,8 @@ export const financialDailyPrices = pgTable("financial_daily_prices", {
   close: numeric("close", { precision: 30, scale: 10 }).notNull(),
   volume: numeric("volume", { precision: 38, scale: 10 }),
   marketCap: numeric("market_cap", { precision: 38, scale: 10 }),
+  quoteChangePercent: numeric("quote_change_percent", { precision: 20, scale: 10 }),
+  quoteWindow: varchar("quote_window", { length: 16 }),
   isAdjusted: boolean("is_adjusted").notNull().default(false),
   fetchedAt: timestamp("fetched_at", { withTimezone: true, mode: "date" }).notNull(),
   sourceUpdatedAt: timestamp("source_updated_at", { withTimezone: true, mode: "date" }),
@@ -163,9 +173,11 @@ export const financialDailyPrices = pgTable("financial_daily_prices", {
   index("financial_daily_prices_date_asset_idx").on(table.referenceDate, table.assetId),
   index("financial_daily_prices_dataset_date_idx").on(table.datasetId, table.referenceDate),
   check("financial_daily_prices_date_check", sql`${table.referenceDate} ~ '^\\d{4}-\\d{2}-\\d{2}$'`),
+  check("financial_daily_prices_close_check", sql`${table.close} > 0`),
   check("financial_daily_prices_ohlc_check", sql`(${table.low} is null or ${table.high} is null or ${table.low} <= ${table.high}) and (${table.open} is null or ${table.low} is null or ${table.open} >= ${table.low}) and (${table.open} is null or ${table.high} is null or ${table.open} <= ${table.high}) and (${table.close} >= coalesce(${table.low}, ${table.close})) and (${table.close} <= coalesce(${table.high}, ${table.close}))`),
   check("financial_daily_prices_volume_check", sql`${table.volume} is null or ${table.volume} >= 0`),
   check("financial_daily_prices_market_cap_check", sql`${table.marketCap} is null or ${table.marketCap} >= 0`),
+  check("financial_daily_prices_quote_check", sql`${table.quoteWindow} is null or ${table.quoteWindow} in ('24h','session')`),
 ]);
 
 export const financialCompanies = pgTable("financial_companies", {
@@ -176,6 +188,12 @@ export const financialCompanies = pgTable("financial_companies", {
   ticker: varchar("ticker", { length: 12 }).notNull(),
   name: text("name").notNull(),
   exchange: varchar("exchange", { length: 24 }),
+  sector: varchar("sector", { length: 32 }).notNull().default("other"),
+  sicCode: varchar("sic_code", { length: 4 }),
+  industry: text("industry"),
+  lastSubmissionAccession: varchar("last_submission_accession", { length: 24 }),
+  lastSubmissionFiledDate: char("last_submission_filed_date", { length: 10 }),
+  lastSubmissionForm: varchar("last_submission_form", { length: 12 }),
   countryCode: char("country_code", { length: 2 }).notNull().default("US"),
   sourceUrl: text("source_url").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
@@ -183,6 +201,11 @@ export const financialCompanies = pgTable("financial_companies", {
   uniqueIndex("financial_companies_source_cik_unique_idx").on(table.sourceId, table.cik),
   uniqueIndex("financial_companies_source_ticker_unique_idx").on(table.sourceId, table.ticker),
   index("financial_companies_ticker_idx").on(table.ticker),
+  index("financial_companies_source_sector_ticker_idx").on(table.sourceId, table.sector, table.ticker),
+  check("financial_companies_sector_check", sql`${table.sector} in ('information-technology','semiconductors','financials','healthcare','consumer','energy','industrials','communications','utilities','real-estate','other')`),
+  check("financial_companies_sic_check", sql`${table.sicCode} is null or ${table.sicCode} ~ '^\\d{4}$'`),
+  check("financial_companies_submission_filed_date_check", sql`${table.lastSubmissionFiledDate} is null or ${table.lastSubmissionFiledDate} ~ '^\\d{4}-\\d{2}-\\d{2}$'`),
+  check("financial_companies_submission_form_check", sql`${table.lastSubmissionForm} is null or ${table.lastSubmissionForm} in ('10-K','10-Q','10-K/A','10-Q/A')`),
 ]);
 
 export const financialCompanyFacts = pgTable("financial_company_facts", {

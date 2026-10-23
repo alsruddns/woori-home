@@ -47,12 +47,13 @@ test("Postgres identifier quoting accepts only a simple provisioned role name", 
 
 test("SEC production importer is isolated to DB_IMPORT_URL, guarded, transactional and does not touch price tables", async () => {
   const source = await readFile(new URL("../scripts/data/import-sec-company-facts-production.mjs", import.meta.url), "utf8");
+  const core = await readFile(new URL("../scripts/data/sec-company-facts-core.mjs", import.meta.url), "utf8");
   assert.match(source, /process\.env\.DB_IMPORT_URL/);
   assert.match(source, /validateFinancialProductionContext\(\{ requireBackup: options\.apply/);
   assert.match(source, /SEC_EDGAR_USER_AGENT/);
   assert.match(source, /begin/);
   assert.match(source, /rollback/);
-  assert.match(source, /on conflict \(company_id,taxonomy,concept,unit,end_date,accession_number,period_key\) do update/);
+  assert.match(core, /on conflict \(company_id,taxonomy,concept,unit,end_date,accession_number,period_key\) do update/);
   assert.match(source, /data_collection_runs/);
   assert.match(source, /financial_company_facts/);
   assert.doesNotMatch(source, /financial_daily_prices|financial_assets/);

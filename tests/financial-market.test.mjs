@@ -36,6 +36,7 @@ test("price validation preserves NUMERIC decimal strings and rejects invalid pre
   assert.equal(validateMarketPriceRecord({ ...row, close: "1.12345678901" }).reason, "precision-close");
   assert.equal(validateMarketPriceRecord({ ...row, close: "Infinity" }).reason, "invalid-close");
   assert.equal(validateMarketPriceRecord({ ...row, close: null }).reason, "missing-close");
+  assert.equal(validateMarketPriceRecord({ ...row, close: "0" }).reason, "nonpositive-close");
   assert.equal(validateMarketPriceRecord({ ...row, volume: "-1" }).reason, "negative-volume");
 });
 
@@ -167,6 +168,8 @@ test("provider catalog distinguishes free technical API access from public data 
 });
 
 test("financial API parsers bound pagination, validate filters, dates, and identifiers", async () => {
+  assert.equal(parseFinancialListQuery(new URLSearchParams("market=usdt"), "crypto").ok, true);
+  assert.equal(parseFinancialListQuery(new URLSearchParams("sort=quoteChangePercent&order=asc"), "crypto").ok, true);
   assert.deepEqual(parseFinancialListQuery(new URLSearchParams("market=krw&page=2&pageSize=500&sort=marketCap&order=desc&q=BTC"), "crypto"), {
     ok: true, page: 2, pageSize: 100, offset: 100, sort: "marketCap", order: "desc", market: "krw", search: "BTC", referenceDate: null,
   });
@@ -194,12 +197,14 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
 
 test("SEC comparison query selects one latest statement per company and excludes cumulative quarters", async () => {
   const querySource = await readFile(new URL("../src/lib/db/financial-queries.ts", import.meta.url), "utf8");
-  assert.match(querySource, /form='10-K' and "fiscalPeriod"='FY' and "durationDays" between 300 and 400/);
-  assert.match(querySource, /form='10-Q' and "fiscalPeriod" in \('Q1','Q2','Q3'\) and "durationDays" between 65 and 110/);
+  assert.match(querySource, /form in \('10-K','10-K\/A'\) and "fiscalPeriod"='FY' and "durationDays" between 300 and 400/);
+  assert.match(querySource, /form in \('10-Q','10-Q\/A'\) and "fiscalPeriod" in \('Q1','Q2','Q3'\) and "durationDays" between 65 and 110/);
   assert.match(querySource, /balance\.concept='Assets'.*balance\.start_date is null/);
   assert.match(querySource, /balance\.concept='Liabilities'.*balance\.start_date is null/);
   assert.match(querySource, /partition by "companyId" order by "endDate" desc,"filedDate" desc/);
   assert.match(querySource, /where \(not \$3::boolean or latest_row=1\)/);
+  assert.match(querySource, /partition by "companyId","endDate","fiscalYear","fiscalPeriod" order by "filedDate" desc,case when form in \('10-K\/A','10-Q\/A'\) then 1 else 0 end desc/);
+  assert.match(querySource, /c\.ticker=any\(\$4::text\[\]\)/);
 });
 
 test("financial endpoints enforce a bounded per-client request window", () => {

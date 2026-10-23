@@ -1,7 +1,7 @@
 export const FINANCIAL_API_CACHE_CONTROL = "no-store";
 
 const ASSET_TYPES = new Set(["stock", "crypto", "index", "metal", "energy", "agriculture", "fx", "rate"]);
-const SORT_COLUMNS = new Set(["symbol", "name", "close", "changePercent", "volume", "marketCap"]);
+const SORT_COLUMNS = new Set(["symbol", "name", "close", "changePercent", "quoteChangePercent", "volume", "marketCap"]);
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -23,9 +23,9 @@ export function parseFinancialListQuery(searchParams, type) {
   const search = (searchParams.get("q") ?? "").trim();
   const referenceDate = searchParams.get("date");
   if (!page || !pageSize || !SORT_COLUMNS.has(sort) || !["asc", "desc"].includes(order) || search.length > 80 || (referenceDate && (!DATE_PATTERN.test(referenceDate) || !validDate(referenceDate)))) return { ok: false, status: 400, error: "invalid_query" };
-  if (market && !["us", "kr", "krw", "usd"].includes(market)) return { ok: false, status: 400, error: "invalid_market" };
+  if (market && !["us", "kr", "krw", "usd", "usdt"].includes(market)) return { ok: false, status: 400, error: "invalid_market" };
   if (type === "stock" && market && !["us", "kr"].includes(market)) return { ok: false, status: 400, error: "invalid_market_for_asset_type" };
-  if (type === "crypto" && market && !["krw", "usd"].includes(market)) return { ok: false, status: 400, error: "invalid_market_for_asset_type" };
+  if (type === "crypto" && market && !["krw", "usd", "usdt"].includes(market)) return { ok: false, status: 400, error: "invalid_market_for_asset_type" };
   return { ok: true, page, pageSize, offset: (page - 1) * pageSize, sort, order, market, search, referenceDate };
 }
 
@@ -86,6 +86,6 @@ export function parseFinancialHeatmapQuery(searchParams, type) {
   const referenceDate = searchParams.get("date");
   if (referenceDate && (!DATE_PATTERN.test(referenceDate) || !validDate(referenceDate))) return { ok: false, status: 400, error: "invalid_date" };
   if (type === "stock" && market && !["us", "kr"].includes(market)) return { ok: false, status: 400, error: "invalid_market_for_asset_type" };
-  if (type === "crypto" && market && !["krw", "usd"].includes(market)) return { ok: false, status: 400, error: "invalid_market_for_asset_type" };
+  if (type === "crypto" && market && !["krw", "usd", "usdt"].includes(market)) return { ok: false, status: 400, error: "invalid_market_for_asset_type" };
   return { ok: true, market, referenceDate };
 }

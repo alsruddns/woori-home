@@ -65,6 +65,9 @@ test("dotenv role URL parsing removes quotes and preserves URL-encoded special p
 
 test("production publishing and immutable image references are restricted to main", () => {
   assert.equal(isMainProductionRelease({ ref: "refs/heads/main", eventName: "workflow_dispatch" }), true);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/main", eventName: "schedule" }), false);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/main", eventName: "schedule", autoRefreshEnabled: true }), true);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/develop", eventName: "schedule", autoRefreshEnabled: true }), false);
   assert.equal(isMainProductionRelease({ ref: "refs/heads/develop", eventName: "workflow_dispatch" }), false);
   assert.equal(isMainProductionRelease({ ref: "refs/heads/release", eventName: "push" }), false);
   assert.equal(assertCommitShaTag("a".repeat(40)), "a".repeat(40));
@@ -103,6 +106,8 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
   assert.match(workflow, /branches: \[main\]/);
   assert.match(workflow, /scripts\/deploy\/release-guard\.mjs/);
+  assert.match(workflow, /SEC_EDGAR_AUTO_REFRESH_ENABLED/);
+  assert.match(workflow, /cron: '17 10 \* \* 1-5'/);
   assert.match(workflow, /PORTAL_DIGEST/);
   assert.match(workflow, /--env-file \.env\.moneybook --env-file \.env\.portal/);
   assert.match(workflow, /test -r \.env\.portal/);
@@ -216,6 +221,18 @@ test("destructive SQL is blocked before an unapplied migration runs", () => {
   const periodKeyMigration = "ALTER TABLE \"financial_company_facts\" ADD COLUMN \"period_key\" varchar(10) DEFAULT 'instant' NOT NULL; UPDATE \"financial_company_facts\" SET \"period_key\"=coalesce(\"start_date\",'instant'); ALTER TABLE \"financial_company_facts\" DROP CONSTRAINT \"financial_company_facts_pk\"; ALTER TABLE \"financial_company_facts\" ADD CONSTRAINT \"financial_company_facts_pk\" PRIMARY KEY(\"company_id\",\"period_key\");";
   assert.doesNotThrow(() => assertNoDestructiveMigration(periodKeyMigration, "0005_sec_fact_period_key.sql"));
   assert.throws(() => assertNoDestructiveMigration(`${periodKeyMigration} DROP TABLE metrics`, "0005_sec_fact_period_key.sql"), /destructive SQL/);
+});
+
+test("financial rights enum check replacement is the only narrowly allowed check-constraint rebuild", async () => {
+  const sql = await readFile(new URL("../drizzle/0007_graceful_cerise.sql", import.meta.url), "utf8");
+  assert.doesNotThrow(() => assertNoDestructiveMigration(sql, "0007_graceful_cerise.sql"));
+  assert.throws(() => assertNoDestructiveMigration(`${sql}DROP TABLE financial_assets;`, "0007_graceful_cerise.sql"), /destructive SQL/);
+});
+
+test("financial currency widening only removes padding while broadening the currency check", async () => {
+  const sql = await readFile(new URL("../drizzle/0008_acoustic_loki.sql", import.meta.url), "utf8");
+  assert.doesNotThrow(() => assertNoDestructiveMigration(sql, "0008_acoustic_loki.sql"));
+  assert.throws(() => assertNoDestructiveMigration(`${sql}DROP TABLE financial_assets;`, "0008_acoustic_loki.sql"), /destructive SQL/);
 });
 
 test("financial production DB tools require the three split production roles, exact role names, host allowlist, main Actions context and approval", () => {

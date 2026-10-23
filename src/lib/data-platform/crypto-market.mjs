@@ -13,7 +13,7 @@ export function validateCryptoSnapshot(snapshot) {
     const ids = new Set();
     for (const coin of day.coins) {
       if (!coin || typeof coin.id !== "string" || !coin.id || ids.has(coin.id)) return false;
-      if (typeof coin.symbol !== "string" || !coin.symbol || typeof coin.name !== "string" || !coin.name || typeof coin.currency !== "string" || !/^[A-Z]{3}$/.test(coin.currency)) return false;
+      if (typeof coin.symbol !== "string" || !coin.symbol || typeof coin.name !== "string" || !coin.name || typeof coin.currency !== "string" || !/^[A-Z]{3,8}$/.test(coin.currency)) return false;
       if (!Number.isFinite(coin.close) || coin.close <= 0) return false;
       for (const field of ["marketCap", "volume"]) {
         if (coin[field] !== null && coin[field] !== undefined && (!Number.isFinite(coin[field]) || coin[field] < 0)) return false;

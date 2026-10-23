@@ -1,6 +1,6 @@
 import pg from "pg";
 import { validateFinancialProductionContext, safeDatabaseErrorCode } from "../db/financial-production-safety.mjs";
-import { SEC_COMPANIES, SEC_DATASET_ID, SEC_SOURCE_ID } from "../../src/lib/data-platform/providers/sec-edgar.mjs";
+import { SEC_TARGETS, SEC_DATASET_ID, SEC_SOURCE_ID } from "../../src/lib/data-platform/providers/sec-edgar.mjs";
 
 const command = process.argv[2];
 if (!new Set(["status", "verify"]).has(command) || process.argv.length !== 3) {
@@ -35,7 +35,7 @@ try {
     where c.source_id=$1`, [SEC_SOURCE_ID, SEC_DATASET_ID]);
   const companyRows = await pool.query(`select ticker,count(f.company_id)::int as facts from financial_companies c
     left join financial_company_facts f on f.company_id=c.id and f.source_id=c.source_id
-    where c.source_id=$1 group by ticker order by ticker`, [SEC_SOURCE_ID]);
+    where c.source_id=$1 and c.ticker=any($2::text[]) group by ticker order by ticker`, [SEC_SOURCE_ID, SEC_TARGETS.map(({ ticker }) => ticker)]);
   const duplicates = await pool.query(`select count(*)::int as duplicate_groups from (
     select company_id,taxonomy,concept,unit,end_date,accession_number,period_key,count(*)
     from financial_company_facts where source_id=$1 group by 1,2,3,4,5,6,7 having count(*)>1) d`, [SEC_SOURCE_ID]);
@@ -46,7 +46,7 @@ try {
     sourceApproved: source?.license_status === "verified",
     datasetLinked: dataset?.source_id === SEC_SOURCE_ID,
     ...summary,
-    expectedCompanies: SEC_COMPANIES.map(({ ticker }) => ticker).sort(),
+    expectedCompanies: SEC_TARGETS.map(({ ticker }) => ticker).sort(),
     companyRows: companyRows.rows,
     duplicateGroups: duplicates.rows[0].duplicate_groups,
   };

@@ -1,0 +1,3 @@
+ALTER TABLE "financial_daily_prices" ADD COLUMN "quote_change_percent" numeric(20, 10);--> statement-breakpoint
+ALTER TABLE "financial_daily_prices" ADD COLUMN "quote_window" varchar(16);--> statement-breakpoint
+ALTER TABLE "financial_daily_prices" ADD CONSTRAINT "financial_daily_prices_quote_check" CHECK ("financial_daily_prices"."quote_window" is null or "financial_daily_prices"."quote_window" in ('24h','session'));

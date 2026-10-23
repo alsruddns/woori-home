@@ -5,6 +5,7 @@ import path from "node:path";
 import pg from "pg";
 import { resolveDatabaseTarget } from "../db/connection-safety.mjs";
 import { validateMarketPriceRecord } from "../../src/lib/data-platform/financial-market.mjs";
+import { canCollectFinancialPrices } from "../../src/lib/data-platform/financial-rights.mjs";
 
 const options = { dryRun: false, file: null };
 for (const arg of process.argv.slice(2)) {
@@ -28,7 +29,7 @@ const sourceAssetIds = new Set();
 for (const asset of input.assets) {
   if (!asset || typeof asset.sourceAssetId !== "string" || !asset.sourceAssetId.trim() || sourceAssetIds.has(asset.sourceAssetId)) throw new Error("Asset identifiers must be present and unique within the import.");
   sourceAssetIds.add(asset.sourceAssetId);
-  if (!/^(stock|crypto|metal|energy|agriculture|fx|rate|index)$/.test(asset.assetType) || !asset.symbol || !asset.name || !/^[A-Z]{3}$/.test(asset.currency) || !asset.unit || !asset.timezone) throw new Error(`Invalid asset metadata for ${asset.sourceAssetId}.`);
+  if (!/^(stock|crypto|metal|energy|agriculture|fx|rate|index)$/.test(asset.assetType) || !asset.symbol || !asset.name || !/^[A-Z]{3,8}$/.test(asset.currency) || !asset.unit || !asset.timezone) throw new Error(`Invalid asset metadata for ${asset.sourceAssetId}.`);
 }
 const uniquePriceKeys = new Set();
 for (const price of input.prices) {
@@ -43,8 +44,11 @@ for (const price of input.prices) {
 const pool = new pg.Pool({ connectionString: target.url, max: 1, connectionTimeoutMillis: 4000, idleTimeoutMillis: 10000, allowExitOnIdle: true });
 const runId = randomUUID();
 try {
-  const { rows: [source] } = await pool.query(`select id,license_status,attribution,source_url from data_sources where id=$1`, [input.sourceId]);
-  if (!source || source.license_status !== "verified" || !source.attribution || !source.source_url) throw new Error("Import is blocked: the source must exist with verified rights, attribution, and a source URL.");
+  const { rows: [source] } = await pool.query(`select id,financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled,attribution,source_url from data_sources where id=$1`, [input.sourceId]);
+  if (!source || !source.attribution || !source.source_url) throw new Error("Import is blocked: the source must exist with attribution and a source URL.");
+  if (!canCollectFinancialPrices(source)) {
+    throw new Error("Import is blocked: database storage and long-term retention must be confirmed, current, and individually enabled.");
+  }
   const { rows: [dataset] } = await pool.query("select id,source_id from datasets where id=$1", [input.datasetId]);
   if (!dataset || dataset.source_id !== input.sourceId) throw new Error("Import is blocked: dataset/source relationship does not match.");
   console.log(`Validated ${input.assets.length} assets and ${input.prices.length} observations (${checksum.slice(0, 12)}…).`);
@@ -70,14 +74,14 @@ try {
       const batch = input.prices.slice(offset, offset + 250);
       for (const price of batch) {
         const { rows } = await client.query(`insert into financial_daily_prices
-            (asset_id,source_id,dataset_id,reference_date,reference_timezone,price_kind,open,high,low,close,volume,market_cap,is_adjusted,fetched_at,source_updated_at,updated_at)
-            values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,now())
+            (asset_id,source_id,dataset_id,reference_date,reference_timezone,price_kind,open,high,low,close,volume,market_cap,quote_change_percent,quote_window,is_adjusted,fetched_at,source_updated_at,updated_at)
+            values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,now())
             on conflict (asset_id,source_id,reference_date,price_kind) do update set
-              dataset_id=excluded.dataset_id,reference_timezone=excluded.reference_timezone,open=excluded.open,high=excluded.high,low=excluded.low,close=excluded.close,volume=excluded.volume,market_cap=excluded.market_cap,is_adjusted=excluded.is_adjusted,fetched_at=excluded.fetched_at,source_updated_at=excluded.source_updated_at,updated_at=now()
+              dataset_id=excluded.dataset_id,reference_timezone=excluded.reference_timezone,open=excluded.open,high=excluded.high,low=excluded.low,close=excluded.close,volume=excluded.volume,market_cap=excluded.market_cap,quote_change_percent=excluded.quote_change_percent,quote_window=excluded.quote_window,is_adjusted=excluded.is_adjusted,fetched_at=excluded.fetched_at,source_updated_at=excluded.source_updated_at,updated_at=now()
             where coalesce(excluded.source_updated_at, excluded.fetched_at) >= coalesce(financial_daily_prices.source_updated_at, financial_daily_prices.fetched_at)
               and (financial_daily_prices.dataset_id,financial_daily_prices.reference_timezone,financial_daily_prices.open,financial_daily_prices.high,financial_daily_prices.low,financial_daily_prices.close,financial_daily_prices.volume,financial_daily_prices.market_cap,financial_daily_prices.is_adjusted,financial_daily_prices.fetched_at,financial_daily_prices.source_updated_at)
-              is distinct from (excluded.dataset_id,excluded.reference_timezone,excluded.open,excluded.high,excluded.low,excluded.close,excluded.volume,excluded.market_cap,excluded.is_adjusted,excluded.fetched_at,excluded.source_updated_at)
-            returning (xmax=0) as was_inserted`, [assetIds.get(price.sourceAssetId), input.sourceId, input.datasetId, price.referenceDate, price.referenceTimezone, price.priceKind, price.open ?? null, price.high ?? null, price.low ?? null, price.close, price.volume ?? null, price.marketCap ?? null, price.isAdjusted ?? false, price.fetchedAt, price.sourceUpdatedAt ?? null]);
+              is distinct from (excluded.dataset_id,excluded.reference_timezone,excluded.open,excluded.high,excluded.low,excluded.close,excluded.volume,excluded.market_cap,excluded.quote_change_percent,excluded.quote_window,excluded.is_adjusted,excluded.fetched_at,excluded.source_updated_at)
+            returning (xmax=0) as was_inserted`, [assetIds.get(price.sourceAssetId), input.sourceId, input.datasetId, price.referenceDate, price.referenceTimezone, price.priceKind, price.open ?? null, price.high ?? null, price.low ?? null, price.close, price.volume ?? null, price.marketCap ?? null, price.quoteChangePercent ?? null, price.quoteWindow ?? null, price.isAdjusted ?? false, price.fetchedAt, price.sourceUpdatedAt ?? null]);
         if (!rows.length) skipped += 1;
         else if (rows[0].was_inserted) inserted += 1;
         else updated += 1;

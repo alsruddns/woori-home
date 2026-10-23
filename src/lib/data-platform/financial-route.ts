@@ -18,7 +18,10 @@ export async function financialListRoute(request: Request, type: string) {
   if (!parsed.ok) return financialApiResponse({ error: parsed.error }, parsed.status);
   try {
     const result = await listFinancialMarketAssets({ type, market: parsed.market, search: parsed.search, sort: parsed.sort, order: parsed.order, limit: parsed.pageSize, offset: parsed.offset, referenceDate: parsed.referenceDate });
-    return financialApiResponse({ data: result.rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total: result.total }, asOf: result.rows.reduce<Date | null>((latest, row) => row.fetchedAt && (!latest || new Date(row.fetchedAt) > latest) ? new Date(row.fetchedAt) : latest, null) });
+    return financialApiResponse({ data: result.rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total: result.total }, asOf: result.rows.reduce<Date | null>((latest, row) => {
+      const candidate = row.quoteFetchedAt && (!latest || new Date(row.quoteFetchedAt) > latest) ? new Date(row.quoteFetchedAt) : row.fetchedAt && (!latest || new Date(row.fetchedAt) > latest) ? new Date(row.fetchedAt) : latest;
+      return candidate;
+    }, null) });
   } catch (error) {
     const reason = classifyFinancialDatabaseError(error);
     console.error("Financial market read failed", reason, safeErrorCode(error));
@@ -61,7 +64,7 @@ export async function financialHeatmapRoute(request: Request, type: "stock" | "c
   const parsed = parseFinancialHeatmapQuery(new URL(request.url).searchParams, type);
   if (!parsed.ok) return financialApiResponse({ error: parsed.error }, parsed.status);
   try {
-    const result = await listFinancialMarketAssets({ type, market: parsed.market, referenceDate: parsed.referenceDate, sort: "marketCap", order: "desc", limit: 100, offset: 0 });
+    const result = await listFinancialMarketAssets({ type, market: parsed.market, referenceDate: parsed.referenceDate, sort: "marketCap", order: "desc", limit: 100, offset: 0, visualization: true });
     const rows = result.rows as Array<{ currency: string; venue: string; marketCap: string | null }>;
     const oneMarket = rows.length > 0 && rows.every((row) => row.currency === rows[0].currency && row.venue === rows[0].venue);
     const completeSizeData = rows.length > 0 && rows.every((row) => row.marketCap !== null && Number(row.marketCap) > 0);
