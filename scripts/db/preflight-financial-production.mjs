@@ -271,6 +271,7 @@ try {
 
   if (!allowPendingSecGrants && report.permissionFindings.length) report.blockers.push("Required Runtime or Import privileges are missing; run the separately approved grant step, then preflight again.");
 
+  if (report.secIdentityDiagnostic) console.error(JSON.stringify(report.secIdentityDiagnostic));
   console.log(JSON.stringify(report, null, 2));
   if (report.blockers.length) process.exitCode = 2;
 } catch (error) {
