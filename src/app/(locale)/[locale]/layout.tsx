@@ -32,9 +32,9 @@ export async function generateMetadata({
     icons: {
       icon: [
         { url: "/favicon.ico" },
-        { url: "/icon.png", type: "image/png" },
+        { url: "/_assets/portal/icon.png", type: "image/png" },
       ],
-      apple: "/apple-icon.png",
+      apple: "/_assets/portal/apple-icon.png",
     },
     alternates: {
       canonical,

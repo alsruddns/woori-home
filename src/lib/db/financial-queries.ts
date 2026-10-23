@@ -124,7 +124,7 @@ const companyFactsEligibleCte = `with grouped as (
       (select max(balance.value)::text from financial_company_facts balance where balance.company_id=c.id and balance.dataset_id=f.dataset_id and balance.end_date=f.end_date and balance.filed_date=f.filed_date and balance.form=f.form and balance.accession_number=f.accession_number and balance.concept='Assets' and balance.unit='USD' and balance.start_date is null) as assets,
       (select max(balance.value)::text from financial_company_facts balance where balance.company_id=c.id and balance.dataset_id=f.dataset_id and balance.end_date=f.end_date and balance.filed_date=f.filed_date and balance.form=f.form and balance.accession_number=f.accession_number and balance.concept='Liabilities' and balance.unit='USD' and balance.start_date is null) as liabilities,
       max(f.value) filter (where f.concept='NetCashProvidedByUsedInOperatingActivities' and f.unit='USD')::text as "operatingCashFlow",
-      min(f.source_url) as "sourceUrl",s.name as "sourceName",s.attribution
+      min(f.source_url) as "sourceUrl",max(f.fetched_at) as "dataObservedAt",s.name as "sourceName",s.attribution
     from financial_company_facts f join financial_companies c on c.id=f.company_id
     join data_sources s on s.id=f.source_id and s.license_status='verified'
     where f.dataset_id='sec-company-facts' and ($1::text is null or c.ticker=$1) and c.ticker=any($4::text[])
@@ -151,7 +151,7 @@ export async function listFinancialCompanyFacts(limit = 100, offset = 0, filters
   const period = filters.period ?? null;
   const latest = filters.latest ?? false;
   const result = await getFinancialReadOnlyPool().query(`${companyFactsRowsCte}
-    select "companyId",ticker,name,exchange,sector,"sicCode",industry,"fiscalYear","fiscalPeriod","startDate","endDate","filedDate",form,"accessionNumber","durationDays",revenue,"operatingIncome","netIncome",assets,liabilities,"operatingCashFlow","sourceUrl","sourceName",attribution
+    select "companyId",ticker,name,exchange,sector,"sicCode",industry,"fiscalYear","fiscalPeriod","startDate","endDate","filedDate",form,"accessionNumber","durationDays",revenue,"operatingIncome","netIncome",assets,liabilities,"operatingCashFlow","sourceUrl","dataObservedAt","sourceName",attribution
     from ranked where (not $3::boolean or latest_row=1)
     order by "endDate" desc,"filedDate" desc,ticker limit $5 offset $6`, [ticker, period, latest, SEC_TARGETS.map(({ ticker: targetTicker }) => targetTicker), Math.max(1, Math.min(200, Math.trunc(limit))), Math.max(0, Math.trunc(offset))]);
   return result.rows;
