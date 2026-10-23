@@ -118,11 +118,10 @@ jobs:
           RELEASE_SHA: ${{ github.sha }}
           PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
+          DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal }}
         run: |
           node scripts/deploy/release-guard.mjs
           node --input-type=module -e 'import {assertCommitDigest,assertCommitShaTag} from "./scripts/deploy/release-guard.mjs"; assertCommitShaTag(process.env.RELEASE_SHA); if (process.env.DEPLOY_PORTAL === "true") assertCommitDigest(process.env.PORTAL_DIGEST); assertCommitDigest(process.env.TOOLS_DIGEST);'
-        env:
-          DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal }}
       - name: Deploy only the portal service
         uses: appleboy/ssh-action@v1.2.0
         env:
