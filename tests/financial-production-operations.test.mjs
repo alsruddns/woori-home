@@ -59,6 +59,13 @@ test("SEC production importer is isolated to DB_IMPORT_URL, guarded, transaction
   assert.doesNotMatch(source, /financial_daily_prices|financial_assets/);
 });
 
+test("scheduled SEC refresh requires preexisting grants and skips privileged grant writes", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+  assert.match(workflow, /SCHEDULED_SEC_REFRESH:.*github\.event_name == 'schedule'/);
+  assert.match(workflow, /if \[ "\$SCHEDULED_SEC_REFRESH" = "true" \]; then\s+printf '%s\\n' "\$preflight_report" \| jq -e '\.permissionFindings \| length == 0'/);
+  assert.match(workflow, /if \[ "\$SCHEDULED_SEC_REFRESH" = "true" \]; then\s+stage="Verify existing restricted SEC Import and Runtime grants"/);
+});
+
 test("SEC production status and verification connections are transaction read-only", async () => {
   const source = await readFile(new URL("../scripts/data/financial-sec-production.mjs", import.meta.url), "utf8");
   assert.match(source, /default_transaction_read_only=on/);
