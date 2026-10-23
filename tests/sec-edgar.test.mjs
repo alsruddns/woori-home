@@ -94,6 +94,9 @@ test("SEC target identity override selects XOM's reporting parent CIK", () => {
   assert.equal(company.cik, "0000034088");
   assert.equal(company.name, "Exxon Mobil Corporation");
   assert.equal(company.rekeyFromCik, "0002115436");
+  const normalized = normalizeSecCompanyFacts(sample, company);
+  assert.equal(normalized.company.cik, "0000034088");
+  assert.equal(normalized.company.rekeyFromCik, "0002115436");
 });
 
 test("SEC incremental collection skips an unchanged accession and isolates company failures", async () => {
