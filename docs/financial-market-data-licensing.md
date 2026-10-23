@@ -1,6 +1,6 @@
 # 금융 시세 데이터 라이선스 검토
 
-검토일: 2026-10-23. 이 문서는 권리 확인 기록과 문의 초안이며 이용 허가서가 아닙니다. 각 이용 목적의 권리는 공급자의 적용 약관이나 서면 승인으로 확인되기 전까지 `pending`으로 유지합니다. 공개 API에 기술적으로 접속할 수 있다는 사실만으로 광고 웹사이트 표시, DB 저장, 장기 보관, 재배포 또는 파생 시각화 권한을 추정하지 않습니다.
+검토일: 2026-10-23. 이 문서는 권리 확인 기록과 문의 초안이며 이용 허가서가 아닙니다. 각 이용 목적의 권리는 공급자의 적용 약관이나 서면 승인으로 확인되기 전까지 `pending`으로 유지합니다. 공개 API에 기술적으로 접속할 수 있다는 사실만으로 광고 웹사이트 표시, DB 저장, 장기 보관, 재배포 또는 파생 시각화 권한을 추정하지 않습니다. 기존 요약표는 조사 시작 기록이며, 아래의 **최신 공식 약관·비용 검토 결과**가 사용 목적별 검토 기준입니다.
 
 | 공급처 | API 조회 | 광고 웹사이트 표시 | DB 저장·장기 이력 | 사용자 API·CSV | 상태 |
 | --- | --- | --- | --- | --- | --- |
@@ -16,13 +16,42 @@
 ## 공식 자료
 
 - Upbit [API 안내](https://docs.upbit.com/kr/reference/api-overview), [Open API 이용약관](https://www.upbit.com/open_api_agreement)
-- Bithumb [API 문서](https://apidocs.bithumb.com/)
+- Bithumb [API 문서](https://apidocs.bithumb.com/), [API 서비스 이용약관](https://www.bithumb.com/resources/data/20180911_bithumb_APIService.pdf)
 - Binance [Spot API 문서](https://developers.binance.com/en/docs/products/spot/rest-api), [Spot 이용약관](https://developers.binance.com/en/docs/products/spot/PROD-TERMS-OF-USE)
-- CoinGecko [라이선스 FAQ](https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses), [API 약관](https://www.coingecko.com/en/api_terms)
+- CoinGecko [요금 및 상업 라이선스](https://www.coingecko.com/en/api/pricing), [라이선스 FAQ](https://support.coingecko.com/articles/1043089972-what-are-the-differences-between-commercial-and-custom-licenses), [API 약관](https://www.coingecko.com/en/api_terms)
 - Twelve Data [약관](https://twelvedata.com/terms), [상업·개인 이용 구분](https://support.twelvedata.com/en/articles/5332349-commercial-and-personal-usage), [미국 주식 데이터 권리](https://support.twelvedata.com/en/articles/9935903-us-equities-market-data)
+- Twelve Data [Business 요금표](https://twelvedata.com/pricing-business)
 - Alpha Vantage [서비스 이용약관](https://www.alphavantage.co/terms_of_service/)
 - KRX [데이터 제공 및 계약 절차](https://openapi.krx.co.kr/contents/OPP/DATA/OPPDATA003.jsp), [시장정보 이용정책](https://data.krx.co.kr/inc/datasale/Market%20Data%20Usage%20Polices_ko.pdf?v=20230121_1)
 - FSC / KRX 공공데이터 [주식시세 라이선스와 제공기관 정보](https://www.data.go.kr/catalog/15094808/openapi.json)
+
+## 최신 공식 약관·비용 검토 결과
+
+확인일은 2026-10-23입니다. `API 조회`는 API 접근 가능 여부만 뜻합니다. 광고 수익이 있는 공개 표시 권한, 캐시, 장기 저장, 방문자 대상 API, CSV 및 파생 시각화는 별도 권리로 판단했습니다.
+
+| 공급처 | API 조회 | 광고 웹 표시 | 서버 캐시·DB 저장 | 장기 이력·차트 | 방문자 API·CSV | 무료/최소 확인 비용 | 운영 판정 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Upbit KRW | 공개 Quotation API 연결 성공. API 문서상 웹·앱에서 시세 조회 제공 | 상업 사이트 범위 미확인 | 미확인 | 미확인 | 허용 범위 미확인 | 무료 공개 API | 서면 확인 전 전부 pending, 비활성 |
+| Bithumb KRW | 공개 현재가·일봉 API 연결 성공 | 명시적 허용 확인 못함 | 미확인 | 미확인 | API 취득 시세 등 정보를 타인에게 양도하는 행위 금지 | 무료 공개 API | 방문자 API·CSV는 제한. 화면 표시도 승인 전 비활성 |
+| Binance Spot | 개발자 문서 존재. 이번 작업에서 API 실호출은 하지 않음 | 미확인 | 미확인 | 미확인 | 미확인 | 공개 시장 API 사용료 확인 못함 | Product Terms 적용 범위를 확인하고 서면 승인 전 비활성 |
+| CoinGecko | API 제공 | 무료 Demo는 상업 이용 불가. 유료 Basic 이상은 “Data provided by CoinGecko” 링크 표시 조건으로 상업 제품 내 표시 허용 | 공개 자료로 woori.today의 DB 장기 보관 조건 확인 불가 | 유료 플랜 일별 이력 제공. 보관 가능 기간은 별도 확인 필요 | 표준 플랜에서 API/데이터 재판매·재배포 금지 | Demo $0(비상업), Basic $35/월 또는 연 $348(월 환산 $29) | 무료 공개 사용 불가. 결제 및 저장권 확인 전 비활성 |
+| Twelve Data US | API 제공 | Business 권한 필요. 상품별 외부 표시 범위 확인 필요 | 계약상 조건 확인 필요 | EOD 글로벌 주식 데이터는 Business 요금표에서 제공 | 외부 배포 권리 필요 | Business Venture $499/월부터, Enterprise $1,099/월부터. US Equities external distribution add-on은 $2,400/년부터 표기 | 무료 Basic은 내부 비표시(8 credits/min, 800/day)만. 정확한 상품·추가 권리 서면 견적 전 비활성 |
+| Alpha Vantage | 무료 API 존재 | 광고 사이트 허용 확인 못함 | 확인되지 않음 | 확인되지 않음 | 확인되지 않음 | API 접근은 무료로 안내됨 | 무료라는 사실만으로 상업 권리를 부여하지 않아 비활성 |
+| KRX / KOSCOM | 공식 데이터 상품·계약 이용 | 상품별 상업 공개 계약 필요 | 보관 기간·히스토리 범위 계약 필요 | 상품별 확인 필요 | 방문자 배포·다운로드 별도 권리 필요 | 공개 가격 확인 못함. KRX Data Marketplace 문의 필요 | 가격·조건 견적 전 비활성 |
+| FSC / KRX 공공데이터 주식시세 | 인증키 API, 기준일 이후 1영업일 지연 | 공공누리 제4유형: 상업적 이용 금지·변경 금지 | 공개 상업 이용권으로 간주하지 않음 | 상업 차트·시계열 사용권 없음 | 제3자 무단 제공·재배포 금지 | 무료 API | 광고 사이트 사용 금지. 상업 목적은 KRX 계약 필요 |
+
+### 조사에서 확인한 권리 범위
+
+- **Upbit:** 공식 개발자 문서는 시세 조회 API 및 사용량 제한을 설명하고, API 약관에 따른 허용 방법 밖의 사용·복제·배포를 금지합니다. woori.today의 광고 기반 가격 표시, 서버 캐시·DB 저장, 과거 차트, 방문자 API, 히트맵 허용을 명시한 조항을 확인하지 못했습니다. 따라서 API 접속 권한을 서비스 공개권으로 확장하지 않습니다.
+- **Bithumb:** 공식 Public API 문서는 현재가·캔들 조회를 제공합니다. 현재 연결된 API 서비스 약관 PDF는 2018-10-18 시행본이며, 제6조는 API를 이용해 얻은 투자정보·시세·계좌 등의 데이터를 타인에게 양도하지 못하게 합니다. 적어도 방문자 API/CSV 재배포는 허용되지 않습니다. 웹 페이지에 시세를 단순 표시하는 권리는 명시적으로 확인하지 못했습니다. 약관이 현재도 적용되는지와 광고 사이트 표시권을 함께 문의해야 하므로 비활성입니다.
+- **CoinGecko:** API 라이선스 FAQ는 2026-10-19 갱신본입니다. 공개 가격 페이지는 Demo를 개인 사용으로 표시하며 상업 사용은 유료 플랜부터입니다. 유료 Basic은 월 $35, 연 결제 시 $348이며 가격·시장 데이터의 과거 일별 이력을 제공합니다. 상업 제품 내 표시에는 CoinGecko 링크 출처표시가 필요하고, 표준 플랜으로 데이터/API 접근을 재판매·재배포할 수 없습니다. 우리 앱에서 필요한 장기 PostgreSQL 보관·방문자 API 권한은 별도 확인 전 pending입니다. 사용자 승인 및 결제 없이 구독하지 않습니다.
+- **Twelve Data:** 약관 개정일은 2026-01-01입니다. 기본 데이터 이용은 내부 사용으로 한정하고, 외부 표시·재배포는 적격 플랜, 부가 계약, 거래소 규칙에 따르도록 합니다. Business 요금표는 Venture 월 $499(외부 표시 데이터, EOD 글로벌 주식 포함), Enterprise 월 $1,099(외부 배포 시장 데이터 포함)부터입니다. 별도 US Equities External Distribution 항목은 연 $2,400부터입니다. 해당 add-on이 Venture와 결합 가능한지, woori.today의 광고 공개 페이지·일별 장기 저장·자체 API를 전부 허용하는지는 가격표만으로 확정할 수 없어 견적이 필요합니다.
+- **FSC/KRX 공공데이터:** 주식시세 공개데이터는 공공누리 제4유형이며 상업적 이용 및 변경을 금지합니다. 데이터 설명에는 상업 사용 시 원천 제공자인 KRX Data Marketplace에서 유료 구매해야 한다고 명시되어 있습니다. 상업 서비스가 공공 API를 직접 사용하지 않습니다.
+- **지수:** 이번 검토에서 S&P 500, Nasdaq Composite, Dow Jones, KOSPI, KOSDAQ 지수의 상업 공개·저장 권한을 개별적으로 확인한 공급처가 없습니다. 해당 지수는 종목 시세 권한과 별개로 pending입니다.
+
+### 실제 API 연결 검증 (무저장 내부 Probe)
+
+2026-10-23에 기존 `pnpm data:financial:probe`로 Upbit와 Bithumb 각각 3개 KRW 마켓을 요청했습니다. 두 공급처 모두 지정일 일봉 3건과 현재 시세 3건을 정상 파싱했고, 현재 시세의 24시간 변동률도 각각 3건 모두 포함됐습니다. 정규화 결과는 KRW이며 거래소 식별값은 `upbit-krw`와 `bithumb-krw`로 분리됐습니다. 이 개발용 Probe는 PostgreSQL이나 공개 API에 쓰지 않습니다. 기술 연결 성공은 상업 공개 또는 DB 저장 권한 승인이 아닙니다.
 
 ## 공급처 문의 초안
 
