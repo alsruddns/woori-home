@@ -106,7 +106,7 @@ export async function collectFinancialProviderSnapshot(provider, request, option
   for (const asset of response.assets) {
     if (!asset || typeof asset.sourceAssetId !== "string" || !asset.sourceAssetId.trim() || assets.has(asset.sourceAssetId)
       || !ASSET_TYPES.has(asset.assetType) || typeof asset.symbol !== "string" || !asset.symbol.trim()
-      || typeof asset.name !== "string" || !asset.name.trim() || !/^[A-Z]{3}$/.test(asset.currency ?? "")
+      || typeof asset.name !== "string" || !asset.name.trim() || !/^[A-Z]{3,8}$/.test(asset.currency ?? "")
       || typeof asset.unit !== "string" || !asset.unit.trim() || !validTimezone(asset.timezone)) {
       throw new FinancialProviderError("invalid-asset-metadata", "Provider asset metadata failed validation.");
     }

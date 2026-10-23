@@ -1,0 +1,1 @@
+ALTER TABLE "financial_daily_prices" ADD CONSTRAINT "financial_daily_prices_close_check" CHECK ("financial_daily_prices"."close" > 0);

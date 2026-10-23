@@ -218,6 +218,18 @@ test("destructive SQL is blocked before an unapplied migration runs", () => {
   assert.throws(() => assertNoDestructiveMigration(`${periodKeyMigration} DROP TABLE metrics`, "0005_sec_fact_period_key.sql"), /destructive SQL/);
 });
 
+test("financial rights enum check replacement is the only narrowly allowed check-constraint rebuild", async () => {
+  const sql = await readFile(new URL("../drizzle/0007_graceful_cerise.sql", import.meta.url), "utf8");
+  assert.doesNotThrow(() => assertNoDestructiveMigration(sql, "0007_graceful_cerise.sql"));
+  assert.throws(() => assertNoDestructiveMigration(`${sql}DROP TABLE financial_assets;`, "0007_graceful_cerise.sql"), /destructive SQL/);
+});
+
+test("financial currency widening only removes padding while broadening the currency check", async () => {
+  const sql = await readFile(new URL("../drizzle/0008_acoustic_loki.sql", import.meta.url), "utf8");
+  assert.doesNotThrow(() => assertNoDestructiveMigration(sql, "0008_acoustic_loki.sql"));
+  assert.throws(() => assertNoDestructiveMigration(`${sql}DROP TABLE financial_assets;`, "0008_acoustic_loki.sql"), /destructive SQL/);
+});
+
 test("financial production DB tools require the three split production roles, exact role names, host allowlist, main Actions context and approval", () => {
   const env = {
     DB_TARGET: "production",

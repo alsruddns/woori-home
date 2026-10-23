@@ -7,6 +7,8 @@ import pg from "pg";
 import { resolveDatabaseTarget } from "../db/connection-safety.mjs";
 import { collectFinancialProviderSnapshot } from "../../src/lib/data-platform/financial-provider.mjs";
 import { getFinancialProvider, listFinancialProviders } from "../../src/lib/data-platform/providers/catalog.mjs";
+import { canCollectFinancialPrices } from "../../src/lib/data-platform/financial-rights.mjs";
+import { normalizeCurrentQuoteRows } from "../../src/lib/data-platform/financial-quotes.mjs";
 
 function parseOptions(args) {
   const options = {};
@@ -19,8 +21,8 @@ function parseOptions(args) {
   return options;
 }
 
-function koreanDateNow(date = new Date()) {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+function dateInZone(date = new Date(), timeZone = "UTC") {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
 }
 
 function writeProviderCatalog() {
@@ -32,14 +34,14 @@ function writeProviderCatalog() {
 async function runCollection(command, args) {
   const options = parseOptions(args);
   const providerId = options.provider;
-  const market = options.market ?? "krw";
-  const limit = Math.max(1, Math.min(8, Math.trunc(Number(options.limit ?? 8)) || 8));
   const provider = getFinancialProvider(providerId);
-  if (!provider || providerId !== "upbit-quotation") throw new Error("A supported, explicitly reviewed provider is required. Use `pnpm data:financial:providers` to view the catalog.");
-  if (market !== "krw") throw new Error("Upbit adapter only collects its KRW exchange pairs; it does not represent global or USD prices.");
+  const market = options.market ?? provider?.market ?? "krw";
+  const limit = Math.max(1, Math.min(8, Math.trunc(Number(options.limit ?? 8)) || 8));
+  if (!provider || !provider.marketTimezone || !provider.datasetId) throw new Error("A supported provider with a configured daily-price adapter is required. Use `pnpm data:financial:providers` to view the catalog.");
+  if (market !== provider.market) throw new Error(`This adapter only represents its own ${provider.market} market; quote currencies are never combined.`);
   if (options.date && (options["start-date"] || options["end-date"])) throw new Error("Use either --date or the --start-date/--end-date pair, not both.");
   if ((options["start-date"] && !options["end-date"]) || (!options["start-date"] && options["end-date"])) throw new Error("Both --start-date and --end-date are required together.");
-  const startDate = options.date ?? options["start-date"] ?? koreanDateNow(new Date(Date.now() - 86_400_000));
+  const startDate = options.date ?? options["start-date"] ?? dateInZone(new Date(Date.now() - 86_400_000), provider.marketTimezone);
   const endDate = options.date ?? options["end-date"] ?? startDate;
   const dryRun = command === "dry-run" || options["dry-run"] === true;
 
@@ -47,20 +49,25 @@ async function runCollection(command, args) {
   const pool = new pg.Pool({ connectionString: target.url, max: 1, connectionTimeoutMillis: 4000, idleTimeoutMillis: 10000, allowExitOnIdle: true });
   let runId;
   try {
-    const { rows: [source] } = await pool.query(`select s.id,s.license_status,s.attribution,s.source_url,d.id as dataset_id
+  const { rows: [source] } = await pool.query(`select s.id,s.attribution,s.source_url,s.financial_rights,s.terms_version,s.reviewed_at,s.review_due_at,s.collection_enabled,d.id as dataset_id
       from data_sources s join datasets d on d.source_id=s.id where s.id=$1 and d.id=$2`, [provider.id, provider.datasetId]);
     if (!source) throw new Error("Collection is disabled: the provider and dataset must be reviewed and registered in the local development DB first.");
-    if (source.license_status !== "verified" || !source.attribution || !source.source_url) {
-      throw new Error("Collection is disabled: exact public display, retention, and attribution rights have not been verified for this provider and dataset.");
+    if (!canCollectFinancialPrices(source)) {
+      throw new Error("Collection is disabled: activate this provider only after API access, database storage, long-term retention, attribution, terms version, and a current rights review are recorded.");
     }
-    provider.licenseStatus = source.license_status;
+    provider.licenseStatus = "verified";
     provider.attribution = source.attribution;
     provider.sourceUrl = source.source_url;
 
     const { rows: [run] } = await pool.query(`insert into data_collection_runs
       (dataset_id,started_at,status,scope) values ($1,now(),'partial',$2) returning id`, [provider.datasetId, JSON.stringify({ kind: "financial-collection", provider: provider.id, market, startDate, endDate, limit, dryRun })]);
     runId = run.id;
-    const snapshot = await collectFinancialProviderSnapshot(provider, { startDate, endDate, marketTimezone: "Asia/Seoul", limit }, { maxAttempts: 3, timeoutMs: 15_000, maxRecords: 2_000 });
+    const snapshot = await collectFinancialProviderSnapshot(provider, { startDate, endDate, marketTimezone: provider.marketTimezone, limit }, { maxAttempts: 3, timeoutMs: 15_000, maxRecords: 2_000 });
+    if (typeof provider.fetchTickers === "function") {
+      const markets = snapshot.assets.map((asset) => asset.metadata?.market ?? asset.sourceAssetId);
+      const quotes = await provider.fetchTickers(markets, { signal: AbortSignal.timeout(30_000) });
+      snapshot.prices.push(...normalizeCurrentQuoteRows(snapshot.assets, quotes, { fetchedAt: new Date().toISOString() }));
+    }
     if (options.verbose) console.log(`Normalized ${snapshot.assets.length} assets and ${snapshot.prices.length} daily candles from ${provider.id}.`);
 
     if (!dryRun) {

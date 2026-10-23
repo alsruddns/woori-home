@@ -31,6 +31,13 @@ function responseError(status, retryAfter) {
  * must gate collection on a separately reviewed DB source record.
  */
 export function createUpbitKrwDailyProvider({ fetchImpl = fetch, now = () => new Date(), wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
+  async function requestJson(path, params, signal) {
+    const url = new URL(`${BASE_URL}${path}`);
+    for (const [key, value] of Object.entries(params ?? {})) url.searchParams.set(key, String(value));
+    const response = await fetchImpl(url, { headers: { accept: "application/json" }, signal });
+    if (!response.ok) throw responseError(response.status, response.headers.get("retry-after"));
+    return response.json();
+  }
   return {
     id: "upbit-quotation",
     datasetId: "upbit-krw-daily-candles",
@@ -39,7 +46,33 @@ export function createUpbitKrwDailyProvider({ fetchImpl = fetch, now = () => new
     attribution: "Source: Upbit KRW market quotation data",
     assetType: "crypto",
     market: "krw",
+    marketTimezone: "Asia/Seoul",
     licenseStatus: "unverified",
+    async fetchMarkets({ signal } = {}) {
+      const rows = await requestJson("/market/all", { isDetails: "true" }, signal);
+      if (!Array.isArray(rows)) throw new Error("Invalid Upbit market payload");
+      return rows.filter((row) => typeof row.market === "string" && row.market.startsWith("KRW-") && typeof row.korean_name === "string")
+        .map((row) => ({ market: row.market, symbol: row.market.slice(4), name: row.korean_name, quoteCurrency: "KRW", baseCurrency: row.market.slice(4), venue: "upbit", warning: row.market_warning === "CAUTION" }));
+    },
+    async fetchTickers(markets, { signal } = {}) {
+      const unique = [...new Set(markets)].filter((market) => /^KRW-[A-Z0-9]+$/.test(market));
+      const output = [];
+      for (let offset = 0; offset < unique.length; offset += 100) {
+        const batch = unique.slice(offset, offset + 100);
+        const rows = await requestJson("/ticker", { markets: batch.join(",") }, signal);
+        if (!Array.isArray(rows)) throw new Error("Invalid Upbit ticker payload");
+        for (const row of rows) {
+          if (!batch.includes(row.market)) throw new Error("Upbit returned a ticker for an unrequested market");
+          const price = decimal(row.trade_price);
+          const change24hPercent = Number(row.signed_change_rate) * 100;
+          output.push({ market: row.market, symbol: row.market.slice(4), venue: "upbit", currency: "KRW", price,
+            change24hPercent: Number.isFinite(change24hPercent) ? String(change24hPercent) : null,
+            volume24h: decimal(row.acc_trade_volume_24h), quoteVolume24h: decimal(row.acc_trade_price_24h),
+            asOf: typeof row.timestamp === "number" ? new Date(row.timestamp).toISOString() : null });
+        }
+      }
+      return output;
+    },
     async fetchDailyPrices({ startDate, endDate, signal, limit = ASSETS.length }) {
       if (!isValidMarketDate(startDate) || !isValidMarketDate(endDate) || startDate > endDate) throw new Error("Invalid Upbit date range");
       const assets = [];
@@ -56,13 +89,7 @@ export function createUpbitKrwDailyProvider({ fetchImpl = fetch, now = () => new
         let pageCount = 0;
         while (!finished && pageCount < 19) {
           await wait(110);
-          const url = new URL(`${BASE_URL}/candles/days`);
-          url.searchParams.set("market", market);
-          url.searchParams.set("to", cursor);
-          url.searchParams.set("count", "200");
-          const response = await fetchImpl(url, { headers: { accept: "application/json" }, signal });
-          if (!response.ok) throw responseError(response.status, response.headers.get("retry-after"));
-          const body = await response.json();
+          const body = await requestJson("/candles/days", { market, to: cursor, count: 200 }, signal);
           if (!Array.isArray(body)) throw new Error("Invalid Upbit candle payload");
           pageCount += 1;
           if (body.length === 0) break;

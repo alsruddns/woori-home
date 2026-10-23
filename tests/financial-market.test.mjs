@@ -36,6 +36,7 @@ test("price validation preserves NUMERIC decimal strings and rejects invalid pre
   assert.equal(validateMarketPriceRecord({ ...row, close: "1.12345678901" }).reason, "precision-close");
   assert.equal(validateMarketPriceRecord({ ...row, close: "Infinity" }).reason, "invalid-close");
   assert.equal(validateMarketPriceRecord({ ...row, close: null }).reason, "missing-close");
+  assert.equal(validateMarketPriceRecord({ ...row, close: "0" }).reason, "nonpositive-close");
   assert.equal(validateMarketPriceRecord({ ...row, volume: "-1" }).reason, "negative-volume");
 });
 
@@ -167,6 +168,8 @@ test("provider catalog distinguishes free technical API access from public data 
 });
 
 test("financial API parsers bound pagination, validate filters, dates, and identifiers", async () => {
+  assert.equal(parseFinancialListQuery(new URLSearchParams("market=usdt"), "crypto").ok, true);
+  assert.equal(parseFinancialListQuery(new URLSearchParams("sort=quoteChangePercent&order=asc"), "crypto").ok, true);
   assert.deepEqual(parseFinancialListQuery(new URLSearchParams("market=krw&page=2&pageSize=500&sort=marketCap&order=desc&q=BTC"), "crypto"), {
     ok: true, page: 2, pageSize: 100, offset: 100, sort: "marketCap", order: "desc", market: "krw", search: "BTC", referenceDate: null,
   });

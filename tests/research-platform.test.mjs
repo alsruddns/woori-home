@@ -97,10 +97,11 @@ test("gold routes remain noindex without verified price records and all quote lo
 });
 
 test("Crossref titles preserve source strings and expose only localized drafts that exist", async () => {
-  const [papersText, localeText] = await Promise.all([read("src/data/research-papers.json"), read("src/data/paper-title-localizations.json")]);
+  const [papersText, localeText, statusText] = await Promise.all([read("src/data/research-papers.json"), read("src/data/paper-title-localizations.json"), read("src/data/research-papers.status.json")]);
   const papers = JSON.parse(papersText).records;
   const translations = JSON.parse(localeText);
-  assert.equal(papers.length, 37);
+  assert.equal(papers.length, JSON.parse(statusText).recordCount);
+  assert.ok(papers.length > 0);
   assert.ok(papers.every((paper) => paper.originalTitle === paper.title && paper.originalLanguage === "und"));
   const translated = papers.filter((paper) => Object.keys(paper.localizedTitles ?? {}).length > 0);
   assert.equal(translated.length, 9);
@@ -111,7 +112,7 @@ test("Crossref titles preserve source strings and expose only localized drafts t
     assert.deepEqual(Object.keys(translations[paper.doi.toLowerCase()]).sort(), [...supportedLocales].sort());
     for (const locale of supportedLocales) assert.ok(paper.localizedTitles[locale].trim(), `${paper.doi}: ${locale}`);
   }
-  assert.equal(papers.filter((paper) => paper.translationStatus === "pending").length, 28);
+  assert.equal(papers.filter((paper) => paper.translationStatus === "pending").length, papers.length - translated.length);
 });
 
 test("global home briefing and mineral source status are localized across all supported locales", async () => {
