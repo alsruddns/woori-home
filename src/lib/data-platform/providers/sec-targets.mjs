@@ -6,7 +6,9 @@ export const SEC_TARGETS = Object.freeze([
   ...["JPM", "BAC", "WFC", "GS", "MS", "BLK", "SCHW", "AXP", "V", "MA"].map((ticker) => ({ ticker, sector: "financials" })),
   ...["LLY", "UNH", "JNJ", "ABBV", "MRK", "ABT", "TMO", "AMGN", "GILD", "ISRG"].map((ticker) => ({ ticker, sector: "healthcare" })),
   ...["WMT", "COST", "PG", "KO", "PEP", "PM", "CL", "MDLZ", "KHC", "EL"].map((ticker) => ({ ticker, sector: "consumer" })),
-  ...["XOM", "CVX", "COP", "SLB", "EOG", "OXY", "PSX", "MPC", "VLO", "FANG"].map((ticker) => ({ ticker, sector: "energy" })),
+  // The SEC exchange directory points XOM at a related subsidiary CIK; the parent's official 10-K uses CIK 34088.
+  { ticker: "XOM", sector: "energy", cik: "0000034088", name: "Exxon Mobil Corporation", exchange: "NYSE", rekeyFromCik: "0002115436" },
+  ...["CVX", "COP", "SLB", "EOG", "OXY", "PSX", "MPC", "VLO", "FANG"].map((ticker) => ({ ticker, sector: "energy" })),
   ...["GE", "CAT", "RTX", "HON", "DE", "UNP", "UPS", "LMT", "ETN", "CMI"].map((ticker) => ({ ticker, sector: "industrials" })),
   ...["GOOGL", "META", "NFLX", "DIS", "T", "VZ", "CMCSA", "TMUS", "CHTR", "TTWO"].map((ticker) => ({ ticker, sector: "communications" })),
   ...["NEE", "SO", "DUK", "CEG", "AEP", "XEL", "EXC", "ED", "D", "PEG"].map((ticker) => ({ ticker, sector: "utilities" })),
@@ -24,8 +26,10 @@ export function parseSecTickerDirectory(text, targets = SEC_TARGETS) {
   const requested = new Map();
   for (const target of targets) {
     const ticker = typeof target?.ticker === "string" ? target.ticker.toUpperCase() : "";
-    if (!TICKER_PATTERN.test(ticker) || requested.has(ticker) || typeof target.sector !== "string" || !target.sector) throw new Error("SEC target tickers and sector groups must be valid and unique.");
-    requested.set(ticker, target.sector);
+    if (!TICKER_PATTERN.test(ticker) || requested.has(ticker) || typeof target.sector !== "string" || !target.sector
+      || (target.cik !== undefined && !/^\d{10}$/.test(target.cik))
+      || (target.rekeyFromCik !== undefined && !/^\d{10}$/.test(target.rekeyFromCik))) throw new Error("SEC target tickers and sector groups must be valid and unique.");
+    requested.set(ticker, { sector: target.sector, cik: target.cik ?? null, name: target.name ?? null, exchange: target.exchange ?? null, rekeyFromCik: target.rekeyFromCik ?? null });
   }
   const found = new Map();
   for (const row of payload.data) {
@@ -36,7 +40,16 @@ export function parseSecTickerDirectory(text, targets = SEC_TARGETS) {
     const name = String(row[columns.name] ?? "").trim();
     const exchange = String(row[columns.exchange] ?? "").trim();
     if (!/^\d{1,10}$/.test(cikNumber) || !name || !["Nasdaq", "NYSE", "NYSE American"].includes(exchange)) continue;
-    const candidate = { ticker, cik: cikNumber.padStart(10, "0"), name, exchange, sector: requested.get(ticker) };
+    const target = requested.get(ticker);
+    const directoryCik = cikNumber.padStart(10, "0");
+    const candidate = {
+      ticker,
+      cik: target.cik ?? directoryCik,
+      name: target.cik && target.cik !== directoryCik ? target.name ?? name : name,
+      exchange: target.exchange ?? exchange,
+      sector: target.sector,
+      ...(target.rekeyFromCik ? { rekeyFromCik: target.rekeyFromCik } : {}),
+    };
     const prior = found.get(ticker);
     if (!prior || (candidate.exchange === "Nasdaq" || candidate.exchange === "NYSE")) found.set(ticker, candidate);
   }

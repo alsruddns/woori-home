@@ -86,6 +86,16 @@ test("SEC directory resolves unique current CIK identities and reports delisted 
   }), targets), /multiple targets to one CIK/);
 });
 
+test("SEC target identity override selects XOM's reporting parent CIK", () => {
+  const company = parseSecTickerDirectory(JSON.stringify({
+    fields: ["cik", "name", "ticker", "exchange"],
+    data: [[2115436, "ExxonMobil Holdings Corp", "XOM", "NYSE"]],
+  }), [SEC_TARGETS.find(({ ticker }) => ticker === "XOM")])[0];
+  assert.equal(company.cik, "0000034088");
+  assert.equal(company.name, "Exxon Mobil Corporation");
+  assert.equal(company.rekeyFromCik, "0002115436");
+});
+
 test("SEC incremental collection skips an unchanged accession and isolates company failures", async () => {
   const companies = [
     { ticker: "AAPL", cik: "0000320193", sector: "information-technology" },
@@ -111,6 +121,7 @@ test("SEC persistence maps normalized facts to database column names and upserts
   const client = {
     async query(sql, args) {
       statements.push({ sql, args });
+      if (sql.includes("update financial_companies as old_company")) return { rowCount: 1, rows: [] };
       if (sql.includes("insert into financial_companies")) return { rows: [{ id: args[3] === "AAPL" ? "company-aapl" : "company-msft" }] };
       const batch = JSON.parse(args[0]);
       return { rows: batch.map(() => ({ inserted: true })) };
@@ -118,12 +129,16 @@ test("SEC persistence maps normalized facts to database column names and upserts
   };
   const snapshot = normalizeSecCompanyFacts(sample, SEC_COMPANIES[0], new Date("2024-05-02T00:00:00Z"));
   snapshot.company.sourceUrl = "https://www.sec.gov/edgar/browse/?CIK=320193";
+  snapshot.company.rekeyFromCik = "0000000001";
   const result = await persistSecCompanyFacts(client, {
     updated: [{ ...snapshot, profile: { latestFiling: { accessionNumber: "0000320193-24-000001", filedDate: "2024-05-01", form: "10-Q" } } }],
     unchanged: [{ company: { ...snapshot.company, ticker: "MSFT", cik: "0000789019", sourceUrl: "https://www.sec.gov/edgar/browse/?CIK=789019" }, profile: { latestFiling: { accessionNumber: "0000789019-24-000001", filedDate: "2024-05-01", form: "10-Q" } } }],
   }, { sourceId: "sec-edgar-companyfacts", datasetId: "sec-company-facts" });
   assert.equal(result.companies, 2);
   assert.equal(result.facts, snapshot.facts.length);
+  assert.match(statements[0].sql, /old_company\.cik=\$3/);
+  assert.equal(statements[0].args[2], "0000000001");
+  assert.match(statements[0].sql, /not exists \(select 1 from financial_companies current_company/);
   const batch = JSON.parse(statements.find(({ sql }) => sql.includes("jsonb_to_recordset" )).args[0]);
   assert.equal(batch[0].company_id, "company-aapl");
   assert.equal(batch[0].period_key, "2024-01-01");
