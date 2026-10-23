@@ -159,8 +159,17 @@ export async function listFinancialCompanyFacts(limit = 100, offset = 0, filters
 
 export async function countFinancialCompanyFacts(filters: CompanyFactsFilters = {}) {
   const query = filters.latest
-    ? `${companyFactsEligibleCte} select count(distinct "companyId")::int as total from eligible where $3::boolean is not null`
+    ? `select count(distinct c.id)::int as total
+      from financial_companies c join financial_company_facts f on f.company_id=c.id and f.dataset_id='sec-company-facts'
+      join data_sources s on s.id=f.source_id and s.license_status='verified'
+      where ($1::text is null or c.ticker=$1) and c.ticker=any($3::text[])
+        and ($2::text is null or
+          ($2='annual' and f.form in ('10-K','10-K/A') and f.fiscal_period='FY' and f.start_date is not null and (f.end_date::date-f.start_date::date+1) between 300 and 400) or
+          ($2='quarterly' and f.form in ('10-Q','10-Q/A') and f.fiscal_period in ('Q1','Q2','Q3') and f.start_date is not null and (f.end_date::date-f.start_date::date+1) between 65 and 110))`
     : `${companyFactsRowsCte} select count(*)::int as total from ranked`;
-  const result = await getFinancialReadOnlyPool().query(query, [filters.ticker ?? null, filters.period ?? null, filters.latest ?? false, SEC_TARGETS.map(({ ticker }) => ticker)]);
+  const values = filters.latest
+    ? [filters.ticker ?? null, filters.period ?? null, SEC_TARGETS.map(({ ticker }) => ticker)]
+    : [filters.ticker ?? null, filters.period ?? null, filters.latest ?? false, SEC_TARGETS.map(({ ticker }) => ticker)];
+  const result = await getFinancialReadOnlyPool().query(query, values);
   return result.rows[0]?.total ?? 0;
 }
