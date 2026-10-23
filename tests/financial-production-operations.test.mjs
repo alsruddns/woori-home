@@ -81,6 +81,8 @@ test("production preflight inspects migration hashes, catalog seeds, World Bank 
   assert.match(source, /data_sources/);
   assert.match(source, /datasets/);
   assert.match(source, /indicator_observations/);
+  assert.match(source, /secIdentityDiagnostic/);
+  assert.match(source, /c\.ticker='XOM'/);
   assert.match(source, /createHash\("sha256"\)/);
   assert.match(source, /PRODUCTION_ROLE_NAMES|validateFinancialProductionContext/);
   assert.match(source, /has_table_privilege/);
