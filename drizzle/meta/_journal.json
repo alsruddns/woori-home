@@ -78,6 +78,13 @@
       "when": 1792741404093,
       "tag": "0010_melodic_metal_master",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792750848204,
+      "tag": "0011_rare_trish_tilby",
+      "breakpoints": true
     }
   ]
 }

@@ -1,7 +1,8 @@
 export const PORTAL_IMAGE = "ghcr.io/alsruddns/woori-home";
 
-export function isMainProductionRelease({ ref, eventName }) {
-  return ref === "refs/heads/main" && ["push", "workflow_dispatch"].includes(eventName);
+export function isMainProductionRelease({ ref, eventName, autoRefreshEnabled = false }) {
+  return ref === "refs/heads/main" && (["push", "workflow_dispatch"].includes(eventName)
+    || (eventName === "schedule" && autoRefreshEnabled === true));
 }
 
 export function assertCommitDigest(value) {
@@ -19,7 +20,7 @@ export function assertCommitShaTag(value) {
 }
 
 if (process.argv[1]?.endsWith("release-guard.mjs")) {
-  if (!isMainProductionRelease({ ref: process.env.GITHUB_REF, eventName: process.env.GITHUB_EVENT_NAME })) {
+  if (!isMainProductionRelease({ ref: process.env.GITHUB_REF, eventName: process.env.GITHUB_EVENT_NAME, autoRefreshEnabled: process.env.SEC_EDGAR_AUTO_REFRESH_ENABLED === "true" })) {
     console.error("Production publishing is restricted to main.");
     process.exit(1);
   }

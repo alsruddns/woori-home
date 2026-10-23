@@ -188,6 +188,12 @@ export const financialCompanies = pgTable("financial_companies", {
   ticker: varchar("ticker", { length: 12 }).notNull(),
   name: text("name").notNull(),
   exchange: varchar("exchange", { length: 24 }),
+  sector: varchar("sector", { length: 32 }).notNull().default("other"),
+  sicCode: varchar("sic_code", { length: 4 }),
+  industry: text("industry"),
+  lastSubmissionAccession: varchar("last_submission_accession", { length: 24 }),
+  lastSubmissionFiledDate: char("last_submission_filed_date", { length: 10 }),
+  lastSubmissionForm: varchar("last_submission_form", { length: 12 }),
   countryCode: char("country_code", { length: 2 }).notNull().default("US"),
   sourceUrl: text("source_url").notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
@@ -195,6 +201,11 @@ export const financialCompanies = pgTable("financial_companies", {
   uniqueIndex("financial_companies_source_cik_unique_idx").on(table.sourceId, table.cik),
   uniqueIndex("financial_companies_source_ticker_unique_idx").on(table.sourceId, table.ticker),
   index("financial_companies_ticker_idx").on(table.ticker),
+  index("financial_companies_source_sector_ticker_idx").on(table.sourceId, table.sector, table.ticker),
+  check("financial_companies_sector_check", sql`${table.sector} in ('information-technology','semiconductors','financials','healthcare','consumer','energy','industrials','communications','utilities','real-estate','other')`),
+  check("financial_companies_sic_check", sql`${table.sicCode} is null or ${table.sicCode} ~ '^\\d{4}$'`),
+  check("financial_companies_submission_filed_date_check", sql`${table.lastSubmissionFiledDate} is null or ${table.lastSubmissionFiledDate} ~ '^\\d{4}-\\d{2}-\\d{2}$'`),
+  check("financial_companies_submission_form_check", sql`${table.lastSubmissionForm} is null or ${table.lastSubmissionForm} in ('10-K','10-Q','10-K/A','10-Q/A')`),
 ]);
 
 export const financialCompanyFacts = pgTable("financial_company_facts", {

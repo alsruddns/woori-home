@@ -1,5 +1,6 @@
 import "server-only";
 import { getFinancialReadOnlyPool } from "./financial-readonly";
+import { SEC_TARGETS } from "../data-platform/providers/sec-targets.mjs";
 
 const sortColumns: Record<string, string> = {
   symbol: "a.symbol", name: "a.name", close: "latest.close", changePercent: '"changePercent"', quoteChangePercent: "quote.quote_change_percent",
@@ -112,8 +113,9 @@ export async function getFinancialProviderRuntimeStatus(providerIds: string[]) {
 export type CompanyFactsPeriod = "annual" | "quarterly";
 export type CompanyFactsFilters = { ticker?: string | null; period?: CompanyFactsPeriod | null; latest?: boolean };
 
-const companyFactsRowsCte = `with grouped as (
-    select c.id as "companyId",c.ticker,c.name,c.exchange,f.fiscal_year as "fiscalYear",f.fiscal_period as "fiscalPeriod",
+const companyFactsEligibleCte = `with grouped as (
+    select c.id as "companyId",c.ticker,c.name,c.exchange,c.sector,c.sic_code as "sicCode",c.industry,
+      f.fiscal_year as "fiscalYear",f.fiscal_period as "fiscalPeriod",
       min(f.start_date)::text as "startDate",f.end_date::text as "endDate",f.filed_date::text as "filedDate",f.form,f.accession_number as "accessionNumber",
       case when f.start_date is null then null else (f.end_date::date-f.start_date::date+1)::int end as "durationDays",
       (array_agg(f.value::text order by case f.concept when 'RevenueFromContractWithCustomerExcludingAssessedTax' then 1 when 'Revenues' then 2 else 3 end,f.concept) filter (where f.concept in ('RevenueFromContractWithCustomerExcludingAssessedTax','Revenues','SalesRevenueNet') and f.unit='USD'))[1] as revenue,
@@ -125,18 +127,20 @@ const companyFactsRowsCte = `with grouped as (
       min(f.source_url) as "sourceUrl",s.name as "sourceName",s.attribution
     from financial_company_facts f join financial_companies c on c.id=f.company_id
     join data_sources s on s.id=f.source_id and s.license_status='verified'
-    where f.dataset_id='sec-company-facts' and ($1::text is null or c.ticker=$1)
-    group by c.id,c.ticker,c.name,c.exchange,f.dataset_id,f.fiscal_year,f.fiscal_period,f.start_date,f.end_date,f.filed_date,f.form,f.accession_number,s.name,s.attribution
+    where f.dataset_id='sec-company-facts' and ($1::text is null or c.ticker=$1) and c.ticker=any($4::text[])
+    group by c.id,c.ticker,c.name,c.exchange,c.sector,c.sic_code,c.industry,f.dataset_id,f.fiscal_year,f.fiscal_period,f.start_date,f.end_date,f.filed_date,f.form,f.accession_number,s.name,s.attribution
   ), eligible as (
     select * from grouped where $2::text is null or
-      ($2='annual' and form='10-K' and "fiscalPeriod"='FY' and "durationDays" between 300 and 400) or
-      ($2='quarterly' and form='10-Q' and "fiscalPeriod" in ('Q1','Q2','Q3') and "durationDays" between 65 and 110)
-  ), scored as (
+      ($2='annual' and form in ('10-K','10-K/A') and "fiscalPeriod"='FY' and "durationDays" between 300 and 400) or
+      ($2='quarterly' and form in ('10-Q','10-Q/A') and "fiscalPeriod" in ('Q1','Q2','Q3') and "durationDays" between 65 and 110)
+  )`;
+
+const companyFactsRowsCte = `${companyFactsEligibleCte}, scored as (
     select *, ((revenue is not null)::int+("operatingIncome" is not null)::int+("netIncome" is not null)::int+("operatingCashFlow" is not null)::int) as completeness,
-      row_number() over (partition by "companyId","endDate","filedDate",form,"accessionNumber","fiscalYear","fiscalPeriod" order by ((revenue is not null)::int+("operatingIncome" is not null)::int+("netIncome" is not null)::int+("operatingCashFlow" is not null)::int) desc,abs(coalesce("durationDays",0)-case when $2='annual' then 365 when $2='quarterly' then 90 else 0 end),"startDate" desc nulls last) as filing_row
+      row_number() over (partition by "companyId","endDate","fiscalYear","fiscalPeriod" order by "filedDate" desc,case when form in ('10-K/A','10-Q/A') then 1 else 0 end desc,((revenue is not null)::int+("operatingIncome" is not null)::int+("netIncome" is not null)::int+("operatingCashFlow" is not null)::int) desc,abs(coalesce("durationDays",0)-case when $2='annual' then 365 when $2='quarterly' then 90 else 0 end),"startDate" desc nulls last) as filing_row
     from eligible
   ), period_rows as (
-    select * from scored where $2::text is null or filing_row=1
+    select * from scored where filing_row=1
   ), ranked as (
     select *,row_number() over (partition by "companyId" order by "endDate" desc,"filedDate" desc,"fiscalYear" desc nulls last,"fiscalPeriod" desc nulls last) as latest_row
     from period_rows
@@ -147,14 +151,16 @@ export async function listFinancialCompanyFacts(limit = 100, offset = 0, filters
   const period = filters.period ?? null;
   const latest = filters.latest ?? false;
   const result = await getFinancialReadOnlyPool().query(`${companyFactsRowsCte}
-    select "companyId",ticker,name,exchange,"fiscalYear","fiscalPeriod","startDate","endDate","filedDate",form,"accessionNumber","durationDays",revenue,"operatingIncome","netIncome",assets,liabilities,"operatingCashFlow","sourceUrl","sourceName",attribution
+    select "companyId",ticker,name,exchange,sector,"sicCode",industry,"fiscalYear","fiscalPeriod","startDate","endDate","filedDate",form,"accessionNumber","durationDays",revenue,"operatingIncome","netIncome",assets,liabilities,"operatingCashFlow","sourceUrl","sourceName",attribution
     from ranked where (not $3::boolean or latest_row=1)
-    order by "endDate" desc,"filedDate" desc,ticker limit $4 offset $5`, [ticker, period, latest, Math.max(1, Math.min(200, Math.trunc(limit))), Math.max(0, Math.trunc(offset))]);
+    order by "endDate" desc,"filedDate" desc,ticker limit $5 offset $6`, [ticker, period, latest, SEC_TARGETS.map(({ ticker: targetTicker }) => targetTicker), Math.max(1, Math.min(200, Math.trunc(limit))), Math.max(0, Math.trunc(offset))]);
   return result.rows;
 }
 
 export async function countFinancialCompanyFacts(filters: CompanyFactsFilters = {}) {
-  const result = await getFinancialReadOnlyPool().query(`${companyFactsRowsCte}
-    select count(*)::int as total from ranked where (not $3::boolean or latest_row=1)`, [filters.ticker ?? null, filters.period ?? null, filters.latest ?? false]);
+  const query = filters.latest
+    ? `${companyFactsEligibleCte} select count(distinct "companyId")::int as total from eligible where $3::boolean is not null`
+    : `${companyFactsRowsCte} select count(*)::int as total from ranked`;
+  const result = await getFinancialReadOnlyPool().query(query, [filters.ticker ?? null, filters.period ?? null, filters.latest ?? false, SEC_TARGETS.map(({ ticker }) => ticker)]);
   return result.rows[0]?.total ?? 0;
 }

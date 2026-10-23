@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import type { Locale } from "@/lib/site";
 import { companyFactsCopy, companyFactsUnavailableCopy } from "@/lib/data-platform/company-facts-copy";
 import { companyFactsPeriodCopy } from "@/lib/data-platform/company-facts-period-copy";
+import { companyFactsExtraCopy, companySectorLabel } from "@/lib/data-platform/company-facts-extra-copy";
+import { stockCopy } from "@/lib/data-platform/stock-copy";
+import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 
 type Period = "annual" | "quarterly";
 type CompanyFactRow = {
-  companyId: string; ticker: string; name: string; exchange: string | null; fiscalYear: number | null; fiscalPeriod: string | null;
+  companyId: string; ticker: string; name: string; exchange: string | null; sector: string; sicCode: string | null; industry: string | null; fiscalYear: number | null; fiscalPeriod: string | null;
   startDate: string | null; endDate: string; filedDate: string; form: string; accessionNumber: string; durationDays: number | null;
   revenue: string | null; operatingIncome: string | null; netIncome: string | null; assets: string | null; liabilities: string | null;
   operatingCashFlow: string | null; sourceUrl: string; sourceName: string;
@@ -16,16 +19,31 @@ type CompanyFactRow = {
 export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
   const copy = companyFactsCopy[locale];
   const periodCopy = companyFactsPeriodCopy[locale];
+  const extra = companyFactsExtraCopy[locale];
+  const stock = stockCopy[locale];
   const [period, setPeriod] = useState<Period>("annual");
   const [summaryResult, setSummaryResult] = useState<{ period: Period; data: CompanyFactRow[] } | null>(null);
   const [summaryErrorPeriod, setSummaryErrorPeriod] = useState<Period | null>(null);
   const [historyResult, setHistoryResult] = useState<{ key: string; data: CompanyFactRow[] } | null>(null);
   const [historyErrorKey, setHistoryErrorKey] = useState("");
   const [selectedTicker, setSelectedTicker] = useState("");
+  const [search, setSearch] = useState("");
+  const [sectorFilter, setSectorFilter] = useState("");
+  const [sortMetric, setSortMetric] = useState<"revenue" | "operatingIncome" | "netIncome" | "assets">("revenue");
   const summaryState = summaryResult?.period === period ? "ready" : summaryErrorPeriod === period ? "unavailable" : "loading";
   const historyKey = `${period}:${selectedTicker}`;
   const historyState = historyResult?.key === historyKey ? "ready" : historyErrorKey === historyKey ? "unavailable" : "loading";
-  const summary = summaryResult?.period === period ? summaryResult.data : [];
+  const summary = useMemo(() => summaryResult?.period === period ? summaryResult.data : [], [summaryResult, period]);
+  const visibleSummary = useMemo(() => summary.filter((row) => {
+    const term = search.trim().toLocaleLowerCase(locale);
+    const matchesSearch = !term || [row.ticker, row.name, row.industry ?? ""].some((value) => value.toLocaleLowerCase(locale).includes(term));
+    return matchesSearch && (!sectorFilter || row.sector === sectorFilter);
+  }).sort((left, right) => {
+    const a = left[sortMetric] === null ? null : Number(left[sortMetric]);
+    const b = right[sortMetric] === null ? null : Number(right[sortMetric]);
+    return a === null ? (b === null ? left.ticker.localeCompare(right.ticker) : 1) : b === null ? -1 : b - a;
+  }), [summary, search, sectorFilter, sortMetric, locale]);
+  const sectorOptions = [...new Set(summary.map((row) => row.sector))].sort();
   const history = historyResult?.key === historyKey ? historyResult.data : [];
 
   useEffect(() => {
@@ -57,6 +75,13 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
   const trend = useMemo(() => (historyResult?.key === historyKey ? historyResult.data : [])
     .filter((row) => row.revenue !== null && Number.isFinite(Number(row.revenue)))
     .slice().sort((left, right) => left.endDate.localeCompare(right.endDate)), [historyResult, historyKey]);
+  const revenueGrowth = useMemo(() => {
+    const latest = trend.at(-1);
+    if (!latest || latest.revenue === null || latest.fiscalYear === null) return null;
+    const comparison = trend.find((row) => row.fiscalYear === latest.fiscalYear! - 1 && row.fiscalPeriod === latest.fiscalPeriod && row.revenue !== null);
+    if (!comparison || comparison.revenue === null || Number(comparison.revenue) === 0) return null;
+    return (Number(latest.revenue) / Number(comparison.revenue) - 1) * 100;
+  }, [trend]);
 
   const amount = (value: string | null) => value === null ? "—" : new Intl.NumberFormat(locale, {
     style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1,
@@ -87,10 +112,21 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
     <p className="company-fundamentals-source">{period === "annual" ? periodCopy.annualBasis : periodCopy.quarterlyBasis} {copy.source}</p>
 
     {summaryState === "loading" ? <p role="status">{copy.loading}</p> : summaryState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : summary.length === 0 ? <p role="status">{copy.empty}</p> : <>
+      <div className="company-facts-controls">
+        <label><span>{copy.company}</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={copy.company} /></label>
+        <label><span>{stock.sectorLabel}</span><select value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)}>
+          <option value="">{cryptoCopy[locale].all}</option>
+          {sectorOptions.map((sector) => <option key={sector} value={sector}>{companySectorLabel(locale, sector, stock.sectors)}</option>)}
+        </select></label>
+        <label><span>{extra.sortBy}</span><select value={sortMetric} onChange={(event) => setSortMetric(event.target.value as typeof sortMetric)}>
+          <option value="revenue">{copy.revenue}</option><option value="operatingIncome">{copy.operatingIncome}</option><option value="netIncome">{copy.netIncome}</option><option value="assets">{copy.assets}</option>
+        </select></label>
+      </div>
       <div className="company-facts-summary-grid" aria-label={copy.title}>
-        {summary.map((row) => <button key={`${row.companyId}-${row.accessionNumber}-${row.startDate ?? "instant"}`} type="button" className={`company-facts-summary-card${row.ticker === selectedTicker ? " is-selected" : ""}`} aria-pressed={row.ticker === selectedTicker} onClick={() => setSelectedTicker(row.ticker)}>
+        {visibleSummary.map((row) => <button key={`${row.companyId}-${row.accessionNumber}-${row.startDate ?? "instant"}`} type="button" className={`company-facts-summary-card${row.ticker === selectedTicker ? " is-selected" : ""}`} aria-pressed={row.ticker === selectedTicker} onClick={() => setSelectedTicker(row.ticker)}>
           <span className="company-facts-company"><strong>{row.ticker}</strong><small>{row.name}</small></span>
           <span className="company-facts-period">{periodLabel(row)} <small>{row.form} · {date(row.startDate)} – {date(row.endDate)}</small></span>
+          <span className="company-facts-industry"><small>{companySectorLabel(locale, row.sector, stock.sectors)}</small>{row.industry ? <small>{row.industry}</small> : null}</span>
           <span className="company-facts-metrics">
             <span><small>{copy.revenue}</small><strong>{amount(row.revenue)}</strong></span>
             <span><small>{copy.operatingIncome}</small><strong>{amount(row.operatingIncome)}</strong></span>
@@ -101,6 +137,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
         </button>)}
       </div>
 
+      {visibleSummary.length === 0 ? <p role="status">{copy.empty}</p> : null}
       {selected ? <section className="company-facts-detail" aria-labelledby="company-facts-detail-title">
         <header className="company-facts-detail-heading">
           <div><h3 id="company-facts-detail-title">{periodCopy.detail}: {selected.name} ({selected.ticker})</h3><p>{copy.period}: {periodLabel(selected)} · {copy.filed}: {date(selected.filedDate)}</p></div>
@@ -110,6 +147,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
         </header>
 
         {historyState === "loading" ? <p role="status">{copy.loading}</p> : historyState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : <>
+          {revenueGrowth !== null ? <p className="company-facts-growth">{extra.growth}: <strong>{new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(revenueGrowth / 100)}</strong></p> : null}
           <div className="company-facts-trend" aria-label={periodCopy.revenueTrend}>
             <h4>{periodCopy.revenueTrend}</h4>
             {trend.length > 1 ? <svg viewBox="0 0 600 180" role="img" aria-label={`${periodCopy.revenueTrend}: ${trend.map((row) => `${periodLabel(row)} ${amount(row.revenue)}`).join(", ")}`} preserveAspectRatio="none">

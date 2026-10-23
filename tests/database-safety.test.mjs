@@ -65,6 +65,9 @@ test("dotenv role URL parsing removes quotes and preserves URL-encoded special p
 
 test("production publishing and immutable image references are restricted to main", () => {
   assert.equal(isMainProductionRelease({ ref: "refs/heads/main", eventName: "workflow_dispatch" }), true);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/main", eventName: "schedule" }), false);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/main", eventName: "schedule", autoRefreshEnabled: true }), true);
+  assert.equal(isMainProductionRelease({ ref: "refs/heads/develop", eventName: "schedule", autoRefreshEnabled: true }), false);
   assert.equal(isMainProductionRelease({ ref: "refs/heads/develop", eventName: "workflow_dispatch" }), false);
   assert.equal(isMainProductionRelease({ ref: "refs/heads/release", eventName: "push" }), false);
   assert.equal(assertCommitShaTag("a".repeat(40)), "a".repeat(40));
@@ -103,6 +106,8 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
   assert.match(workflow, /branches: \[main\]/);
   assert.match(workflow, /scripts\/deploy\/release-guard\.mjs/);
+  assert.match(workflow, /SEC_EDGAR_AUTO_REFRESH_ENABLED/);
+  assert.match(workflow, /cron: '17 10 \* \* 1-5'/);
   assert.match(workflow, /PORTAL_DIGEST/);
   assert.match(workflow, /--env-file \.env\.moneybook --env-file \.env\.portal/);
   assert.match(workflow, /test -r \.env\.portal/);

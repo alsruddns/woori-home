@@ -40,12 +40,15 @@ on:
         type: string
         required: false
         default: ''
+  schedule:
+    - cron: '17 10 * * 1-5'
 
 permissions:
   contents: read
 
 jobs:
   release-guard:
+    if: github.event_name != 'schedule' || vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,11 +56,12 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ vars.SEC_EDGAR_AUTO_REFRESH_ENABLED }}
         run: node scripts/deploy/release-guard.mjs
 
   image:
     needs: release-guard
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -74,6 +78,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and publish portal image
+        if: github.event_name != 'schedule'
         id: portal
         uses: docker/build-push-action@v6
         with:
@@ -98,7 +103,7 @@ jobs:
 
   deploy:
     needs: image
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)))
     runs-on: ubuntu-latest
     environment: production
     concurrency:
@@ -115,25 +120,27 @@ jobs:
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
         run: |
           node scripts/deploy/release-guard.mjs
-          node --input-type=module -e 'import {assertCommitDigest,assertCommitShaTag} from "./scripts/deploy/release-guard.mjs"; assertCommitShaTag(process.env.RELEASE_SHA); assertCommitDigest(process.env.PORTAL_DIGEST); assertCommitDigest(process.env.TOOLS_DIGEST);'
+          node --input-type=module -e 'import {assertCommitDigest,assertCommitShaTag} from "./scripts/deploy/release-guard.mjs"; assertCommitShaTag(process.env.RELEASE_SHA); if (process.env.DEPLOY_PORTAL === "true") assertCommitDigest(process.env.PORTAL_DIGEST); assertCommitDigest(process.env.TOOLS_DIGEST);'
+        env:
+          DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal }}
       - name: Deploy only the portal service
         uses: appleboy/ssh-action@v1.2.0
         env:
           RELEASE_SHA: ${{ github.sha }}
           PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
-          DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal }}
+          DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal || 'false' }}
           PREFLIGHT_DATABASE: ${{ github.event_name == 'workflow_dispatch' && inputs.preflight_database || 'false' }}
           APPLY_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_migrations || 'false' }}
           IMPORT_WORLD_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.import_world_bank || 'false' }}
-          IMPORT_SEC: ${{ github.event_name == 'workflow_dispatch' && inputs.import_sec || 'false' }}
-          CONFIRM_PRODUCTION_DB_WRITE: ${{ github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write || 'false' }}
-          RESTORE_VALIDATION_REFERENCE: ${{ inputs.restore_validation_reference || '' }}
+          IMPORT_SEC: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || 'false' }}
+          CONFIRM_PRODUCTION_DB_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || 'false' }}
+          RESTORE_VALIDATION_REFERENCE: ${{ inputs.restore_validation_reference || vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE || '' }}
           EXPECTED_RESTORE_VALIDATION_REFERENCE: ${{ vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE }}
-          PRODUCTION_OPERATION_APPROVAL: ${{ github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec) && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
+          PRODUCTION_OPERATION_APPROVAL: ${{ ((github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true')) && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
           PRODUCTION_DB_ALLOWED_HOSTS: ${{ secrets.PRODUCTION_DB_ALLOWED_HOSTS }}
           PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
-          SEC_EDGAR_USER_AGENT: ${{ github.event_name == 'workflow_dispatch' && inputs.import_sec && secrets.SEC_EDGAR_USER_AGENT || '' }}
+          SEC_EDGAR_USER_AGENT: ${{ ((github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true')) && secrets.SEC_EDGAR_USER_AGENT || '' }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -310,7 +317,7 @@ jobs:
               preflight_report="$(db_tools_run scripts/db/preflight-financial-production.mjs $preflight_args)"
               printf '%s\n' "$preflight_report" | jq -e '.blockers | length == 0' >/dev/null
               if [ "$IMPORT_SEC" = "true" ] && [ "$APPLY_MIGRATIONS" != "true" ]; then
-                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 6' >/dev/null
+                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 12' >/dev/null
               fi
               stage="Check production database migration status"
               printf '[DEPLOY DB] %s\n' "$stage"
@@ -365,7 +372,7 @@ jobs:
                 stage="Verify migration status after migration"
                 migration_status="$(db_tools_run scripts/db/status-production.mjs)"
                 printf '%s\n' "$migration_status"
-                printf '%s\n' "$migration_status" | grep -Eq '6 applied, 0 pending'
+                printf '%s\n' "$migration_status" | grep -Eq '12 applied, 0 pending'
                 stage="Grant and verify Runtime SELECT-only access to SEC tables"
                 db_tools_run scripts/db/grant-financial-runtime-read-production.mjs --apply --backup-reference="$backup_reference"
                 stage="Grant and verify restricted SEC Import access"
