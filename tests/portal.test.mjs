@@ -13,6 +13,7 @@ const categoryRoute = await readFile(new URL("../src/app/(locale)/[locale]/(plat
 const stockPage = await readFile(new URL("../src/app/(locale)/[locale]/stock-market-dashboard.tsx", import.meta.url), "utf8");
 const companyFactsPanel = await readFile(new URL("../src/app/(locale)/[locale]/company-fundamentals-panel.tsx", import.meta.url), "utf8");
 const companyFactsPeriods = await readFile(new URL("../src/lib/data-platform/company-facts-period-copy.ts", import.meta.url), "utf8");
+const companyFactsStatus = await readFile(new URL("../src/lib/data-platform/company-facts-status-copy.ts", import.meta.url), "utf8");
 const platformStyles = await readFile(new URL("../src/app/(locale)/[locale]/platform.css", import.meta.url), "utf8");
 const worldData = await readFile(new URL("../src/app/(locale)/[locale]/world-data.tsx", import.meta.url), "utf8");
 const portalFooter = await readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8");
@@ -326,11 +327,14 @@ test("market snapshots are disclosed, accessible, theme-aware, and free of inter
   assert.match(companyFactsPanel, /ticker: selectedTicker/);
   assert.match(companyFactsPanel, /notation: "compact"/);
   assert.match(companyFactsPanel, /company-facts-history-table/);
+  assert.match(companyFactsPanel, /dataObservedAt/);
+  assert.match(companyFactsPanel, /calculateYearOverYearGrowth\(history, "netIncome"\)/);
   assert.match(platformStyles, /company-facts-summary-grid\{display:grid;grid-template-columns:repeat\(2/);
   assert.match(platformStyles, /@media\(max-width:760px\)/);
   assert.match(platformStyles, /company-facts-summary-grid\{grid-template-columns:1fr\}/);
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.match(companyFactsPeriods, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{ annual: "[^"]+", quarterly: "[^"]+", annualBasis: "[^"]+", quarterlyBasis: "[^"]+"`), `${locale}: missing company period copy`);
+    assert.match(companyFactsStatus, new RegExp(`(?:^|\\n)\\s*"?${locale}"?: \\{ factsLoaded: "[^"]+", netIncomeGrowth: "[^"]+"`), `${locale}: missing SEC freshness and net income growth copy`);
   }
   assert.doesNotMatch(stockPage, /licensedSource\}/);
 });
@@ -376,8 +380,8 @@ test("root favicon and PNG site icons are declared and use square public PNG ass
     assert.ok(png.readUInt32BE(16) >= minimum, `${name} is at least ${minimum}px`);
   }
   assert.match(layout, /url: "\/favicon\.ico"/);
-  assert.match(layout, /url: "\/icon\.png", type: "image\/png"/);
-  assert.match(layout, /apple: "\/apple-icon\.png"/);
+  assert.match(layout, /url: "\/_assets\/portal\/icon\.png", type: "image\/png"/);
+  assert.match(layout, /apple: "\/_assets\/portal\/apple-icon\.png"/);
 });
 
 test("portal sitemap contains locale home and privacy pages with matching alternates", () => {

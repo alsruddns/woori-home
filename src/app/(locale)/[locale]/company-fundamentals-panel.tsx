@@ -5,6 +5,7 @@ import type { Locale } from "@/lib/site";
 import { companyFactsCopy, companyFactsUnavailableCopy } from "@/lib/data-platform/company-facts-copy";
 import { companyFactsPeriodCopy } from "@/lib/data-platform/company-facts-period-copy";
 import { companyFactsExtraCopy, companySectorLabel } from "@/lib/data-platform/company-facts-extra-copy";
+import { companyFactsStatusCopy } from "@/lib/data-platform/company-facts-status-copy";
 import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 
@@ -16,13 +17,27 @@ type CompanyFactRow = {
   operatingCashFlow: string | null; sourceUrl: string; sourceName: string;
 };
 
+function calculateYearOverYearGrowth(rows: CompanyFactRow[], metric: "revenue" | "netIncome") {
+  const comparable = rows.filter((row) => row[metric] !== null && row.fiscalYear !== null)
+    .slice().sort((left, right) => left.endDate.localeCompare(right.endDate));
+  const latest = comparable.at(-1);
+  if (!latest || latest[metric] === null || latest.fiscalYear === null) return null;
+  const comparison = comparable.find((row) => row.fiscalYear === latest.fiscalYear! - 1 && row.fiscalPeriod === latest.fiscalPeriod);
+  if (!comparison || comparison[metric] === null) return null;
+  const currentValue = Number(latest[metric]);
+  const previousValue = Number(comparison[metric]);
+  if (!Number.isFinite(currentValue) || !Number.isFinite(previousValue) || previousValue <= 0 || currentValue < 0) return null;
+  return (currentValue / previousValue - 1) * 100;
+}
+
 export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
   const copy = companyFactsCopy[locale];
   const periodCopy = companyFactsPeriodCopy[locale];
   const extra = companyFactsExtraCopy[locale];
+  const statusCopy = companyFactsStatusCopy[locale];
   const stock = stockCopy[locale];
   const [period, setPeriod] = useState<Period>("annual");
-  const [summaryResult, setSummaryResult] = useState<{ period: Period; data: CompanyFactRow[] } | null>(null);
+  const [summaryResult, setSummaryResult] = useState<{ period: Period; data: CompanyFactRow[]; asOf: string | null; dataObservedAt: string | null } | null>(null);
   const [summaryErrorPeriod, setSummaryErrorPeriod] = useState<Period | null>(null);
   const [historyResult, setHistoryResult] = useState<{ key: string; data: CompanyFactRow[] } | null>(null);
   const [historyErrorKey, setHistoryErrorKey] = useState("");
@@ -44,7 +59,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
     return a === null ? (b === null ? left.ticker.localeCompare(right.ticker) : 1) : b === null ? -1 : b - a;
   }), [summary, search, sectorFilter, sortMetric, locale]);
   const sectorOptions = [...new Set(summary.map((row) => row.sector))].sort();
-  const history = historyResult?.key === historyKey ? historyResult.data : [];
+  const history = useMemo(() => historyResult?.key === historyKey ? historyResult.data : [], [historyResult, historyKey]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -53,7 +68,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
       .then(async (response) => { if (!response.ok) throw new Error("Financial facts unavailable."); return response.json(); })
       .then((payload) => {
         const data = Array.isArray(payload.data) ? payload.data as CompanyFactRow[] : [];
-        setSummaryResult({ period, data });
+        setSummaryResult({ period, data, asOf: typeof payload.asOf === "string" ? payload.asOf : null, dataObservedAt: typeof payload.dataObservedAt === "string" ? payload.dataObservedAt : null });
         setSelectedTicker((current) => data.some((row) => row.ticker === current) ? current : data[0]?.ticker ?? "");
       })
       .catch(() => { if (!controller.signal.aborted) { setSummaryErrorPeriod(period); setSelectedTicker(""); } });
@@ -75,13 +90,8 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
   const trend = useMemo(() => (historyResult?.key === historyKey ? historyResult.data : [])
     .filter((row) => row.revenue !== null && Number.isFinite(Number(row.revenue)))
     .slice().sort((left, right) => left.endDate.localeCompare(right.endDate)), [historyResult, historyKey]);
-  const revenueGrowth = useMemo(() => {
-    const latest = trend.at(-1);
-    if (!latest || latest.revenue === null || latest.fiscalYear === null) return null;
-    const comparison = trend.find((row) => row.fiscalYear === latest.fiscalYear! - 1 && row.fiscalPeriod === latest.fiscalPeriod && row.revenue !== null);
-    if (!comparison || comparison.revenue === null || Number(comparison.revenue) === 0) return null;
-    return (Number(latest.revenue) / Number(comparison.revenue) - 1) * 100;
-  }, [trend]);
+  const revenueGrowth = useMemo(() => calculateYearOverYearGrowth(history, "revenue"), [history]);
+  const netIncomeGrowth = useMemo(() => calculateYearOverYearGrowth(history, "netIncome"), [history]);
 
   const amount = (value: string | null) => value === null ? "—" : new Intl.NumberFormat(locale, {
     style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1,
@@ -90,6 +100,11 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
     if (!value) return "—";
     const parsed = new Date(`${value}T00:00:00Z`);
     return Number.isNaN(parsed.valueOf()) ? value : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(parsed);
+  };
+  const dateTime = (value: string | null) => {
+    if (!value) return "—";
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.valueOf()) ? value : new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(parsed);
   };
   const periodLabel = (row: CompanyFactRow) => `${row.fiscalPeriod ?? row.form}${row.fiscalYear ? ` ${row.fiscalYear}` : ""}`;
   const chartPoints = useMemo(() => {
@@ -109,7 +124,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
         <button type="button" aria-pressed={period === "quarterly"} onClick={() => setPeriod("quarterly")}>{periodCopy.quarterly} <small>10-Q</small></button>
       </div>
     </header>
-    <p className="company-fundamentals-source">{period === "annual" ? periodCopy.annualBasis : periodCopy.quarterlyBasis} {copy.source}</p>
+    <p className="company-fundamentals-source">{period === "annual" ? periodCopy.annualBasis : periodCopy.quarterlyBasis} {copy.source}{summaryResult?.period === period ? <> {copy.filed}: {date(summaryResult.asOf)} · {statusCopy.factsLoaded}: {dateTime(summaryResult.dataObservedAt)} UTC</> : null}</p>
 
     {summaryState === "loading" ? <p role="status">{copy.loading}</p> : summaryState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : summary.length === 0 ? <p role="status">{copy.empty}</p> : <>
       <div className="company-facts-controls">
@@ -148,6 +163,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
 
         {historyState === "loading" ? <p role="status">{copy.loading}</p> : historyState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : <>
           {revenueGrowth !== null ? <p className="company-facts-growth">{extra.growth}: <strong>{new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(revenueGrowth / 100)}</strong></p> : null}
+          {netIncomeGrowth !== null ? <p className="company-facts-growth">{statusCopy.netIncomeGrowth}: <strong>{new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(netIncomeGrowth / 100)}</strong></p> : null}
           <div className="company-facts-trend" aria-label={periodCopy.revenueTrend}>
             <h4>{periodCopy.revenueTrend}</h4>
             {trend.length > 1 ? <svg viewBox="0 0 600 180" role="img" aria-label={`${periodCopy.revenueTrend}: ${trend.map((row) => `${periodLabel(row)} ${amount(row.revenue)}`).join(", ")}`} preserveAspectRatio="none">

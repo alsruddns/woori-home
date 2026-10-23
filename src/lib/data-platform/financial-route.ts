@@ -50,7 +50,12 @@ export async function financialCompanyFactsRoute(request: Request) {
     if (!parsed.ok) return financialApiResponse({ error: parsed.error }, parsed.status);
     const filters = { ticker: parsed.ticker, period: parsed.period, latest: parsed.latest };
     const [rows, total] = await Promise.all([listFinancialCompanyFacts(parsed.pageSize, parsed.offset, filters), countFinancialCompanyFacts(filters)]);
-    return financialApiResponse({ data: rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total }, source: rows[0]?.sourceName ?? "U.S. SEC EDGAR Company Facts", asOf: rows[0]?.filedDate ?? null, dataState: total ? "available" : "no-company-facts" });
+    const asOf = rows.reduce<string | null>((latest, row) => typeof row.filedDate === "string" && (!latest || row.filedDate > latest) ? row.filedDate : latest, null);
+    const dataObservedAt = rows.reduce<Date | null>((latest, row) => {
+      const candidate = row.dataObservedAt instanceof Date ? row.dataObservedAt : row.dataObservedAt ? new Date(String(row.dataObservedAt)) : null;
+      return candidate && !Number.isNaN(candidate.valueOf()) && (!latest || candidate > latest) ? candidate : latest;
+    }, null);
+    return financialApiResponse({ data: rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total }, source: rows[0]?.sourceName ?? "U.S. SEC EDGAR Company Facts", asOf, dataObservedAt, dataState: total ? "available" : "no-company-facts" });
   } catch (error) {
     const reason = classifyFinancialDatabaseError(error);
     console.error("Financial company-facts read failed", reason, safeErrorCode(error));
