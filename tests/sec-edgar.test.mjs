@@ -94,9 +94,11 @@ test("SEC target identity override selects XOM's reporting parent CIK", () => {
   assert.equal(company.cik, "0000034088");
   assert.equal(company.name, "Exxon Mobil Corporation");
   assert.equal(company.rekeyFromCik, "0002115436");
+  assert.equal(company.rekeyFromName, "ExxonMobil Holdings Corp");
   const normalized = normalizeSecCompanyFacts(sample, company);
   assert.equal(normalized.company.cik, "0000034088");
   assert.equal(normalized.company.rekeyFromCik, "0002115436");
+  assert.equal(normalized.company.rekeyFromName, "ExxonMobil Holdings Corp");
 });
 
 test("SEC incremental collection skips an unchanged accession and isolates company failures", async () => {
@@ -124,7 +126,10 @@ test("SEC persistence maps normalized facts to database column names and upserts
   const client = {
     async query(sql, args) {
       statements.push({ sql, args });
-      if (sql.includes("update financial_companies as old_company")) return { rowCount: 1, rows: [] };
+      if (sql.includes("select id,ticker from financial_companies")) return { rows: [{ id: "legacy-company", ticker: "XOM" }] };
+      if (sql.includes("select id from financial_companies where source_id=$1 and ticker=$2")) return { rows: [] };
+      if (sql.includes("update financial_companies set ticker")) return { rowCount: 1, rows: [] };
+      if (sql.includes("update financial_company_facts set company_id")) return { rowCount: 14, rows: [] };
       if (sql.includes("insert into financial_companies")) return { rows: [{ id: args[3] === "AAPL" ? "company-aapl" : "company-msft" }] };
       const batch = JSON.parse(args[0]);
       return { rows: batch.map(() => ({ inserted: true })) };
@@ -135,13 +140,15 @@ test("SEC persistence maps normalized facts to database column names and upserts
   snapshot.company.rekeyFromCik = "0000000001";
   const result = await persistSecCompanyFacts(client, {
     updated: [{ ...snapshot, profile: { latestFiling: { accessionNumber: "0000320193-24-000001", filedDate: "2024-05-01", form: "10-Q" } } }],
-    unchanged: [{ company: { ...snapshot.company, ticker: "MSFT", cik: "0000789019", sourceUrl: "https://www.sec.gov/edgar/browse/?CIK=789019" }, profile: { latestFiling: { accessionNumber: "0000789019-24-000001", filedDate: "2024-05-01", form: "10-Q" } } }],
+    unchanged: [{ company: { ...snapshot.company, ticker: "MSFT", cik: "0000789019", rekeyFromCik: undefined, rekeyFromName: undefined, sourceUrl: "https://www.sec.gov/edgar/browse/?CIK=789019" }, profile: { latestFiling: { accessionNumber: "0000789019-24-000001", filedDate: "2024-05-01", form: "10-Q" } } }],
   }, { sourceId: "sec-edgar-companyfacts", datasetId: "sec-company-facts" });
   assert.equal(result.companies, 2);
   assert.equal(result.facts, snapshot.facts.length);
-  assert.match(statements[0].sql, /old_company\.cik=\$3/);
-  assert.equal(statements[0].args[2], "0000000001");
-  assert.match(statements[0].sql, /not exists \(select 1 from financial_companies current_company/);
+  assert.equal(result.reclassifiedFacts, 14);
+  assert.match(statements.find(({ sql }) => sql.includes("update financial_companies set ticker")).sql, /ticker=\$2/);
+  assert.equal(statements.find(({ sql }) => sql.includes("update financial_companies set ticker")).args[1], "CIK1");
+  assert.match(statements.find(({ sql }) => sql.includes("update financial_company_facts set company_id")).sql, /position\(\$4 in source_url\)>0/);
+  assert.doesNotMatch(statements.map(({ sql }) => sql).join("\n"), /delete from/i);
   const batch = JSON.parse(statements.find(({ sql }) => sql.includes("jsonb_to_recordset" )).args[0]);
   assert.equal(batch[0].company_id, "company-aapl");
   assert.equal(batch[0].period_key, "2024-01-01");

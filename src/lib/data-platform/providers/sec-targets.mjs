@@ -49,6 +49,7 @@ export function parseSecTickerDirectory(text, targets = SEC_TARGETS) {
       exchange: target.exchange ?? exchange,
       sector: target.sector,
       ...(target.rekeyFromCik ? { rekeyFromCik: target.rekeyFromCik } : {}),
+      ...(target.rekeyFromCik ? { rekeyFromName: name } : {}),
     };
     const prior = found.get(ticker);
     if (!prior || (candidate.exchange === "Nasdaq" || candidate.exchange === "NYSE")) found.set(ticker, candidate);

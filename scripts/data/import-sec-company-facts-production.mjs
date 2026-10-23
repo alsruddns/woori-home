@@ -96,7 +96,7 @@ try {
       const firstFailure = collected.failed[0] ?? null;
       await client.query(`update data_collection_runs set finished_at=now(),status=$2,record_count=$3,inserted_count=$4,updated_count=$5,
         latest_reference_period=(select max(end_date) from financial_company_facts where source_id=$6),error_category=$7,error_message=$8 where id=$1`,
-      [run.id, status, saved.facts, saved.insertedFacts, saved.updatedFacts, SEC_SOURCE_ID, firstFailure?.code ?? null, firstFailure?.error ?? null]);
+      [run.id, status, saved.facts + saved.reclassifiedFacts, saved.insertedFacts, saved.updatedFacts + saved.reclassifiedFacts, SEC_SOURCE_ID, firstFailure?.code ?? null, firstFailure?.error ?? null]);
       await client.query("commit");
       console.log(JSON.stringify({ result: status, ...saved, skippedUnchanged: collected.unchanged.length, failed: collected.failed }));
       if (collected.failed.length) process.exitCode = 1;

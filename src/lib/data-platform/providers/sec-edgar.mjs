@@ -78,6 +78,7 @@ export function normalizeSecCompanyFacts(payload, company, fetchedAt = new Date(
       lastSubmissionForm: profile.latestFiling?.form ?? null,
       sourceUrl: `https://www.sec.gov/edgar/browse/?CIK=${Number(company.cik)}&owner=exclude`,
       ...(company.rekeyFromCik ? { rekeyFromCik: company.rekeyFromCik } : {}),
+      ...(company.rekeyFromName ? { rekeyFromName: company.rekeyFromName } : {}),
     },
     facts,
   };
