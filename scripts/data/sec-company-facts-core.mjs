@@ -44,6 +44,19 @@ export async function persistSecCompanyFacts(client, { updated, unchanged }, { s
   const companyIds = new Map();
   for (const item of [...unchanged, ...updated]) {
     const company = item.company;
+    if (company.rekeyFromCik) {
+      await client.query(`update financial_companies as old_company set
+          cik=$4,provider_company_id=$4,name=$5,exchange=$6,sector=$7,sic_code=$8,industry=$9,
+          last_submission_accession=coalesce($10,old_company.last_submission_accession),
+          last_submission_filed_date=coalesce($11,old_company.last_submission_filed_date),
+          last_submission_form=coalesce($12,old_company.last_submission_form),
+          country_code='US',source_url=$13,updated_at=now()
+        where old_company.source_id=$1 and old_company.ticker=$2 and old_company.cik=$3
+          and not exists (select 1 from financial_companies current_company where current_company.source_id=$1 and current_company.cik=$4)`,
+      [sourceId, company.ticker, company.rekeyFromCik, company.cik, company.name, company.exchange, company.sector ?? "other", company.sicCode,
+        company.industry, item.profile.latestFiling?.accessionNumber ?? null, item.profile.latestFiling?.filedDate ?? null,
+        item.profile.latestFiling?.form ?? null, company.sourceUrl]);
+    }
     const { rows: [saved] } = await client.query(`insert into financial_companies
         (source_id,provider_company_id,cik,ticker,name,exchange,sector,sic_code,industry,last_submission_accession,last_submission_filed_date,last_submission_form,country_code,source_url,updated_at)
       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'US',$13,now())
