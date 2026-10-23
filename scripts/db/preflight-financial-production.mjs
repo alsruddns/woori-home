@@ -189,6 +189,18 @@ try {
   if (sourceResult.rows[0] && !sourceMatches) report.blockers.push("SEC data_sources ID exists with fields different from the Migration 0004 seed.");
   if (datasetResult.rows[0] && !datasetMatches) report.blockers.push("SEC datasets ID exists with fields different from the Migration 0004 seed.");
 
+  if (tableNames.has("financial_companies") && tableNames.has("financial_company_facts")) {
+    const xomRows = await pool.query(`select c.id::text as id,c.cik,c.ticker,c.name,c.exchange,
+        count(f.company_id)::int as facts,
+        count(f.company_id) filter(where f.form in ('10-K','10-K/A'))::int as annual_facts,
+        count(f.company_id) filter(where f.form in ('10-Q','10-Q/A'))::int as quarterly_facts
+      from financial_companies c
+      left join financial_company_facts f on f.company_id=c.id and f.source_id=c.source_id
+      where c.source_id=$1 and (c.ticker='XOM' or c.cik=any($2::text[]))
+      group by c.id,c.cik,c.ticker,c.name,c.exchange order by c.cik,c.ticker`, [expectedSource.id, ["0000034088", "0002115436"]]);
+    report.secIdentityDiagnostic = { purpose: "read-only SEC issuer identity conflict diagnosis", rows: xomRows.rows };
+  }
+
   const runtime = new Pool({ connectionString: process.env.DATABASE_URL, max: 1, connectionTimeoutMillis: 5000, idleTimeoutMillis: 1000, allowExitOnIdle: true, options: "-c default_transaction_read_only=on -c statement_timeout=10000 -c application_name=woori_financial_runtime_preflight" });
   const importer = new Pool({ connectionString: process.env.DB_IMPORT_URL, max: 1, connectionTimeoutMillis: 5000, idleTimeoutMillis: 1000, allowExitOnIdle: true, options: "-c default_transaction_read_only=on -c statement_timeout=10000 -c application_name=woori_financial_import_preflight" });
   try {
