@@ -14,6 +14,7 @@ import { goldCopy } from "@/lib/data-platform/gold-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 import { categoryNavigation } from "@/lib/data-platform/category-navigation";
 import { mineralCopy } from "@/lib/data-platform/mineral-copy";
+import { unitFor } from "@/lib/data-platform/country-units";
 
 const viewLabels: Record<Locale, string> = {
   ru:"Открыть данные",
@@ -46,9 +47,22 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   const familyCopy = familySitesCopy[locale];
   const population = latestForCountry("SP.POP.TOTL", "WLD");
   const gdp = latestForCountry("NY.GDP.MKTP.CD", "WLD");
+  const gdpPerCapita = latestForCountry("NY.GDP.PCAP.KD", "WLD");
+  const gdpGrowth = latestForCountry("NY.GDP.MKTP.KD.ZG", "WLD");
+  const inflation = latestForCountry("FP.CPI.TOTL.ZG", "WLD");
+  const unemployment = latestForCountry("SL.UEM.TOTL.ZS", "WLD");
   const electricityAccess = latestForCountry("EG.ELC.ACCS.ZS", "WLD");
   const populationIndicator = indicators.find((item) => item.id === "population")!;
   const gdpIndicator = indicators.find((item) => item.id === "gdp")!;
+  const format = (value: number, maximumFractionDigits = 0) => new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
+  const summaryMetrics = [
+    { item: population, indicator: indicators.find((metric) => metric.id === "population")!, value: population ? format(population.value) : copy.missing },
+    { item: gdp, indicator: gdpIndicator, value: gdp ? new Intl.NumberFormat(locale, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(gdp.value) : copy.missing },
+    { item: gdpPerCapita, indicator: indicators.find((metric) => metric.id === "gdp-per-capita-real")!, value: gdpPerCapita ? new Intl.NumberFormat(locale, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(gdpPerCapita.value) : copy.missing },
+    { item: gdpGrowth, indicator: indicators.find((metric) => metric.id === "gdp-growth")!, value: gdpGrowth ? `${format(gdpGrowth.value, 2)}%` : copy.missing },
+    { item: inflation, indicator: indicators.find((metric) => metric.id === "inflation")!, value: inflation ? `${format(inflation.value, 2)}%` : copy.missing },
+    { item: unemployment, indicator: indicators.find((metric) => metric.id === "unemployment")!, value: unemployment ? `${format(unemployment.value, 2)}%` : copy.missing },
+  ];
   const navLabel = (id: string) => categoryNavigation(locale).find((item) => item.id === id)?.label ?? "";
   const cards = [
     { href: `/${locale}/stocks`, title: copy.categories[2], detail: stocks.noMarketSnapshots },
@@ -71,7 +85,6 @@ export function PlatformHome({ locale }: { locale: Locale }) {
     inLanguage: hreflangFor(locale),
     hasPart: familyKeys.map((key) => ({ "@type": "WebSite", name: familyCopy.sites[key], url: `https://www.woori.today${familySiteHref(locale, key)}` })),
   };
-  const format = (value: number, maximumFractionDigits = 0) => new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
   const date = (value?: string) => value ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`)) : copy.missing;
   const extensions = [
     { href: `/${locale}/energy`, title: copy.categories[4], detail: energyPageCopy[locale].intro, value: electricityAccess ? `${format(electricityAccess.value, 1)}%` : copy.missing, meta: electricityAccess ? `${energyPageCopy[locale].dateLabel}: ${electricityAccess.year} · ${energyAccessCopy[locale].source}` : copy.notAvailable },
@@ -83,8 +96,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
     <header className="platform-page-heading platform-home-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank</span><h1>{copy.overview}</h1><p>{copy.overviewBody}</p></header>
     <GlobalDataBriefing locale={locale} />
     <section className="platform-home-summary" aria-label={copy.latest}>
-      <article><span>{populationIndicator.label[locale]}</span><strong>{population ? format(population.value) : copy.missing}</strong><small>{population ? `${copy.referenceYear}: ${population.year}` : copy.notAvailable}</small></article>
-      <article><span>{gdpIndicator.label[locale]}</span><strong>{gdp ? new Intl.NumberFormat(locale, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(gdp.value) : copy.missing}</strong><small>{gdp ? `${copy.referenceYear}: ${gdp.year}` : copy.notAvailable}</small></article>
+      {summaryMetrics.map(({ item, indicator, value }) => <article key={indicator.id}><span>{indicator.label[locale] ?? indicator.label.en}</span><strong>{value}</strong><small>{item ? `${copy.referenceYear}: ${item.year} · ${unitFor(locale, indicator)}` : copy.notAvailable}</small><small>{item ? `${copy.dataSource}: World Bank WDI · ${date(item.lastCheckedAt.slice(0, 10))}` : ""}</small></article>)}
     </section>
     <section className="platform-home-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{copy.overview}</h2></div></div>
       <div className="platform-home-grid">{cards.map((card) => <article className="platform-home-card" key={card.href}>

@@ -1,6 +1,6 @@
 # Data source and reuse audit
 
-Reviewed: 2026-10-21. This audit records the conditions checked for the current WDI snapshot and candidate providers. It is not a blanket license for every individual source series: the provider's metadata and source-specific notices still control.
+Reviewed: 2026-10-25. This audit records the conditions checked for the WDI series currently approved for display and PostgreSQL storage, plus candidate providers. It is not a blanket license for every individual series: provider metadata and source-specific notices still control.
 
 ## Current source: World Bank World Development Indicators
 
@@ -16,13 +16,16 @@ Reviewed: 2026-10-21. This audit records the conditions checked for the current 
 | Missing values | Null observations are omitted. No interpolation or forward filling |
 | Collection | Monthly GitHub Actions batch; checked-in snapshot remains available if a refresh fails |
 
-The reviewed snapshot contains 4,514 non-null observations across eight indicators for WLD plus 15 countries, 1990–2025. Counts can change as WDI is revised. It includes modeled ILO unemployment (560 observations, latest 2025) and electricity access (530 observations, latest 2024). Provider strings are stored once per indicator in the normalized snapshot and shown on detail pages.
+The snapshot contains 126,038 non-null observations across 11 indicators for 217 economies plus WLD, 1960–2025. Counts change as WDI is revised. Seven series with DataBank metadata reviewed for CC BY 4.0 are approved for database storage and attribution; four other series remain JSON-only. Provider/source names are retained per series and shown with the relevant data.
 
 | Indicator | Definition / unit | Values | Latest year | Decision |
 | --- | --- | ---: | ---: | --- |
-| `NY.GDP.MKTP.KD.ZG` | GDP growth, annual % | 576 | 2025 | Withheld: source metadata includes national statistics and OECD, but the exact upstream series conditions were not confirmed |
-| `FP.CPI.TOTL.ZG` | Consumer price inflation, annual % | 575 | 2025 | Withheld: source is IMF IFS; IMF requests permission for potential commercial reuse |
-| `SL.UEM.TOTL.ZS` | Unemployment, modeled ILO estimate, % of labor force | 560 | 2025 | Included; ILO datasets and metadata published since 2023-05-03 are CC BY 4.0 unless otherwise indicated; label retains modeled-estimate qualifier |
+| `SP.POP.TOTL` | Population, people | 14,358 | 2025 | Included for display and storage; [DataBank series metadata](https://databank.worldbank.org/metadataglossary/world-development-indicators/series/SP.POP.TOTL) specifies CC BY 4.0 |
+| `NY.GDP.MKTP.CD` | GDP, current US$ | 11,830 | 2025 | Included; [DataBank series metadata](https://databank.worldbank.org/metadataglossary/world-development-indicators/series/NY.GDP.MKTP.CD) specifies CC BY 4.0 |
+| `NY.GDP.PCAP.KD` | GDP per capita, constant 2015 US$ | 11,599 | 2025 | Included; [DataBank series metadata](https://databank.worldbank.org/metadataglossary/world-development-indicators/series/NY.GDP.PCAP.KD) specifies CC BY 4.0 |
+| `NY.GDP.MKTP.KD.ZG` | Real GDP growth, annual % | 11,473 | 2025 | Included; [DataBank series metadata](https://databank.worldbank.org/metadataglossary/world-development-indicators/series/NY.GDP.MKTP.KD.ZG) specifies CC BY 4.0. It is not a price return |
+| `FP.CPI.TOTL.ZG` | Consumer price inflation, annual % | 9,196 | 2025 | Included; [DataBank series metadata](https://databank.worldbank.org/metadataglossary/world-development-indicators/series/FP.CPI.TOTL.ZG) specifies CC BY 4.0 |
+| `SL.UEM.TOTL.ZS` | Unemployment, modeled ILO estimate, % of labor force | 6,566 | 2025 | Included; ILO datasets and metadata published since 2023-05-03 are CC BY 4.0 unless otherwise indicated; label retains modeled-estimate qualifier |
 | `NV.IND.TOTL.ZS` | Industry value added, % of GDP | 548 | 2025 | Candidate for economy |
 | `NE.EXP.GNFS.CD` | Exports of goods and services, current US$ | 538 | 2025 | Candidate; WLD aggregate absent in this query |
 | `NE.IMP.GNFS.CD` | Imports of goods and services, current US$ | 538 | 2025 | Candidate; WLD aggregate absent in this query |
@@ -31,7 +34,7 @@ The reviewed snapshot contains 4,514 non-null observations across eight indicato
 | `SP.POP.TOTL.FE.IN` / `SP.POP.TOTL.MA.IN` | Female / male population, people | 576 each | 2025 | Available; do not infer gender identity from these binary source series |
 | `SP.DYN.IMRT.IN` | Infant mortality, deaths per 1,000 live births | 560 | 2024 | Withheld pending rights checks across UNICEF, WHO, World Bank and UN source records |
 | `EG.FEC.RNEW.ZS` | Renewable energy consumption, % of total final energy consumption | 511 | 2021 | Withheld: underlying source is IEA; IEA terms for non-CC material require additional permission/licensing for some recurring or revenue-generating display uses |
-| `EG.ELC.ACCS.ZS` | Population with access to electricity, % | 530 | 2024 | Included after World Bank DataBank series metadata was confirmed as CC BY 4.0; provider metadata names SE4ALL / Global Tracking Framework. Access is not consumption |
+| `EG.ELC.ACCS.ZS` | Population with access to electricity, % | 6,774 | 2024 | Included after World Bank DataBank series metadata was confirmed as CC BY 4.0; provider metadata names SE4ALL / Global Tracking Framework. Access is not consumption |
 | `EG.USE.PCAP.KG.OE` | Energy use per capita, kg of oil equivalent | 560 | 2024 | Withheld: underlying source is IEA; per-capita measure, not total consumption |
 | `EG.USE.ELEC.KH.PC` | Electric power consumption, kWh per capita | 570 | 2025 | Withheld: underlying source is IEA; distinct from access and total energy use |
 | `SP.POP.1524.TO.ZS` | Youth population share | 0 | — | Excluded: indicator unavailable for the queried range |
@@ -163,7 +166,7 @@ Only the ILO modeled unemployment series was added after confirming ILOSTAT's CC
 - Snapshot replacement uses a same-directory temporary file and rename. The public data snapshot is replaced only after normalization and validation finish. The status is collection status only; it does not claim that visitors received the file.
 - The three update workflows upload the snapshot and status file to `develop` only, use concurrency locks, bounded retries in the source adapters, and 15-minute job timeouts. If collection fails, the workflow still records the failure status before returning a failed job.
 - GitHub CLI authentication was available, but `gh workflow list --all` returned only the main-branch `publish.yml`. The data workflows exist only on `develop`; therefore GitHub does not currently offer them for `workflow_dispatch`, and their schedules are not active. No remote workflow run was dispatched.
-- Local live-source runs succeeded for Crossref (37 records), World Bank (4,514 observations; unchanged), and NASA NeoWs (57 records; unchanged). Re-running Crossref on the same UTC day was skipped after a successful run; its API search result is otherwise allowed one daily refresh, and recently indexed records are retained within the 30-day window to dampen result-set fluctuation.
+- Previous live-source checks succeeded for Crossref and NASA NeoWs. The current World Bank snapshot refresh fetched 11 WDI indicators with 126,038 non-null observations; the approved seven-indicator PostgreSQL scope reconciles at 71,796 observations. Re-running Crossref on the same UTC day is skipped after a successful run; its API search result is otherwise allowed one daily refresh, and recently indexed records are retained within the 30-day window to dampen result-set fluctuation.
 - A `develop` commit is not a production data delivery. The current `publish.yml` builds/deploys on `main`; this task did not change it or production. A separately approved integration still needs a data publication path that atomically makes a validated version available to the running container and records publication success separately from collection success.
 
 ### Additional scholarly metadata candidates

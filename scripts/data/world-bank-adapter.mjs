@@ -1,15 +1,28 @@
 const API = "https://api.worldbank.org/v2";
 const LICENSE = "World Bank terms of use; indicator-specific terms may apply";
 const INDICATOR_LICENSES = {
+  "SP.POP.TOTL": "CC BY 4.0; World Bank WDI metadata explicitly identifies this indicator as CC BY-4.0",
+  "NY.GDP.MKTP.CD": "CC BY 4.0; World Bank WDI metadata explicitly identifies this indicator as CC BY-4.0",
+  "NY.GDP.PCAP.KD": "CC BY 4.0; World Bank WDI metadata explicitly identifies this indicator as CC BY-4.0",
+  "NY.GDP.PCAP.CD": "CC BY 4.0; World Bank WDI metadata explicitly identifies this indicator as CC BY-4.0",
+  "NY.GDP.MKTP.KD.ZG": "CC BY 4.0; World Bank WDI metadata explicitly identifies this indicator as CC BY-4.0",
+  "FP.CPI.TOTL.ZG": "CC BY 4.0; World Bank WDI metadata explicitly identifies this indicator as CC BY-4.0",
   "SL.UEM.TOTL.ZS": "World Bank terms (CC BY 4.0 default); ILOSTAT data CC BY 4.0",
   "EG.ELC.ACCS.ZS": "CC BY 4.0; World Bank WDI, SDG 7.1.1 Electrification Dataset (ESMAP/World Bank)",
 };
 const UNITS = {
   "SP.POP.TOTL": "people", "NY.GDP.MKTP.CD": "current US dollars", "NY.GDP.PCAP.CD": "current US dollars per person",
+  "NY.GDP.PCAP.KD": "constant 2015 US dollars per person",
   "SP.DYN.TFRT.IN": "births per woman", "SP.DYN.LE00.IN": "years", "SP.POP.GROW": "percent per year",
+  "NY.GDP.MKTP.KD.ZG": "percent per year", "FP.CPI.TOTL.ZG": "percent per year",
   "SL.UEM.TOTL.ZS": "percent of labor force",
   "EG.ELC.ACCS.ZS": "percent of population",
 };
+
+export const WORLD_BANK_INDICATORS = Object.freeze([
+  "SP.POP.TOTL", "NY.GDP.MKTP.CD", "NY.GDP.PCAP.CD", "NY.GDP.PCAP.KD", "NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG",
+  "SP.DYN.TFRT.IN", "SP.DYN.LE00.IN", "SP.POP.GROW", "SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS",
+]);
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
@@ -64,4 +77,26 @@ export async function fetchWorldBankIndicator({ indicator, countries, startYear 
     lastUpdatedAt: metadata?.lastupdated ?? checkedAt,
   }));
   return { observations, publishedAt: metadata?.lastupdated ?? null, sourceUrl: url };
+}
+
+export async function fetchWorldBankCountryCatalog({ fetchImpl = fetch, waitImpl = delay } = {}) {
+  const payload = await requestJson(`${API}/country/all?format=json&per_page=400`, fetchImpl, waitImpl);
+  if (!Array.isArray(payload) || !Array.isArray(payload[1]) || payload[1].length < 200) {
+    throw new Error("World Bank country catalog response was incomplete");
+  }
+  const catalog = payload[1].filter((row) => row.id && /^[A-Z]{3}$/.test(row.id)
+    && (row.id === "WLD" || row.region?.id !== "NA"))
+    .map((row) => ({
+      iso3: row.id,
+      iso2: row.iso2Code && /^[A-Z]{2}$/.test(row.iso2Code) ? row.iso2Code : null,
+      worldBankCode: row.id,
+      name: row.name,
+      region: row.region?.id === "NA" ? null : row.region?.value ?? null,
+      incomeGroup: row.incomeLevel?.id === "NA" ? null : row.incomeLevel?.value ?? null,
+      isAggregate: row.id === "WLD",
+    }));
+  if (!catalog.some((row) => row.iso3 === "WLD") || catalog.length < 190) {
+    throw new Error(`World Bank country catalog validation failed (${catalog.length} rows)`);
+  }
+  return catalog.sort((a, b) => a.iso3.localeCompare(b.iso3));
 }

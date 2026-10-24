@@ -18,6 +18,7 @@ export type DataSnapshot = {
   schemaVersion: 2;
   source: "World Bank";
   generatedAt: string;
+  countryMetadata?: { iso3: string; iso2: string | null; worldBankCode: string; name: string; region: string | null; incomeGroup: string | null; isAggregate: boolean }[];
   indicatorMetadata: Record<string, Omit<DataObservation, "country" | "countryName" | "indicator" | "year" | "value">>;
   observations: Pick<DataObservation, "country" | "countryName" | "indicator" | "year" | "value">[];
 };

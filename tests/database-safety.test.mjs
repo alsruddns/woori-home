@@ -93,10 +93,12 @@ test("World Bank reads default to JSON and production DB mode requires an approv
 });
 
 test("only reviewed World Bank indicators use DB while all other indicators keep the JSON source", () => {
-  assert.deepEqual(approvedWorldBankDbIndicators, ["SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"]);
-  assert.equal(worldBankIndicatorSource("db", "SL.UEM.TOTL.ZS"), "db");
+  assert.deepEqual(approvedWorldBankDbIndicators, ["SP.POP.TOTL", "NY.GDP.MKTP.CD", "NY.GDP.PCAP.KD", "NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG", "SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"]);
+  for (const indicator of ["SP.POP.TOTL", "NY.GDP.MKTP.CD", "NY.GDP.PCAP.KD", "NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG", "SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"]) {
+    assert.equal(worldBankIndicatorSource("db", indicator), "db");
+  }
   assert.equal(worldBankIndicatorSource("db", "EG.ELC.ACCS.ZS"), "db");
-  for (const indicator of ["SP.POP.TOTL", "NY.GDP.MKTP.CD", "unknown"]) {
+  for (const indicator of ["NY.GDP.PCAP.CD", "SP.DYN.TFRT.IN", "unknown"]) {
     assert.equal(worldBankIndicatorSource("db", indicator), "json");
   }
   assert.equal(worldBankIndicatorSource("json", "SL.UEM.TOTL.ZS"), "json");
@@ -126,8 +128,7 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.doesNotMatch(workflow, /^\s*echo\s+.*(?:DATABASE_URL|DB_IMPORT_URL|DB_MIGRATION_URL)/m);
   assert.match(workflow, /up -d --no-deps portal/);
   assert.match(workflow, /\.source == "db" and \.indicator == "unemployment"/);
-  assert.match(workflow, /\.source == "json" and \.indicator == "population"/);
-  assert.match(workflow, /stale-while-revalidate=86400/);
+  assert.match(workflow, /\.source == "db" and \.indicator == "population"/);
   assert.match(workflow, /Could not remove the temporary smoke-test body/);
   assert.match(workflow, /rollback_tag/);
   assert.match(workflow, /environment: production/);

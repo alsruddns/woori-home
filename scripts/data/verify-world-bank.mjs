@@ -57,18 +57,21 @@ try {
   for (const indicator of Object.keys(IMPORTABLE_INDICATORS)) {
     const left = jsonRows.filter((row) => row.indicator === indicator);
     const right = dbRows.filter((row) => row.indicator === indicator);
-    const latestJson = Math.max(...left.map((row) => row.year));
-    const latestDb = right.length ? Math.max(...right.map((row) => row.year)) : null;
+    const latestJson = left.reduce((latest, row) => Math.max(latest, row.year), 0);
+    const latestDb = right.length ? right.reduce((latest, row) => Math.max(latest, row.year), 0) : null;
     console.log(`  ${indicator}: JSON ${left.length} observations / latest ${latestJson}; DB ${right.length} / latest ${latestDb}; ${right.length === left.length && latestJson === latestDb ? "MATCH" : "DIFFERENCE"}`);
   }
   for (const [indicator, country] of [["SL.UEM.TOTL.ZS", "KOR"], ["EG.ELC.ACCS.ZS", "KOR"], ["EG.ELC.ACCS.ZS", "WLD"]]) {
-    const row = jsonRows.find((item) => item.indicator === indicator && item.country === country && item.year === Math.max(...jsonRows.filter((item) => item.indicator === indicator && item.country === country).map((item) => item.year)));
+    const countryRows = jsonRows.filter((item) => item.indicator === indicator && item.country === country);
+    const latestYear = countryRows.reduce((latest, item) => Math.max(latest, item.year), 0);
+    const row = countryRows.find((item) => item.year === latestYear);
     const stored = row ? dbByKey.get(key(row)) : null;
     console.log(`  Representative ${country} ${indicator}: ${row ? `${row.year} ${row.value}` : "not in JSON"} / DB ${stored ? `${stored.year} ${stored.value}` : "not stored"}`);
   }
   for (const code of ["SP.POP.TOTL", "NY.GDP.MKTP.CD"]) {
     const row = snapshot.observations.filter((item) => item.indicator === code && item.country === "KOR").sort((a, b) => b.year - a.year)[0];
-    console.log(`  Representative KOR ${code}: JSON ${row ? `${row.year} ${row.value}` : "not available"}; DB intentionally excluded pending indicator-specific rights verification.`);
+    const stored = row ? dbByKey.get(key({ ...row, value: String(row.value) })) : null;
+    console.log(`  Representative KOR ${code}: JSON ${row ? `${row.year} ${row.value}` : "not available"}; DB ${stored ? `${stored.year} ${stored.value}` : "not stored by reviewed allowlist"}.`);
   }
   console.log("Comparison rules: exact country/indicator/year identity and decimal string equality; omitted JSON observations remain omitted; zero and negative values are not treated as missing.");
   if (missingInDb.length || extraInDb.length || mismatched.length) {

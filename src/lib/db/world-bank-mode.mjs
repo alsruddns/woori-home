@@ -1,6 +1,9 @@
 import { resolveDatabaseTarget } from "../../../scripts/db/connection-safety.mjs";
 
-export const approvedWorldBankDbIndicators = Object.freeze(["SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"]);
+export const approvedWorldBankDbIndicators = Object.freeze([
+  "SP.POP.TOTL", "NY.GDP.MKTP.CD", "NY.GDP.PCAP.KD", "NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG",
+  "SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS",
+]);
 
 export function worldBankIndicatorSource(source, indicatorCode) {
   return source === "db" && approvedWorldBankDbIndicators.includes(indicatorCode) ? "db" : "json";

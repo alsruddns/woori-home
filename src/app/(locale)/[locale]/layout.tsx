@@ -4,7 +4,6 @@ import Analytics from "../../analytics";
 import { alternates, isLocale, locales, messages, ogLocaleFor, origin, localeConfig } from "@/lib/site";
 import "../../globals.css";
 
-export const dynamicParams = false;
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
 }
