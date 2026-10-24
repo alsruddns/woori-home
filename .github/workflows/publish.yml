@@ -478,8 +478,8 @@ jobs:
             : > "$smoke_body"
             : > "$smoke_headers"
             curl --fail --silent --show-error --max-time 20 --dump-header "$smoke_headers" --output "$smoke_body" 'https://www.woori.today/portal-api/world-bank/compare?countries=kr%2Cus&indicator=population'
-            jq -e '.source == "json" and .indicator == "population" and (.series | length == 2)' "$smoke_body" >/dev/null
-            grep -Eiq '^cache-control:[[:space:]]*public, max-age=3600, stale-while-revalidate=86400' "$smoke_headers"
+            jq -e '.source == "db" and .indicator == "population" and (.series | length == 2)' "$smoke_body" >/dev/null
+            grep -Eiq '^cache-control:[[:space:]]*no-store' "$smoke_headers"
             : > "$smoke_body"
             : > "$smoke_headers"
             curl --fail --silent --show-error --max-time 20 --dump-header "$smoke_headers" --output "$smoke_body" 'https://www.woori.today/portal-api/finance/companies?pageSize=1'

@@ -1,3 +1,5 @@
+import snapshot from "@/data/world-bank.json";
+
 export const dataCountries = [
   { code: "au", iso3: "AUS" }, { code: "br", iso3: "BRA" }, { code: "ca", iso3: "CAN" },
   { code: "cn", iso3: "CHN" }, { code: "de", iso3: "DEU" }, { code: "fr", iso3: "FRA" },
@@ -6,12 +8,12 @@ export const dataCountries = [
   { code: "ng", iso3: "NGA" }, { code: "us", iso3: "USA" }, { code: "za", iso3: "ZAF" },
 ] as const;
 
-// Comparison accepts additional valid country codes so missing observations can be shown explicitly.
-export const supportedCountries = [
+const catalog = (snapshot as typeof snapshot & { countryMetadata?: { iso3: string; iso2: string | null; isAggregate: boolean }[] }).countryMetadata ?? [];
+// Comparison accepts all World Bank economies present in the reviewed country catalog.
+export const supportedCountries = [...new Map([
   ...dataCountries,
-  { code: "ch", iso3: "CHE" }, { code: "ru", iso3: "RUS" }, { code: "sa", iso3: "SAU" },
-  { code: "es", iso3: "ESP" }, { code: "tr", iso3: "TUR" },
-] as const;
+  ...catalog.filter((country) => !country.isAggregate && country.iso2).map((country) => ({ code: country.iso2!.toLowerCase(), iso3: country.iso3 })),
+].map((country) => [country.code, country])).values()].sort((a, b) => a.code.localeCompare(b.code));
 
 export type CountryCode = (typeof supportedCountries)[number]["code"];
 export function countryByCode(value: string) {

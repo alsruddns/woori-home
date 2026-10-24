@@ -12,6 +12,7 @@ import Link from "next/link";
 import { CountryTrendChart, type CountrySeries } from "./country-charts";
 import { periodChange } from "@/lib/data-platform/rankings";
 import { comparePeriodCopy, isRateIndicator } from "@/lib/data-platform/compare-period-copy";
+import { countrySearchPlaceholder } from "@/lib/data-platform/world-economy-copy";
 
 type SourceInfo = { provider: string; providerUrl: string; license: string; licenseUrl: string };
 
@@ -27,6 +28,7 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   const [series, setSeries] = useState(initialSeries);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
+  const [countryQuery, setCountryQuery] = useState("");
   const [sourceInfo, setSourceInfo] = useState<SourceInfo | null>(initialSourceInfo);
   const [startYear, setStartYear] = useState<number | null>(null);
   const [endYear, setEndYear] = useState<number | null>(null);
@@ -66,6 +68,7 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   }
 
   const sortedCountries = [...supportedCountries].sort((a, b) => countryName(a.code, locale).localeCompare(countryName(b.code, locale), locale));
+  const visibleCountries = sortedCountries.filter((country) => countryName(country.code, locale).toLocaleLowerCase(locale).includes(countryQuery.trim().toLocaleLowerCase(locale)) || country.code.includes(countryQuery.trim().toLowerCase()));
   const latest = series.map((item) => ({ code: item.code, observation: item.observations.at(-1) ?? null }));
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: indicator.id === "population" || indicator.id === "gdp" ? 0 : 2 });
   const yearSets = series.map((item) => new Set(item.observations.map((row) => row.year)));
@@ -94,7 +97,7 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   return <section className="country-comparison-dashboard" aria-busy={busy}>
     <div className="country-comparison-controls">
       <div className="country-control-group"><label htmlFor="comparison-indicator">{copy.metric}</label><select id="comparison-indicator" value={draftIndicator} onChange={(event) => setDraftIndicator(event.target.value)}>{availableIndicators.map((item) => <option key={item.id} value={item.id}>{item.label[locale] ?? item.label.en}</option>)}</select></div>
-      <details className="country-picker"><summary>{copy.chooseCountries} · {draftCountries.length}/20</summary><div className="country-picker-panel"><p>{copy.maxCountries.replace(/5/g, "20")}</p>{sortedCountries.map((country) => <label key={country.code}><input type="checkbox" checked={draftCountries.includes(country.code)} disabled={!draftCountries.includes(country.code) && draftCountries.length >= 20 || draftCountries.includes(country.code) && draftCountries.length <= 2} onChange={() => toggleCountry(country.code)}/><span>{countryName(country.code, locale)}</span></label>)}</div></details>
+      <details className="country-picker"><summary>{copy.chooseCountries} · {draftCountries.length}/20</summary><div className="country-picker-panel"><p>{copy.maxCountries.replace(/5/g, "20")}</p><input className="country-picker-search" type="search" value={countryQuery} onChange={(event) => setCountryQuery(event.target.value)} placeholder={countrySearchPlaceholder(locale)} aria-label={countrySearchPlaceholder(locale)}/>{visibleCountries.map((country) => <label key={country.code}><input type="checkbox" checked={draftCountries.includes(country.code)} disabled={!draftCountries.includes(country.code) && draftCountries.length >= 20 || draftCountries.includes(country.code) && draftCountries.length <= 2} onChange={() => toggleCountry(country.code)}/><span suppressHydrationWarning>{countryName(country.code, locale)}</span></label>)}</div></details>
       <button className="country-compare-button" type="button" disabled={!hasChanges || draftCountries.length < 2} onClick={compare}>{copy.compareCountries}</button>
       {error ? <p className="country-comparison-error" role="alert">{copy.loadError}</p> : null}
     </div>

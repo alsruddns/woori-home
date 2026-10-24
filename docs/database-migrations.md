@@ -25,7 +25,7 @@ CREATE ROLE woori_portal_dev LOGIN PASSWORD '<LOCAL_SECRET>';
 CREATE DATABASE woori_today_portal_dev OWNER woori_portal_dev;
 ```
 
-This workspace has a local `woori_today_portal_dev` database owned by `woori_portal_dev`. Its application and migration URLs are stored in the ignored `.env.local`; neither the password nor URL belongs in version control. The administrator role is used only for local database provisioning. The development DB now has 12 migrations applied (0000-0011), 1,090 World Bank observations, 100 curated SEC companies with the facts reported in the latest development collection (pre-existing out-of-scope SEC rows were retained), and zero financial price observations. Production was not accessed from this workspace. No production host or database is configured in this workspace.
+This workspace has a local `woori_today_portal_dev` database owned by `woori_portal_dev`. Its application and migration URLs are stored in the ignored `.env.local`; neither the password nor URL belongs in version control. The administrator role is used only for local database provisioning. Development verification on 2026-10-25 found 12 migrations applied (0000-0011), 71,796 World Bank observations across seven reviewed indicators, 100 curated SEC companies with existing collection facts, and zero financial price observations. Production was not accessed from this workspace. No production host or database is configured in this workspace.
 
 The SEC importer is target-isolated: `pnpm data:financial:sec:collect` is development-only. Production uses the protected SEC Import path described in `docs/production-deployment.md`.
 

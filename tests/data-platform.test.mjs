@@ -12,7 +12,8 @@ test("World Bank snapshot contains validated observations and complete provenanc
   assert.equal(snapshot.source, "World Bank");
   assert.ok(Date.parse(snapshot.generatedAt));
   assert.ok(snapshot.observations.length > 1000);
-  assert.equal(Object.keys(storedSnapshot.indicatorMetadata).length, 8);
+  assert.equal(Object.keys(storedSnapshot.indicatorMetadata).length, 11);
+  assert.equal(storedSnapshot.countryMetadata.filter((country) => !country.isAggregate).length, 217);
   assert.equal(Object.keys(storedSnapshot.observations[0]).length, 5);
   for (const row of snapshot.observations) {
     assert.match(row.country, /^[A-Z]{3}$/);
@@ -36,7 +37,13 @@ test("World Bank snapshot contains validated observations and complete provenanc
 test("only source-reviewed WDI additions are shipped and their upstream attribution is preserved", () => {
   const indicators = new Set(snapshot.observations.map((row) => row.indicator));
   assert.ok(indicators.has("SL.UEM.TOTL.ZS"));
-  for (const deferred of ["NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG", "EG.FEC.RNEW.ZS", "EG.USE.PCAP.KG.OE", "EG.USE.ELEC.KH.PC"]) assert.ok(!indicators.has(deferred), `${deferred} rights remain unverified`);
+  for (const reviewed of ["SP.POP.TOTL", "NY.GDP.MKTP.CD", "NY.GDP.PCAP.KD", "NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG"]) {
+    assert.ok(indicators.has(reviewed), `${reviewed} is missing`);
+    const row = snapshot.observations.find((observation) => observation.indicator === reviewed);
+    assert.match(row.license, /CC BY 4\.0/);
+    assert.ok(row.dataProvider);
+  }
+  for (const deferred of ["EG.FEC.RNEW.ZS", "EG.USE.PCAP.KG.OE", "EG.USE.ELEC.KH.PC"]) assert.ok(!indicators.has(deferred), `${deferred} rights remain unverified`);
   const laborSource = snapshot.observations.find((row) => row.indicator === "SL.UEM.TOTL.ZS");
   assert.match(laborSource.dataProvider, /International Labour Organization/);
   assert.match(laborSource.license, /ILOSTAT data CC BY 4\.0/);
@@ -99,6 +106,18 @@ test("the data platform has translations for each supported locale", async () =>
   }
 });
 
+test("country comparison search and newly added macroeconomic labels cover all 26 locales", async () => {
+  const [copy, comparison, registry, units] = await Promise.all([read("src/lib/data-platform/world-economy-copy.ts"), read("src/app/(locale)/[locale]/country-comparison.tsx"), read("src/lib/data-platform/registry.ts"), read("src/lib/data-platform/country-units.ts")]);
+  const locales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"];
+  for (const locale of locales) assert.match(copy, new RegExp(`(?:\\{|, |\\n)\\s*"?${locale}"?:`), `${locale}: missing annual unit/search translation`);
+  assert.match(comparison, /countrySearchPlaceholder\(locale\)/);
+  assert.match(comparison, /visibleCountries\.map/);
+  assert.match(comparison, /type="search"/);
+  assert.match(registry, /worldEconomyDefinition\("gdp-growth", locale\)/);
+  assert.match(registry, /worldEconomyInterpretation\("inflation", locale\)/);
+  assert.match(units, /worldEconomyUnit\(indicator\.id, locale\)/);
+});
+
 test("development stock fixtures stay out of the public dashboard until licensed data exists", async () => {
   const [fixtures, preview, publicationAdapter, productionSnapshot] = await Promise.all([read("src/lib/data-platform/mock-stocks.ts"), read("src/app/(locale)/[locale]/stock-market-dashboard.tsx"), read("src/lib/data-platform/published-stocks.ts"), read("src/data/world-bank.json")]);
   assert.match(fixtures, /Development-only fixtures/);
@@ -111,17 +130,21 @@ test("development stock fixtures stay out of the public dashboard until licensed
 });
 
 test("country detail routes cover observed countries while comparisons support 20 valid countries", async () => {
-  const [registry, route] = await Promise.all([read("src/lib/data-platform/countries.ts"), read("src/app/(locale)/[locale]/(platform)/countries/[countryCode]/page.tsx")]);
+  const [registry, route, localeLayout] = await Promise.all([read("src/lib/data-platform/countries.ts"), read("src/app/(locale)/[locale]/(platform)/countries/[countryCode]/page.tsx"), read("src/app/(locale)/[locale]/layout.tsx")]);
   const codes = [...registry.matchAll(/\{ code: "([a-z]{2})", iso3: "([A-Z]{3})" \}/g)].map((match) => ({ alpha2: match[1], alpha3: match[2] }));
   const observed = new Set(snapshot.observations.filter((row) => row.country !== "WLD").map((row) => row.country));
-  assert.equal(codes.length, 20);
-  assert.equal(new Set(codes.map((item) => item.alpha3)).size, 20);
-  assert.ok([...observed].every((country) => codes.some((item) => item.alpha3 === country)));
+  assert.equal(codes.length, 15);
+  assert.equal(new Set(codes.map((item) => item.alpha3)).size, 15);
+  assert.equal(observed.size, 217);
+  assert.match(registry, /countryMetadata/);
+  assert.match(registry, /catalog\.filter\(\(country\) => !country\.isAggregate/);
   assert.match(registry, /export const dataCountries/);
   assert.match(route, /dataCountries\.map/);
-  assert.match(route, /dynamicParams = false/);
+  assert.match(route, /dynamicParams = true/);
   assert.match(route, /generateStaticParams/);
   assert.match(route, /notFound\(\)/);
+  assert.doesNotMatch(localeLayout, /dynamicParams = false/);
+  assert.match(localeLayout, /if \(!isLocale\(locale\)\) notFound\(\)/);
 });
 
 test("country comparison defaults to ten countries, caps selections at twenty, and keeps source routing", async () => {

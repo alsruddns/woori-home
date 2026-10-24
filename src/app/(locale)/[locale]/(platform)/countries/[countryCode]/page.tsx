@@ -8,7 +8,7 @@ import { latestForCountry } from "@/lib/data-platform/snapshot";
 import { unitFor } from "@/lib/data-platform/country-units";
 import { CountryDashboard } from "../../../country-dashboard";
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 export async function generateStaticParams() { return dataCountries.map((country) => ({ countryCode: country.code })); }
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string; countryCode: string }> }): Promise<Metadata> {

@@ -1,6 +1,9 @@
 import type { IndicatorDefinition } from "./model";
 import { expandedIndicator } from "./expanded-indicator-copy";
 import { energyAccessCopy } from "./energy-copy";
+import { worldEconomyDefinition, worldEconomyInterpretation, worldEconomyLabel } from "./world-economy-copy";
+
+const locales = ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"] as const;
 
 export const dataCategories = [
   { id: "world", label: "World overview", path: "/world" },
@@ -36,6 +39,24 @@ export const indicators: IndicatorDefinition[] = [
     label: { en: "GDP per capita", ko: "1인당 GDP", ja: "一人当たりGDP", zh: "人均GDP", es: "PIB per cápita", "pt-br": "PIB per capita", de: "BIP pro Kopf", fr: "PIB par habitant", vi: "GDP bình quân đầu người", id: "PDB per kapita", th: "GDP ต่อหัว", "zh-tw": "人均GDP", it: "PIL pro capite", nl: "bbp per hoofd", hi: "प्रति व्यक्ति जीडीपी" },
     definition: { en: "GDP per capita is gross domestic product divided by the population, in current US dollars per person.", ko: "1인당 GDP는 국내총생산을 인구로 나눈 값이며, 해당 연도의 미국 달러 기준입니다." },
     interpretation: { en: "This average does not describe how income is distributed among people. Current-dollar values also vary with prices and exchange rates.", ko: "평균값이므로 사람들 사이의 소득 분포를 보여주지는 않습니다. 명목 달러 값은 물가와 환율에도 따라 달라집니다." },
+  },
+  {
+    id: "gdp-per-capita-real", category: "economy", code: "NY.GDP.PCAP.KD", unit: "constant 2015 US dollars per person",
+    label: Object.fromEntries(locales.map((locale) => [locale, worldEconomyLabel("gdp-per-capita-real", locale)])),
+    definition: Object.fromEntries(locales.map((locale) => [locale, worldEconomyDefinition("gdp-per-capita-real", locale)])),
+    interpretation: Object.fromEntries(locales.map((locale) => [locale, worldEconomyInterpretation("gdp-per-capita-real", locale)])),
+  },
+  {
+    id: "gdp-growth", category: "economy", code: "NY.GDP.MKTP.KD.ZG", unit: "percent per year",
+    label: Object.fromEntries(locales.map((locale) => [locale, worldEconomyLabel("gdp-growth", locale)])),
+    definition: Object.fromEntries(locales.map((locale) => [locale, worldEconomyDefinition("gdp-growth", locale)])),
+    interpretation: Object.fromEntries(locales.map((locale) => [locale, worldEconomyInterpretation("gdp-growth", locale)])),
+  },
+  {
+    id: "inflation", category: "economy", code: "FP.CPI.TOTL.ZG", unit: "percent per year",
+    label: Object.fromEntries(locales.map((locale) => [locale, worldEconomyLabel("inflation", locale)])),
+    definition: Object.fromEntries(locales.map((locale) => [locale, worldEconomyDefinition("inflation", locale)])),
+    interpretation: Object.fromEntries(locales.map((locale) => [locale, worldEconomyInterpretation("inflation", locale)])),
   },
   {
     id: "fertility", category: "population", code: "SP.DYN.TFRT.IN", unit: "births per woman",

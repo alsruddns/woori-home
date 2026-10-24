@@ -5,10 +5,11 @@ import { normalizeWorldBankSnapshot, decimalString, parseImportArgs } from "../s
 
 const snapshot = JSON.parse(await readFile(new URL("../src/data/world-bank.json", import.meta.url), "utf8"));
 
-test("World Bank import selects only individually reviewed indicators and preserves aggregate identity", () => {
+test("World Bank import selects reviewed CC BY indicators and preserves country and aggregate identity", () => {
   const result = normalizeWorldBankSnapshot(snapshot);
-  assert.equal(result.observations.length, 1090);
-  assert.deepEqual([...new Set(result.observations.map((row) => row.indicator))].sort(), ["EG.ELC.ACCS.ZS", "SL.UEM.TOTL.ZS"]);
+  assert.ok(result.observations.length > 70000);
+  assert.deepEqual([...new Set(result.observations.map((row) => row.indicator))].sort(), ["EG.ELC.ACCS.ZS", "FP.CPI.TOTL.ZG", "NY.GDP.MKTP.CD", "NY.GDP.MKTP.KD.ZG", "NY.GDP.PCAP.KD", "SL.UEM.TOTL.ZS", "SP.POP.TOTL"]);
+  assert.equal(snapshot.countryMetadata.filter((row) => !row.isAggregate).length, 217);
   assert.equal(result.observations.some((row) => row.country === "WLD"), true);
   assert.equal(result.observations.find((row) => row.country === "WLD").iso2, null);
   assert.equal(result.duplicates, 0);
@@ -22,8 +23,8 @@ test("World Bank import filters supported scope and parses explicit CLI options"
   const rows = normalizeWorldBankSnapshot(snapshot, { indicator: "EG.ELC.ACCS.ZS", country: "KOR", yearFrom: 2010, yearTo: 2024 }).observations;
   assert.ok(rows.length > 0);
   assert.ok(rows.every((row) => row.country === "KOR" && row.year >= 2010 && row.year <= 2024));
-  assert.throws(() => parseImportArgs(["--indicator=SP.POP.TOTL"]), /not approved/);
-  assert.throws(() => parseImportArgs(["--country=EUR"]), /Unsupported/);
+  assert.throws(() => parseImportArgs(["--indicator=SP.DYN.TFRT.IN"]), /not approved/);
+  assert.throws(() => parseImportArgs(["--country=EURO"]), /Unsupported/);
   assert.throws(() => parseImportArgs(["--year-from=2024", "--year-to=1990"]), /less than or equal/);
 });
 
@@ -80,6 +81,6 @@ test("World Bank DB screen mode defaults to JSON, guards production, stays allow
   assert.match(route, /worldBankIndicatorSource\(mode\.source, indicator\.code\)/);
   assert.match(route, /source: "json"/);
   assert.match(route, /World Bank database comparison is unavailable/);
-  assert.match(repository, /"SL\.UEM\.TOTL\.ZS", "EG\.ELC\.ACCS\.ZS"/);
+  assert.match(repository, /"SP\.POP\.TOTL", "NY\.GDP\.MKTP\.CD", "NY\.GDP\.PCAP\.KD"/);
   assert.match(repository, /\.limit\(countryIso3\.length \* 401\)/);
 });

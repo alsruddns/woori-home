@@ -89,29 +89,34 @@ try {
   const catalog = await pool.connect();
   try {
     await catalog.query("begin");
-    await catalog.query(`insert into data_sources (id, name, provider, source_url, license_status, license_name, license_url, attribution, rights_note, reviewed_at)
-      values ('world-bank', 'World Bank', 'World Bank and reviewed third-party providers', 'https://data.worldbank.org/summary-terms-of-use', 'conditional', 'CC BY 4.0 default; indicator-specific terms apply', 'https://www.worldbank.org/ext/en/legal/terms-conditions/datasets', 'The World Bank: World Development Indicators; named source providers are credited per indicator.', 'Only individually reviewed CC BY 4.0 indicators are imported; other snapshot indicators remain excluded pending rights review.', $1)
-      on conflict (id) do update set name=excluded.name, provider=excluded.provider, source_url=excluded.source_url, license_status=excluded.license_status, license_name=excluded.license_name, license_url=excluded.license_url, attribution=excluded.attribution, rights_note=excluded.rights_note, reviewed_at=excluded.reviewed_at, updated_at=now()`, [now]);
+    await catalog.query(`insert into data_sources (id, name, provider, source_url, license_status, license_name, license_url, attribution, rights_note, terms_version, reviewed_at, review_due_at)
+      values ('world-bank', 'World Bank', 'World Bank and reviewed third-party providers', 'https://data.worldbank.org/summary-terms-of-use', 'conditional', 'CC BY 4.0 default; indicator-specific terms apply', 'https://www.worldbank.org/ext/en/legal/terms-conditions/datasets', 'The World Bank: World Development Indicators; named source providers are credited per indicator.', 'Only individually reviewed CC BY 4.0 indicators are imported. Third-party exceptions remain in force and are tracked in each indicator metadata record.', 'World Bank Dataset Terms accessed 2026-10-24; CC BY 4.0 default; per-indicator WDI license metadata reviewed', $1, $1::timestamptz + interval '6 months')
+      on conflict (id) do update set name=excluded.name, provider=excluded.provider, source_url=excluded.source_url, license_status=excluded.license_status, license_name=excluded.license_name, license_url=excluded.license_url, attribution=excluded.attribution, rights_note=excluded.rights_note, terms_version=excluded.terms_version, reviewed_at=excluded.reviewed_at, review_due_at=excluded.review_due_at, updated_at=now()`, [now]);
     await catalog.query(`insert into datasets (id, source_id, name, category, reference_period_kind, source_url)
       values ('world-development-indicators', 'world-bank', 'World Development Indicators', 'statistics', 'annual', 'https://data.worldbank.org/indicator')
       on conflict (id) do update set source_id=excluded.source_id, name=excluded.name, category=excluded.category, reference_period_kind=excluded.reference_period_kind, source_url=excluded.source_url, updated_at=now()`);
 
-    for (const row of countries.values()) {
-      const names = localizedCountryNames(row.iso2, row.countryName);
-      await catalog.query(`insert into countries (iso3, iso2, world_bank_code, localized_names, is_aggregate)
-        values ($1::char(3), $2::char(2), $1::varchar, $3::jsonb, $4)
-        on conflict (iso3) do update set iso2=excluded.iso2, world_bank_code=excluded.world_bank_code, localized_names=excluded.localized_names, is_aggregate=excluded.is_aggregate, updated_at=now()`,
-      [row.country, row.iso2, JSON.stringify(names), row.country === "WLD"]);
+    const countryCatalog = snapshot.countryMetadata.filter((country) => !options.country || country.iso3 === options.country);
+    for (const metadata of countryCatalog) {
+      const names = localizedCountryNames(metadata.iso2, metadata.name);
+      await catalog.query(`insert into countries (iso3, iso2, world_bank_code, localized_names, region, income_group, is_aggregate)
+        values ($1::char(3), $2::char(2), $3, $4::jsonb, $5, $6, $7)
+        on conflict (iso3) do update set iso2=excluded.iso2, world_bank_code=excluded.world_bank_code, localized_names=excluded.localized_names, region=excluded.region, income_group=excluded.income_group, is_aggregate=excluded.is_aggregate, updated_at=now()`,
+      [metadata.iso3, metadata.iso2, metadata.worldBankCode, JSON.stringify(names), metadata.region, metadata.incomeGroup, metadata.isAggregate]);
     }
     for (const code of indicators) {
       const license = IMPORTABLE_INDICATORS[code];
       const sample = normalized.observations.find((row) => row.indicator === code);
       const localizedNames = code === "SL.UEM.TOTL.ZS"
         ? unemploymentCopy.label
-        : Object.fromEntries(Object.entries(energyAccessCopy).map(([locale, copy]) => [locale, copy.label]));
+        : code === "EG.ELC.ACCS.ZS"
+          ? Object.fromEntries(Object.entries(energyAccessCopy).map(([locale, copy]) => [locale, copy.label]))
+          : { en: license.provider, ko: license.provider };
       const localizedDefinitions = code === "SL.UEM.TOTL.ZS"
         ? unemploymentCopy.definition
-        : Object.fromEntries(Object.entries(energyAccessCopy).map(([locale, copy]) => [locale, copy.definition]));
+        : code === "EG.ELC.ACCS.ZS"
+          ? Object.fromEntries(Object.entries(energyAccessCopy).map(([locale, copy]) => [locale, copy.definition]))
+          : { en: license.rightsNote, ko: license.rightsNote };
       const definitions = {
         ...sample.metadata,
         source: "World Bank World Development Indicators",
@@ -120,6 +125,8 @@ try {
         license: license.license,
         licenseUrl: license.licenseUrl,
         rightsNote: license.rightsNote,
+        termsVersion: "World Bank Dataset Terms accessed 2026-10-24",
+        reviewedAt: "2026-10-24",
         referencePeriod: "Annual observation year; latest year varies by country.",
         localizedDefinitions,
         locales: LOCALES,

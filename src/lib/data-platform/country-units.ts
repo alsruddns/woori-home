@@ -2,6 +2,7 @@ import type { Locale } from "@/lib/site";
 import type { IndicatorDefinition } from "./model";
 import { expandedUnit } from "./expanded-indicator-copy";
 import { energyAccessCopy } from "./energy-copy";
+import { worldEconomyUnit } from "./world-economy-copy";
 
 type Units = Record<string, string>;
 export const countryUnits: Record<Locale, Units> = {
@@ -44,5 +45,5 @@ export const countryUnits: Record<Locale, Units> = {
 
 export function unitFor(locale: Locale, indicator: IndicatorDefinition) {
   if (indicator.id === "electricity-access") return energyAccessCopy[locale].unit;
-  return countryUnits[locale][indicator.id] ?? expandedUnit(locale, indicator.id) ?? indicator.unit;
+  return countryUnits[locale][indicator.id] ?? expandedUnit(locale, indicator.id) ?? worldEconomyUnit(indicator.id, locale) ?? indicator.unit;
 }

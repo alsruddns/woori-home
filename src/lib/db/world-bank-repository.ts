@@ -3,7 +3,10 @@ import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { getDatabase } from "./index";
 import { countries, dataSources, datasets, indicators, observations } from "./schema";
 
-const approvedIndicatorCodes = ["SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS"] as const;
+const approvedIndicatorCodes = [
+  "SP.POP.TOTL", "NY.GDP.MKTP.CD", "NY.GDP.PCAP.KD", "NY.GDP.MKTP.KD.ZG", "FP.CPI.TOTL.ZG",
+  "SL.UEM.TOTL.ZS", "EG.ELC.ACCS.ZS",
+] as const;
 export type ApprovedWorldBankIndicator = (typeof approvedIndicatorCodes)[number];
 
 function isApprovedIndicator(code: string): code is ApprovedWorldBankIndicator {
@@ -19,7 +22,7 @@ export async function listWorldBankCountries() {
     region: countries.region,
     incomeGroup: countries.incomeGroup,
     isAggregate: countries.isAggregate,
-  }).from(countries).where(inArray(countries.iso3, ["AUS", "BRA", "CAN", "CHN", "DEU", "FRA", "GBR", "IDN", "IND", "JPN", "KOR", "MEX", "NGA", "USA", "ZAF", "WLD"]))
+  }).from(countries)
     .orderBy(asc(countries.iso3));
 }
 

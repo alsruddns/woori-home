@@ -1,4 +1,34 @@
 export const IMPORTABLE_INDICATORS = Object.freeze({
+  "SP.POP.TOTL": {
+    unit: "people", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    provider: "World Bank World Development Indicators; source providers include UN Population Division and national statistical offices",
+    providerUrl: "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/SP.POP.TOTL",
+    rightsNote: "World Bank WDI indicator metadata explicitly lists CC BY-4.0. Attribute The World Bank, World Development Indicators, and the data source named in metadata. Third-party exceptions in the World Bank Dataset Terms remain applicable.",
+  },
+  "NY.GDP.MKTP.CD": {
+    unit: "current US dollars", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    provider: "World Bank World Development Indicators; country national accounts, OECD, and World Bank staff estimates",
+    providerUrl: "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/NY.GDP.MKTP.CD",
+    rightsNote: "World Bank WDI indicator metadata explicitly lists CC BY-4.0. Attribute The World Bank, World Development Indicators, and the data source named in metadata. Third-party exceptions in the World Bank Dataset Terms remain applicable.",
+  },
+  "NY.GDP.PCAP.KD": {
+    unit: "constant 2015 US dollars per person", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    provider: "World Bank national accounts data and OECD National Accounts data files",
+    providerUrl: "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/NY.GDP.PCAP.KD",
+    rightsNote: "World Bank WDI indicator metadata explicitly lists CC BY-4.0. Constant 2015 US dollars. Attribute The World Bank, World Development Indicators, and the data source named in metadata. Third-party exceptions remain applicable.",
+  },
+  "NY.GDP.MKTP.KD.ZG": {
+    unit: "percent per year", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    provider: "World Bank World Development Indicators; country national accounts, OECD, and World Bank staff estimates",
+    providerUrl: "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/NY.GDP.MKTP.KD.ZG",
+    rightsNote: "World Bank WDI indicator metadata explicitly lists CC BY-4.0. Real annual GDP growth at constant prices. Attribute The World Bank, World Development Indicators, and the data source named in metadata. Third-party exceptions remain applicable.",
+  },
+  "FP.CPI.TOTL.ZG": {
+    unit: "percent per year", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    provider: "International Monetary Fund, International Financial Statistics database (as catalogued by World Bank WDI)",
+    providerUrl: "https://databank.worldbank.org/metadataglossary/world-development-indicators/series/FP.CPI.TOTL.ZG",
+    rightsNote: "World Bank WDI indicator metadata explicitly lists CC BY-4.0 for this series. The indicator source is IMF IFS; attribute The World Bank, World Development Indicators, and IMF IFS. Recheck metadata terms before changing provider or source dataset.",
+  },
   "SL.UEM.TOTL.ZS": {
     unit: "percent of labor force",
     license: "CC BY 4.0",
@@ -17,12 +47,7 @@ export const IMPORTABLE_INDICATORS = Object.freeze({
   },
 });
 
-export const COUNTRY_CODES = Object.freeze({
-  AUS: "AU", BRA: "BR", CAN: "CA", CHN: "CN", DEU: "DE", FRA: "FR", GBR: "GB", IDN: "ID",
-  IND: "IN", JPN: "JP", KOR: "KR", MEX: "MX", NGA: "NG", USA: "US", ZAF: "ZA", WLD: null,
-});
-
-export const LOCALES = Object.freeze(["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi"]);
+export const LOCALES = Object.freeze(["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]);
 
 export function parseImportArgs(args) {
   const options = { dataset: "world-development-indicators", dryRun: false };
@@ -47,7 +72,7 @@ export function parseImportArgs(args) {
   }
   if (options.dataset !== "world-development-indicators") throw new Error("Only the world-development-indicators dataset is supported");
   if (options.indicator && !IMPORTABLE_INDICATORS[options.indicator]) throw new Error(`Indicator ${options.indicator} is not approved for database storage`);
-  if (options.country && !Object.hasOwn(COUNTRY_CODES, options.country.toUpperCase())) throw new Error(`Unsupported ISO3 or aggregate country code: ${options.country}`);
+  if (options.country && !/^[A-Z]{3}$/i.test(options.country)) throw new Error(`Unsupported ISO3 or aggregate country code: ${options.country}`);
   for (const key of ["yearFrom", "yearTo"]) {
     if (options[key] !== undefined && (!/^\d{4}$/.test(String(options[key])) || Number(options[key]) < 1800 || Number(options[key]) > 2200)) {
       throw new Error(`${key} must be a year between 1800 and 2200`);
@@ -94,6 +119,7 @@ export function normalizeWorldBankSnapshot(snapshot, options = {}) {
     throw new Error("Expected a schemaVersion 2 World Bank snapshot");
   }
   const filtered = [];
+  const countryMetadata = new Map((snapshot.countryMetadata ?? []).map((country) => [country.iso3, country]));
   let missing = 0;
   for (const row of snapshot.observations) {
     if (options.indicator && row.indicator !== options.indicator) continue;
@@ -102,7 +128,7 @@ export function normalizeWorldBankSnapshot(snapshot, options = {}) {
     if (options.yearFrom !== undefined && row.year < options.yearFrom) continue;
     if (options.yearTo !== undefined && row.year > options.yearTo) continue;
     if (row.value === null || row.value === undefined) { missing += 1; continue; }
-    if (typeof row.country !== "string" || !Object.hasOwn(COUNTRY_CODES, row.country)) throw new Error(`Unrecognized country code ${row.country}`);
+    if (typeof row.country !== "string" || !/^[A-Z]{3}$/.test(row.country) || !countryMetadata.has(row.country)) throw new Error(`Unrecognized country code ${row.country}`);
     if (!IMPORTABLE_INDICATORS[row.indicator]) throw new Error(`Indicator ${row.indicator} is not approved for database storage`);
     if (!Number.isInteger(row.year) || row.year < 1800 || row.year > 2200) throw new Error(`Invalid reference year ${row.year}`);
     const metadata = snapshot.indicatorMetadata[row.indicator];
@@ -112,7 +138,8 @@ export function normalizeWorldBankSnapshot(snapshot, options = {}) {
     filtered.push({
       country: row.country,
       countryName: row.countryName,
-      iso2: COUNTRY_CODES[row.country],
+      iso2: countryMetadata.get(row.country).iso2,
+      countryMetadata: countryMetadata.get(row.country),
       indicator: row.indicator,
       year: row.year,
       value,
@@ -133,7 +160,7 @@ export function normalizeWorldBankSnapshot(snapshot, options = {}) {
 }
 
 export function localizedCountryNames(iso2, worldBankName) {
-  if (!iso2) return Object.fromEntries(LOCALES.map((locale) => [locale, "World"]));
+  if (!iso2) return Object.fromEntries(LOCALES.map((locale) => [locale, worldBankName ?? "World"]));
   return Object.fromEntries(LOCALES.map((locale) => {
     try { return [locale, new Intl.DisplayNames([locale], { type: "region" }).of(iso2) ?? worldBankName]; }
     catch { return [locale, worldBankName]; }
