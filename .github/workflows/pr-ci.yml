@@ -16,6 +16,25 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      TEST_DATABASE_URL: postgresql://woori_test:woori_ci_test_only@127.0.0.1:5432/woori_today_portal_test
+      TEST_DATABASE_ADMIN_URL: postgresql://postgres:woori_ci_admin_test_only@127.0.0.1:5432/postgres
+      TEST_DATABASE_PASSWORD: woori_ci_test_only
+      DB_TARGET: test
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: woori_ci_admin_test_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     permissions:
       contents: read
     steps:
@@ -34,9 +53,19 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Prepare isolated PostgreSQL and run database integration tests
+        run: pnpm test:db
+      - name: Audit all dependencies
+        run: pnpm audit
+      - name: Audit production dependencies
+        run: pnpm audit --prod
       - name: "Run pnpm lint"
         run: pnpm lint
       - name: "Run pnpm test"
         run: pnpm test
+      - name: "Run TypeScript check"
+        run: pnpm exec tsc --noEmit
+      - name: "Check Drizzle migrations"
+        run: pnpm exec drizzle-kit check
       - name: "Run pnpm build"
         run: pnpm build

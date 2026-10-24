@@ -95,6 +95,7 @@ export function createSecEdgarProvider({ fetchImpl = fetch, userAgent = process.
   const cache = new Map();
   let directoryPromise;
   let lastRequestAt = 0;
+  const requestStats = { apiRequests: 0, apiRetries: 0, rateLimitResponses: 0, requestFailures: 0 };
 
   async function requestJson(url) {
     let lastError;
@@ -102,21 +103,32 @@ export function createSecEdgarProvider({ fetchImpl = fetch, userAgent = process.
       const delay = Math.max(0, minRequestIntervalMs - (Date.now() - lastRequestAt));
       if (delay) await wait(delay);
       lastRequestAt = Date.now();
+      requestStats.apiRequests += 1;
       let response;
       try {
         response = await fetchImpl(url, { headers: { "User-Agent": userAgent, "Accept-Encoding": "gzip, deflate", Accept: "application/json" }, signal: AbortSignal.timeout(20_000) });
       } catch (error) {
         lastError = error;
+        requestStats.requestFailures += 1;
+        if (attempt < 2) requestStats.apiRetries += 1;
         if (attempt === 2) throw Object.assign(new Error("SEC API network request failed."), { code: "sec-network-failed", cause: error });
         await wait(Math.min(4_000, 250 * (2 ** attempt)));
         continue;
       }
       if (response.status === 429 || response.status >= 500) {
         lastError = Object.assign(new Error(`SEC API responded with ${response.status}.`), { code: response.status === 429 ? "sec-rate-limited" : `sec-http-${response.status}`, retryAfter: response.headers?.get?.("retry-after") ?? null });
-        if (attempt < 2) await wait(retryDelay(response, attempt));
+        if (response.status === 429) requestStats.rateLimitResponses += 1;
+        if (attempt === 2) requestStats.requestFailures += 1;
+        if (attempt < 2) {
+          requestStats.apiRetries += 1;
+          await wait(retryDelay(response, attempt));
+        }
         continue;
       }
-      if (!response.ok) throw Object.assign(new Error(`SEC API responded with ${response.status}.`), { code: `sec-http-${response.status}` });
+      if (!response.ok) {
+        requestStats.requestFailures += 1;
+        throw Object.assign(new Error(`SEC API responded with ${response.status}.`), { code: `sec-http-${response.status}` });
+      }
       return response.json();
     }
     throw lastError ?? Object.assign(new Error("SEC API request failed."), { code: "sec-request-failed" });
@@ -129,6 +141,7 @@ export function createSecEdgarProvider({ fetchImpl = fetch, userAgent = process.
 
   return {
     id: SEC_SOURCE_ID,
+    getRequestStats() { return { ...requestStats }; },
     async resolveCompanies(targets = SEC_TARGETS) {
       const directory = await loadDirectory();
       const byTicker = new Map(directory.map((company) => [company.ticker, company]));

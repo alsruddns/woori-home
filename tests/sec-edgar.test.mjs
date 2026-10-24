@@ -58,6 +58,7 @@ test("SEC adapter requires identifying User-Agent, caches repeated company fetch
   await provider.fetchCompany(SEC_COMPANIES[0]);
   await provider.fetchCompany(SEC_COMPANIES[0]);
   assert.equal(calls, 1);
+  assert.deepEqual(provider.getRequestStats(), { apiRequests: 1, apiRetries: 0, rateLimitResponses: 0, requestFailures: 0 });
   assert.equal(requestHeaders["User-Agent"], "Woori.today tests contact test@example.org");
   assert.throws(() => createSecEdgarProvider({ userAgent: "anonymous" }), { code: "sec-user-agent-missing" });
   await assert.rejects(provider.fetchCompany({ ticker: "BAD", cik: "0000000001" }), /outside the reviewed SEC collection scope/);
@@ -66,6 +67,7 @@ test("SEC adapter requires identifying User-Agent, caches repeated company fetch
 test("SEC adapter handles rate-limit and HTTP failures without returning fabricated records", async () => {
   const limited = createSecEdgarProvider({ userAgent: "Woori.today tests contact test@example.org", fetchImpl: async () => new Response("", { status: 429, headers: { "retry-after": "2" } }) });
   await assert.rejects(limited.fetchCompany(SEC_COMPANIES[0]), (error) => error.code === "sec-rate-limited" && error.retryAfter === "2");
+  assert.deepEqual(limited.getRequestStats(), { apiRequests: 3, apiRetries: 2, rateLimitResponses: 3, requestFailures: 1 });
   const unavailable = createSecEdgarProvider({ userAgent: "Woori.today tests contact test@example.org", fetchImpl: async () => new Response("", { status: 503 }) });
   await assert.rejects(unavailable.fetchCompany(SEC_COMPANIES[0]), (error) => error.code === "sec-http-503");
 });

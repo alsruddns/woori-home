@@ -33,6 +33,8 @@ try {
       max(f.end_date) as latest_period,max(f.filed_date) as latest_filed_date
     from financial_companies c left join financial_company_facts f on f.company_id=c.id and f.source_id=c.source_id
     where c.source_id=$1`, [SEC_SOURCE_ID, SEC_DATASET_ID]);
+  const { rows: recentRuns } = await pool.query(`select started_at,finished_at,status,scope,record_count,inserted_count,updated_count,skipped_count,latest_reference_period,error_category
+    from data_collection_runs where dataset_id=$1 order by started_at desc limit 5`, [SEC_DATASET_ID]);
   const companyRows = await pool.query(`select ticker,count(f.company_id)::int as facts from financial_companies c
     left join financial_company_facts f on f.company_id=c.id and f.source_id=c.source_id
     where c.source_id=$1 and c.ticker=any($2::text[]) group by ticker order by ticker`, [SEC_SOURCE_ID, SEC_TARGETS.map(({ ticker }) => ticker)]);
@@ -46,6 +48,28 @@ try {
     sourceApproved: source?.license_status === "verified",
     datasetLinked: dataset?.source_id === SEC_SOURCE_ID,
     ...summary,
+    checkedAt: new Date().toISOString(),
+    lastSuccessfulRun: recentRuns.find((run) => run.status === "success" || run.status === "unchanged") ?? null,
+    lastFailedRun: recentRuns.find((run) => run.status === "failed" || run.status === "partial") ?? null,
+    recentRuns: recentRuns.map((run) => ({
+      startedAt: run.started_at,
+      finishedAt: run.finished_at,
+      status: run.status,
+      targetCompanies: run.scope?.targetCompanies ?? null,
+      successfulCompanies: run.scope?.successfulCompanies ?? (Number.isInteger(run.scope?.targetCompanies) ? run.scope.targetCompanies - (run.scope?.failed?.length ?? 0) : null),
+      failedCompanies: run.scope?.failed?.length ?? null,
+      latestFiledDate: run.scope?.latestFiledDate ?? null,
+      apiRequests: run.scope?.apiRequests ?? null,
+      apiRetries: run.scope?.apiRetries ?? null,
+      rateLimitResponses: run.scope?.rateLimitResponses ?? null,
+      requestFailures: run.scope?.requestFailures ?? null,
+      facts: run.record_count,
+      inserted: run.inserted_count,
+      updated: run.updated_count,
+      skipped: run.skipped_count,
+      latestFinancialPeriod: run.latest_reference_period,
+      errorCategory: run.error_category,
+    })),
     expectedCompanies: SEC_TARGETS.map(({ ticker }) => ticker).sort(),
     companyRows: companyRows.rows,
     duplicateGroups: duplicates.rows[0].duplicate_groups,
