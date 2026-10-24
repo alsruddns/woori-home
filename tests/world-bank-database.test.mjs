@@ -3,17 +3,21 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import pg from "pg";
 import { resolveDatabaseTarget } from "../scripts/db/connection-safety.mjs";
+import { parseIntegrationTestTarget } from "../scripts/db/integration-test-safety.mjs";
 
 const { Pool } = pg;
-const enabled = process.env.DB_TARGET === "development" && Boolean(process.env.DATABASE_URL);
+const enabled = process.env.DB_TARGET === "test" && Boolean(process.env.TEST_DATABASE_URL);
 
 test("World Bank local DB safety rejects production and remote targets before connecting", () => {
   assert.throws(() => resolveDatabaseTarget({ target: "development", databaseUrl: "postgresql://x:y@remote.example/woori_today_portal_dev" }), /local PostgreSQL host/);
   assert.throws(() => resolveDatabaseTarget({ target: "development", databaseUrl: "postgresql://x:y@localhost/woori_today_portal" }), /restricted to woori_today_portal_dev/);
+  assert.throws(() => parseIntegrationTestTarget("postgres://woori_test:pw@remote.example/woori_today_portal_test"), /restricted to woori_today_portal_test/);
+  assert.throws(() => parseIntegrationTestTarget("postgres://woori_portal:pw@localhost/woori_today_portal_test"), /dedicated woori_test role/);
+  assert.throws(() => parseIntegrationTestTarget("postgres://woori_test:pw@localhost/woori_today_portal"), /restricted to woori_today_portal_test/);
 });
 
-test("World Bank database INSERT, SELECT, UPSERT, foreign-key guard and ROLLBACK work locally", { skip: !enabled && "local development DATABASE_URL is not configured" }, async () => {
-  const target = resolveDatabaseTarget({ target: process.env.DB_TARGET, databaseUrl: process.env.DATABASE_URL });
+test("World Bank database INSERT, SELECT, UPSERT, foreign-key guard and ROLLBACK work in isolated test PostgreSQL", { skip: !enabled && "isolated TEST_DATABASE_URL is not configured; use pnpm test:db" }, async () => {
+  const target = parseIntegrationTestTarget(process.env.TEST_DATABASE_URL);
   const pool = new Pool({ connectionString: target.url, max: 1, connectionTimeoutMillis: 4000, allowExitOnIdle: true });
   const client = await pool.connect();
   try {
