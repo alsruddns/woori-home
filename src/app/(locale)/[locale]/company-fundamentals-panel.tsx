@@ -126,6 +126,10 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
       </div>
     </header>
     <p className="company-fundamentals-source">{period === "annual" ? periodCopy.annualBasis : periodCopy.quarterlyBasis} {copy.source}{summaryResult?.period === period ? <> {copy.filed}: {date(summaryResult.asOf)} · {statusCopy.factsLoaded}: {dateTime(summaryResult.dataObservedAt)} UTC</> : null}</p>
+    <CompanyFinancialTreemap locale={locale} period={period} onPeriodChange={setPeriod} onSelectCompany={(ticker) => {
+      setSelectedTicker(ticker);
+      document.getElementById("company-fundamentals-detail-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }} />
 
     {summaryState === "loading" ? <p role="status">{copy.loading}</p> : summaryState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : summary.length === 0 ? <p role="status">{copy.empty}</p> : <>
       <div className="company-facts-controls">
@@ -138,10 +142,6 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
           <option value="revenue">{copy.revenue}</option><option value="operatingIncome">{copy.operatingIncome}</option><option value="netIncome">{copy.netIncome}</option><option value="assets">{copy.assets}</option>
         </select></label>
       </div>
-      {period === "annual" ? <CompanyFinancialTreemap locale={locale} onSelectCompany={(ticker) => {
-        setSelectedTicker(ticker);
-        document.getElementById("company-fundamentals-detail-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }} /> : null}
       <div className="company-facts-summary-grid" aria-label={copy.title}>
         {visibleSummary.map((row) => <button key={`${row.companyId}-${row.accessionNumber}-${row.startDate ?? "instant"}`} type="button" className={`company-facts-summary-card${row.ticker === selectedTicker ? " is-selected" : ""}`} aria-pressed={row.ticker === selectedTicker} onClick={() => setSelectedTicker(row.ticker)}>
           <span className="company-facts-company"><strong>{row.ticker}</strong><small>{row.name}</small></span>
