@@ -73,8 +73,10 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
   const [lastSuccessAt, setLastSuccessAt] = useState<string | Date | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTicker, setActiveTicker] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogScrollYRef = useRef(0);
   const normalMap = useObservedSize();
   const expandedMap = useObservedSize();
 
@@ -106,6 +108,24 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
   }, [isExpanded]);
 
   useEffect(() => {
+    if (!isExpanded) return;
+    const root = document.documentElement;
+    const body = document.body;
+    const previousRootOverflow = root.style.overflow;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+    root.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    return () => {
+      root.style.overflow = previousRootOverflow;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overscrollBehavior = previousBodyOverscroll;
+      window.scrollTo(0, dialogScrollYRef.current);
+    };
+  }, [isExpanded]);
+
+  useEffect(() => {
     const controller = new AbortController();
     if (fiscalYear === null) return () => controller.abort();
     const makeQuery = (year: number) => new URLSearchParams({ period, latest: "true", fiscalYear: String(year), pageSize: "100" });
@@ -127,14 +147,14 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
     const priorByPeriod = new Map(previous.map((row) => [`${row.ticker}:${period === "quarterly" ? row.fiscalPeriod : "FY"}`, row]));
     return data.map((row) => ({ row, metrics: companyFinancialMetrics(row, priorByPeriod.get(`${row.ticker}:${period === "quarterly" ? row.fiscalPeriod : "FY"}`) ?? null) }));
   }, [data, previous, period]);
-  const rankedRows = useMemo(() => [...rows].sort((left, right) => {
-    const a = left.metrics[areaMetric];
-    const b = right.metrics[areaMetric];
-    return a === null ? (b === null ? left.row.ticker.localeCompare(right.row.ticker) : 1) : b === null ? -1 : b - a;
-  }), [rows, areaMetric]);
+  const filteredRows = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase(locale);
+    if (!query) return rows;
+    return rows.filter(({ row }) => `${row.ticker} ${row.name}`.toLocaleLowerCase(locale).includes(query));
+  }, [rows, searchQuery, locale]);
   const groups = useMemo(() => {
     const grouped = new Map<string, typeof rows>();
-    for (const entry of rows) {
+    for (const entry of filteredRows) {
       const division = sicDivision(entry.row.sicCode);
       const key = entry.row.sicCode ? `${division.key}:${entry.row.sicCode}` : "unclassified";
       grouped.set(key, [...(grouped.get(key) ?? []), entry]);
@@ -145,7 +165,12 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
       division: sicDivision(entries[0]?.row.sicCode),
       entries,
     }));
-  }, [rows, copy.sector]);
+  }, [filteredRows, copy.sector]);
+  const filteredRankedRows = useMemo(() => [...filteredRows].sort((left, right) => {
+    const a = left.metrics[areaMetric];
+    const b = right.metrics[areaMetric];
+    return a === null ? (b === null ? left.row.ticker.localeCompare(right.row.ticker) : 1) : b === null ? -1 : b - a;
+  }), [filteredRows, areaMetric]);
 
   const colorValues = rows.map(({ metrics }) => metrics[colorMetric]).filter((value): value is number => value !== null && Number.isFinite(value));
   const maxAbs = Math.max(...colorValues.map(Math.abs), 1);
@@ -159,8 +184,8 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
   });
   const renderableGroups = groupedTiles.filter(({ groupValue, rects }) => groupValue > 0 && rects !== null);
   const groupRects = cryptoTreemapLayout(renderableGroups.map(({ group, groupValue }) => ({ id: group.key, symbol: group.key, name: group.label, currency: "USD", close: 1, marketCap: groupValue })));
-  const totalMissing = rows.filter(({ metrics }) => metrics[areaMetric] === null).length;
-  const netLosses = rows.filter(({ metrics }) => metrics.netIncome !== null && metrics.netIncome < 0).length;
+  const totalMissing = filteredRows.filter(({ metrics }) => metrics[areaMetric] === null).length;
+  const netLosses = filteredRows.filter(({ metrics }) => metrics.netIncome !== null && metrics.netIncome < 0).length;
   const amount = (value: number | null) => value === null ? "—" : new Intl.NumberFormat(locale, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(value);
   const percent = (value: number | null) => value === null ? "—" : new Intl.NumberFormat(locale, { style: "percent", signDisplay: "always", maximumFractionDigits: 1 }).format(value / 100);
   const areaLabel = areaMetric === "revenue" ? copy.revenue : areaMetric === "assets" ? copy.assets : copy.operatingIncome;
@@ -182,7 +207,9 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
     <label><span>{copy.color}</span><select value={colorMetric} onChange={(event) => setColorMetric(event.target.value as ColorMetric)} aria-label={copy.color}>
       <option value="revenueGrowth">{copy.revenueGrowth}</option><option value="operatingMargin">{copy.operatingMargin}</option><option value="netMargin">{copy.netMargin}</option>
     </select></label>
-    {idPrefix === "normal" ? <button ref={fullscreenButtonRef} type="button" className="company-financial-treemap-expand" onClick={() => setIsExpanded(true)} aria-haspopup="dialog">
+    <label className="company-financial-treemap-search"><span>{ui.search}</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={ui.searchPlaceholder} aria-label={ui.search} />
+    </label>
+    {idPrefix === "normal" ? <button ref={fullscreenButtonRef} type="button" className="company-financial-treemap-expand" onClick={() => { dialogScrollYRef.current = window.scrollY; setIsExpanded(true); }} aria-haspopup="dialog">
       <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3" /></svg>
       <span>{ui.fullscreen}</span>
     </button> : null}
@@ -245,7 +272,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
   </div>;
 
   const renderStatus = () => <>
-    <p className="company-financial-treemap-meta">{period === "annual" ? periodCopy.annual : periodCopy.quarterly} · {copy.year}: {fiscalYear} · {copy.area}: {areaLabel} · {copy.color}: {colorLabel} · {copy.companies}: {rows.length} / 100 · {copy.losses}: {netLosses} · {copy.missing}: {totalMissing}</p>
+    <p className="company-financial-treemap-meta">{period === "annual" ? periodCopy.annual : periodCopy.quarterly} · {copy.year}: {fiscalYear} · {copy.area}: {areaLabel} · {copy.color}: {colorLabel} · {copy.companies}: {filteredRows.length} / {rows.length} · {copy.losses}: {netLosses} · {copy.missing}: {totalMissing}</p>
     {sourceAsOf ? <p className="company-financial-treemap-meta">{factsCopy.filed}: {sourceAsOf}{dataObservedAt ? ` · ${statusCopy.factsLoaded}: ${new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(dataObservedAt))} UTC` : ""}</p> : null}
     <p className="company-financial-treemap-meta">{statusCopy.lastSecSuccess}: {lastSuccessAt ? `${new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(lastSuccessAt))} UTC` : "—"}</p>
   </>;
@@ -256,18 +283,19 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
       {renderControls("normal")}
       {displayState === "loading" ? <p role="status">{copy.year}: {fiscalYear ?? "—"}</p> : displayState === "unavailable" ? <p role="status">{copy.noData}</p> : <>
         {renderStatus()}
-        {renderableGroups.length ? renderMap(normalMap.ref, normalMap.size, "company-financial-treemap-touch-hint") : <p role="status">{copy.noData}</p>}
+        {renderableGroups.length ? renderMap(normalMap.ref, normalMap.size, "company-financial-treemap-touch-hint") : <p role="status">{filteredRows.length === 0 && searchQuery.trim() ? ui.noMatches : copy.noData}</p>}
         {renderSelectedDetail()}
         {renderLegend()}
         <div className="company-financial-treemap-table platform-table-scroll"><table className="platform-table"><thead><tr><th>{copy.sector}</th><th>{copy.revenue}</th><th>{factsCopy.netIncome}</th><th>{copy.assets}</th><th>{copy.operatingIncome}</th><th>{copy.operatingMargin}</th><th>{copy.netMargin}</th><th>{copy.revenueGrowth}</th></tr></thead><tbody>
-          {rankedRows.map(({ row, metrics }) => <tr key={row.ticker}><th scope="row"><button type="button" className="company-financial-treemap-link" onClick={() => onSelectCompany(row.ticker)}>{row.ticker}</button><small>{row.industry || (row.sicCode ? `SIC ${row.sicCode}` : copy.sector)}</small></th><td>{amount(metrics.revenue)}</td><td>{amount(metrics.netIncome)}</td><td>{amount(metrics.assets)}</td><td>{amount(metrics.operatingIncome)}</td><td>{percent(metrics.operatingMargin)}</td><td>{percent(metrics.netMargin)}</td><td>{percent(metrics.revenueGrowth)}</td></tr>)}
+          {filteredRankedRows.map(({ row, metrics }) => <tr key={row.ticker}><th scope="row"><button type="button" className="company-financial-treemap-link" onClick={() => onSelectCompany(row.ticker)}>{row.ticker}</button><small>{row.industry || (row.sicCode ? `SIC ${row.sicCode}` : copy.sector)}</small></th><td>{amount(metrics.revenue)}</td><td>{amount(metrics.netIncome)}</td><td>{amount(metrics.assets)}</td><td>{amount(metrics.operatingIncome)}</td><td>{percent(metrics.operatingMargin)}</td><td>{percent(metrics.netMargin)}</td><td>{percent(metrics.revenueGrowth)}</td></tr>)}
         </tbody></table></div>
         <p className="company-financial-treemap-meta">{copy.year}: {fiscalYear} · {factsCopy.filed}: {sourceAsOf ?? "—"}</p>
       </>}
     </section>
     <dialog ref={dialogRef} className="company-financial-treemap-dialog" role="dialog" aria-modal="true" aria-labelledby="company-financial-treemap-dialog-title"
+      onKeyDownCapture={(event) => { if (event.key === "Escape") { event.preventDefault(); setIsExpanded(false); } }}
       onCancel={(event) => { event.preventDefault(); setIsExpanded(false); }}
-      onClose={() => { setIsExpanded(false); requestAnimationFrame(() => fullscreenButtonRef.current?.focus()); }}>
+      onClose={() => { setIsExpanded(false); requestAnimationFrame(() => { window.scrollTo(0, dialogScrollYRef.current); fullscreenButtonRef.current?.focus(); }); }}>
       <div className="company-financial-treemap-dialog-inner">
         <div className="company-financial-treemap-dialog-sticky">
           <header className="company-financial-treemap-dialog-header">
@@ -280,7 +308,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
         </div>
         {displayState === "ready" ? <>
           {renderStatus()}
-          {renderableGroups.length ? renderMap(expandedMap.ref, expandedMap.size, "company-financial-treemap-dialog-touch-hint") : <p role="status">{copy.noData}</p>}
+          {renderableGroups.length ? renderMap(expandedMap.ref, expandedMap.size, "company-financial-treemap-dialog-touch-hint") : <p role="status">{filteredRows.length === 0 && searchQuery.trim() ? ui.noMatches : copy.noData}</p>}
           {renderSelectedDetail()}
           {renderLegend()}
         </> : <p role="status">{displayState === "loading" ? `${copy.year}: ${fiscalYear ?? "—"}` : copy.noData}</p>}

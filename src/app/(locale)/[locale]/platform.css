@@ -299,3 +299,12 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
   .company-financial-treemap-dialog .company-financial-treemap-controls select,.company-financial-treemap-dialog .company-facts-period-switch button{min-height:32px;padding:4px 7px}
   .company-financial-treemap-dialog .company-financial-treemap-map{flex-basis:30dvh;height:34dvh;min-height:160px}
 }
+
+.company-financial-treemap-controls>label{min-width:0}
+.company-financial-treemap-controls select,.company-financial-treemap-controls input{box-sizing:border-box;width:100%;min-width:0}
+.company-financial-treemap-controls input{min-height:40px;max-width:100%;padding:7px 9px;border:1px solid var(--platform-border);border-radius:7px;background:var(--platform-surface);color:var(--platform-text);font:inherit}
+.company-financial-treemap-controls input:focus-visible{outline:2px solid var(--platform-accent);outline-offset:2px}
+.company-financial-treemap-controls .company-financial-treemap-search{flex:1 1 190px}
+.company-financial-treemap-dialog .company-financial-treemap-controls .company-financial-treemap-search{flex:1 1 160px}
+.company-financial-treemap-tile.is-tiny{padding:0;border:0;border-radius:0;font-size:0;line-height:0}
+@media(max-width:760px){.company-financial-treemap-controls .company-financial-treemap-search{grid-column:1/-1}.company-financial-treemap-dialog .company-financial-treemap-controls .company-financial-treemap-search{grid-column:1/-1}}
