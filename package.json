@@ -12,6 +12,8 @@
     "db:migrate": "node scripts/db/migrate.mjs",
     "db:status": "node scripts/db/status.mjs",
     "db:migrate:test": "node scripts/db/migrate-test-database.mjs",
+    "test:db": "node scripts/db/run-integration-tests.mjs",
+    "ops:disk:report": "node scripts/ops/disk-report.mjs",
     "db:status:production": "node scripts/db/status-production.mjs",
     "db:migrate:production": "node scripts/db/migrate-production.mjs",
     "db:preflight:financial:production": "node scripts/db/preflight-financial-production.mjs",
@@ -63,7 +65,8 @@
   "packageManager": "pnpm@9.12.1",
   "pnpm": {
     "overrides": {
-      "zod": "4.6.6"
+      "zod": "4.6.6",
+      "@esbuild-kit/core-utils>esbuild": "0.25.12"
     }
   }
 }

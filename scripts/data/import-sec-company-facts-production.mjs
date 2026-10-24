@@ -52,12 +52,12 @@ async function assertImportRole(client) {
   }
 }
 
-async function recordFailure(category, message, companies = []) {
+async function recordFailure(category, message, companies = [], requestStats = {}) {
   const client = await pool.connect();
   try {
     await client.query("begin");
     await client.query(`insert into data_collection_runs (dataset_id,started_at,finished_at,status,scope,error_category,error_message)
-      values ($1,now(),now(),'failed',$2::jsonb,$3,$4)`, [SEC_DATASET_ID, JSON.stringify({ targetCompanies: companies.length, sourceId: SEC_SOURCE_ID, datasetId: SEC_DATASET_ID }), category.slice(0, 80), message.slice(0, 2000)]);
+      values ($1,now(),now(),'failed',$2::jsonb,$3,$4)`, [SEC_DATASET_ID, JSON.stringify({ targetCompanies: companies.length, sourceId: SEC_SOURCE_ID, datasetId: SEC_DATASET_ID, ...requestStats }), category.slice(0, 80), message.slice(0, 2000)]);
     await client.query("commit");
   } catch { await client.query("rollback").catch(() => {}); }
   finally { client.release(); }
@@ -77,7 +77,9 @@ try {
 
   const collected = await collectChangedSecCompanies(provider, companies, existing);
   const factCount = collected.updated.reduce((sum, item) => sum + item.facts.length, 0);
-  const preview = { target: targets.DB_IMPORT_URL.database, dryRun: options.dryRun, targetCompanies: companies.length, changedCompanies: collected.updated.length, unchangedCompanies: collected.unchanged.length, failedCompanies: collected.failed, facts: factCount };
+  const requestStats = provider.getRequestStats();
+  const latestFiledDate = [...collected.updated, ...collected.unchanged].map((item) => item.profile.latestFiling?.filedDate).filter(Boolean).sort().at(-1) ?? null;
+  const preview = { target: targets.DB_IMPORT_URL.database, dryRun: options.dryRun, targetCompanies: companies.length, changedCompanies: collected.updated.length, unchangedCompanies: collected.unchanged.length, failedCompanies: collected.failed, facts: factCount, ...requestStats };
   console.log(JSON.stringify(preview));
   if (options.dryRun) {
     if (collected.failed.length) process.exitCode = 1;
@@ -90,7 +92,7 @@ try {
       const { rows: [source] } = await client.query("select license_status from data_sources where id=$1 for share", [SEC_SOURCE_ID]);
       if (!source || source.license_status !== "verified") throw new Error("SEC source reuse approval is not active.");
       const { rows: [run] } = await client.query(`insert into data_collection_runs (dataset_id,started_at,status,scope)
-        values ($1,now(),'partial',$2::jsonb) returning id`, [SEC_DATASET_ID, JSON.stringify({ targetCompanies: companies.length, changedTickers: collected.updated.map((item) => item.company.ticker), unchangedTickers: collected.unchanged.map((item) => item.company.ticker), failed: collected.failed.map(({ ticker, code }) => ({ ticker, code })) })]);
+        values ($1,now(),'partial',$2::jsonb) returning id`, [SEC_DATASET_ID, JSON.stringify({ targetCompanies: companies.length, successfulCompanies: collected.updated.length + collected.unchanged.length, changedTickers: collected.updated.map((item) => item.company.ticker), unchangedTickers: collected.unchanged.map((item) => item.company.ticker), failed: collected.failed.map(({ ticker, code }) => ({ ticker, code })), latestFiledDate, ...requestStats })]);
       const saved = await persistSecCompanyFacts(client, collected, { sourceId: SEC_SOURCE_ID, datasetId: SEC_DATASET_ID });
       const status = collected.failed.length ? saved.companies ? "partial" : "failed" : "success";
       const firstFailure = collected.failed[0] ?? null;
@@ -108,7 +110,7 @@ try {
 } catch (error) {
   const message = error instanceof Error ? error.message : "SEC collection failed.";
   const category = safeDatabaseErrorCode(error);
-  await recordFailure(category, message);
+  await recordFailure(category, message, [], provider.getRequestStats());
   console.error(JSON.stringify({ result: "failed", target: "production", error: category, message }));
   process.exitCode = 1;
 } finally { await pool.end(); }
