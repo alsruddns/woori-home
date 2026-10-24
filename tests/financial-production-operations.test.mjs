@@ -62,6 +62,8 @@ test("SEC production importer is isolated to DB_IMPORT_URL, guarded, transaction
 test("scheduled SEC refresh requires preexisting grants and skips privileged grant writes", async () => {
   const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
   assert.match(workflow, /SCHEDULED_SEC_REFRESH:.*github\.event_name == 'schedule'/);
+  assert.match(workflow, /if \[ "\$DEPLOY_PORTAL" = "true" \]; then printf '%s' "\$PORTAL_DIGEST"/);
+  assert.match(workflow, /if: github\.event_name != 'schedule'[\s\S]*?id: portal/);
   assert.match(workflow, /if \[ "\$SCHEDULED_SEC_REFRESH" = "true" \]; then\s+printf '%s\\n' "\$preflight_report" \| jq -e '\.permissionFindings \| length == 0'/);
   assert.match(workflow, /if \[ "\$SCHEDULED_SEC_REFRESH" = "true" \]; then\s+stage="Verify existing restricted SEC Import and Runtime grants"/);
 });

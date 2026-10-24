@@ -8,6 +8,7 @@ import { getFinancialProvider, listFinancialProviders } from "../src/lib/data-pl
 import { FINANCIAL_API_CACHE_CONTROL, financialApiErrorResponse, financialApiResponse, parseFinancialCompanyFactsQuery, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery } from "../src/lib/data-platform/financial-api.mjs";
 import { allowFinancialRequest } from "../src/lib/data-platform/financial-rate-limit.mjs";
 import { classifyFinancialDatabaseError } from "../src/lib/data-platform/financial-db-error.mjs";
+import { companyFinancialMetrics, sicDivision } from "../src/lib/data-platform/company-financial-treemap.mjs";
 
 const providerFixture = (overrides = {}) => ({
   id: "fixture-provider", datasetId: "fixture-daily-prices", licenseStatus: "verified",
@@ -180,13 +181,23 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
     ok: true, limit: 1000, from: "2026-01-01", to: "2026-01-31",
   });
   assert.equal(parseFinancialHistoryQuery(new URLSearchParams(), "../../secrets").ok, false);
-  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("page=2&pageSize=50")), { ok: true, page: 2, pageSize: 50, offset: 50, period: null, ticker: null, latest: false });
-  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("period=annual&latest=true&pageSize=20")), { ok: true, page: 1, pageSize: 20, offset: 0, period: "annual", ticker: null, latest: true });
-  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("period=quarterly&ticker=nvda")), { ok: true, page: 1, pageSize: 100, offset: 0, period: "quarterly", ticker: "NVDA", latest: false });
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("page=2&pageSize=50")), { ok: true, page: 2, pageSize: 50, offset: 50, period: null, ticker: null, latest: false, fiscalYear: null });
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("period=annual&latest=true&pageSize=20")), { ok: true, page: 1, pageSize: 20, offset: 0, period: "annual", ticker: null, latest: true, fiscalYear: null });
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("period=quarterly&ticker=nvda")), { ok: true, page: 1, pageSize: 100, offset: 0, period: "quarterly", ticker: "NVDA", latest: false, fiscalYear: null });
+  assert.deepEqual(parseFinancialCompanyFactsQuery(new URLSearchParams("period=annual&latest=true&fiscalYear=2025")).fiscalYear, 2025);
+  assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("period=annual&fiscalYear=20x5")).error, "invalid_fiscal_year");
+  assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("fiscalYear=2025")).error, "fiscal_year_requires_period");
   assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("period=monthly")).error, "invalid_period");
   assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("ticker=NVDA%3Bdrop%20table")).error, "invalid_ticker");
   assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("latest=true")).error, "invalid_latest_query");
   assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("page=0")).ok, false);
+  assert.equal(sicDivision("2834").key, "manufacturing");
+  assert.equal(sicDivision("6021").key, "finance-real-estate");
+  assert.equal(sicDivision(null).key, "unclassified");
+  assert.deepEqual(companyFinancialMetrics({ revenue: "200", operatingIncome: "20", netIncome: "-5", assets: "300" }, { revenue: "100" }), {
+    revenue: 200, operatingIncome: 20, netIncome: -5, assets: 300, revenueGrowth: 100, operatingMargin: 10, netMargin: -2.5,
+  });
+  assert.equal(companyFinancialMetrics({ revenue: "0", operatingIncome: "1", netIncome: null, assets: "-1" }, { revenue: "0" }).revenueGrowth, null);
   assert.deepEqual(parseFinancialHeatmapQuery(new URLSearchParams("market=krw&date=2026-01-01"), "crypto"), { ok: true, market: "krw", referenceDate: "2026-01-01" });
   assert.equal(FINANCIAL_API_CACHE_CONTROL, "no-store");
   assert.equal(financialApiResponse({ ok: true }).headers.get("cache-control"), "no-store");
