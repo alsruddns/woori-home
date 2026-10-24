@@ -295,7 +295,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
     <dialog ref={dialogRef} className="company-financial-treemap-dialog" role="dialog" aria-modal="true" aria-labelledby="company-financial-treemap-dialog-title"
       onKeyDownCapture={(event) => { if (event.key === "Escape") { event.preventDefault(); setIsExpanded(false); } }}
       onCancel={(event) => { event.preventDefault(); setIsExpanded(false); }}
-      onClose={() => { setIsExpanded(false); requestAnimationFrame(() => { window.scrollTo(0, dialogScrollYRef.current); fullscreenButtonRef.current?.focus(); }); }}>
+      onClose={() => { setIsExpanded(false); requestAnimationFrame(() => { window.scrollTo(0, dialogScrollYRef.current); fullscreenButtonRef.current?.focus({ preventScroll: true }); }); }}>
       <div className="company-financial-treemap-dialog-inner">
         <div className="company-financial-treemap-dialog-sticky">
           <header className="company-financial-treemap-dialog-header">
