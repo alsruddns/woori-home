@@ -46,12 +46,16 @@ export function parseFinancialCompanyFactsQuery(searchParams) {
   const ticker = rawTicker?.trim().toUpperCase() ?? null;
   const rawLatest = searchParams.get("latest");
   const latest = rawLatest === "true" || rawLatest === "1";
+  const rawFiscalYear = searchParams.get("fiscalYear");
+  const fiscalYear = rawFiscalYear === null ? null : Number(rawFiscalYear);
   if (!page || !pageSize) return { ok: false, status: 400, error: "invalid_pagination" };
   if (period && !["annual", "quarterly"].includes(period)) return { ok: false, status: 400, error: "invalid_period" };
   if (rawTicker && !/^[A-Z][A-Z0-9.-]{0,9}$/.test(ticker)) return { ok: false, status: 400, error: "invalid_ticker" };
   if (rawLatest && !["true", "false", "1", "0"].includes(rawLatest)) return { ok: false, status: 400, error: "invalid_latest" };
+  if (rawFiscalYear !== null && (!/^\d{4}$/.test(rawFiscalYear) || !Number.isSafeInteger(fiscalYear) || fiscalYear < 1990 || fiscalYear > new Date().getUTCFullYear() + 1)) return { ok: false, status: 400, error: "invalid_fiscal_year" };
   if (latest && (!period || ticker)) return { ok: false, status: 400, error: "invalid_latest_query" };
-  return { ok: true, page, pageSize, offset: (page - 1) * pageSize, period, ticker, latest };
+  if (fiscalYear !== null && !period) return { ok: false, status: 400, error: "fiscal_year_requires_period" };
+  return { ok: true, page, pageSize, offset: (page - 1) * pageSize, period, ticker, latest, fiscalYear };
 }
 
 function validDate(value) {

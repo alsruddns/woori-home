@@ -8,6 +8,7 @@ import { companyFactsExtraCopy, companySectorLabel } from "@/lib/data-platform/c
 import { companyFactsStatusCopy } from "@/lib/data-platform/company-facts-status-copy";
 import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
+import { CompanyFinancialTreemap } from "./company-financial-treemap";
 
 type Period = "annual" | "quarterly";
 type CompanyFactRow = {
@@ -137,6 +138,10 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
           <option value="revenue">{copy.revenue}</option><option value="operatingIncome">{copy.operatingIncome}</option><option value="netIncome">{copy.netIncome}</option><option value="assets">{copy.assets}</option>
         </select></label>
       </div>
+      {period === "annual" ? <CompanyFinancialTreemap locale={locale} onSelectCompany={(ticker) => {
+        setSelectedTicker(ticker);
+        document.getElementById("company-fundamentals-detail-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }} /> : null}
       <div className="company-facts-summary-grid" aria-label={copy.title}>
         {visibleSummary.map((row) => <button key={`${row.companyId}-${row.accessionNumber}-${row.startDate ?? "instant"}`} type="button" className={`company-facts-summary-card${row.ticker === selectedTicker ? " is-selected" : ""}`} aria-pressed={row.ticker === selectedTicker} onClick={() => setSelectedTicker(row.ticker)}>
           <span className="company-facts-company"><strong>{row.ticker}</strong><small>{row.name}</small></span>

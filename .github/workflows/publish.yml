@@ -227,7 +227,7 @@ jobs:
             test -r docker-compose.yml
             test -n "${PORTAL_HEALTH_URL:-}"
             printf '%s' "$RELEASE_SHA" | grep -Eq '^[a-f0-9]{40}$'
-            printf '%s' "$PORTAL_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
+            if [ "$DEPLOY_PORTAL" = "true" ]; then printf '%s' "$PORTAL_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'; fi
             printf '%s' "$TOOLS_DIGEST" | grep -Eq '^sha256:[a-f0-9]{64}$'
             compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
             override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
