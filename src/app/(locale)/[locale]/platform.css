@@ -212,3 +212,99 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
 .company-financial-treemap{margin:20px 0;padding:16px;border:1px solid var(--platform-border);border-radius:10px;background:var(--platform-bg);min-width:0}.company-financial-treemap>header h3{margin:4px 0 6px;font-size:clamp(17px,2.5vw,22px)}.company-financial-treemap>header p,.company-financial-treemap-meta,.company-financial-treemap-legend{color:var(--platform-muted);font-size:12px;line-height:1.55;overflow-wrap:anywhere}.company-financial-treemap>header p{margin:0 0 12px;max-width:82ch}.company-financial-treemap-controls{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}.company-financial-treemap-controls label{display:grid;gap:5px;min-width:min(160px,100%);color:var(--platform-muted);font-size:12px}.company-financial-treemap-controls select{min-height:40px;max-width:100%;padding:7px 9px;border:1px solid var(--platform-border);border-radius:7px;background:var(--platform-surface);color:var(--platform-text);font:inherit}.company-financial-treemap-meta{margin:9px 0}.company-financial-treemap-map{position:relative;min-height:390px;overflow:hidden;border:1px solid var(--platform-border);border-radius:9px;background:var(--platform-surface)}.company-financial-treemap-group{position:absolute;overflow:hidden;border:1px solid var(--platform-bg)}.company-financial-treemap-group>h4{position:absolute;z-index:2;top:3px;left:4px;max-width:calc(100% - 8px);margin:0;padding:3px 5px;border-radius:4px;background:color-mix(in srgb,var(--platform-surface) 90%,transparent);color:var(--platform-text);font-size:clamp(8px,1vw,11px);line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none}.company-financial-treemap-tile{position:absolute;display:grid;align-content:center;justify-items:center;gap:2px;overflow:hidden;min-width:0;min-height:0;padding:2px;border:1px solid color-mix(in srgb,var(--platform-border) 70%,transparent);border-radius:3px;color:var(--platform-text);font:inherit;text-align:center;cursor:pointer}.company-financial-treemap-tile:hover,.company-financial-treemap-tile:focus-visible{z-index:3;outline:2px solid var(--platform-accent);outline-offset:-2px}.company-financial-treemap-tile.is-loss{border-style:dashed}.company-financial-treemap-tile strong{max-width:100%;font-size:clamp(8px,1vw,13px);overflow:hidden;text-overflow:ellipsis}.company-financial-treemap-tile span,.company-financial-treemap-tile small{max-width:100%;font-size:clamp(7px,.75vw,10px);line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.company-financial-treemap-legend{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin:10px 0}.company-financial-treemap-table{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}.company-financial-treemap-table table{min-width:720px}.company-financial-treemap-table th,.company-financial-treemap-table td{white-space:nowrap}.company-financial-treemap-table tbody th{text-align:left}.company-financial-treemap-table tbody th small{display:block;max-width:220px;color:var(--platform-muted);font-size:11px;font-weight:400;overflow:hidden;text-overflow:ellipsis}.company-financial-treemap-link{padding:2px 0;border:0;background:transparent;color:var(--platform-accent);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:760px){.company-financial-treemap{padding:12px}.company-financial-treemap-map{min-height:320px}.company-financial-treemap-controls{display:grid;grid-template-columns:1fr 1fr}.company-financial-treemap-controls label{min-width:0}.company-financial-treemap-controls label:first-child{grid-column:1/-1}}
 @media(max-width:380px){.company-financial-treemap{padding:10px}.company-financial-treemap-map{min-height:290px}.company-financial-treemap-controls{grid-template-columns:1fr}}
+
+/* SEC financial treemap: reserve a separate group header and never force labels into tiny tiles. */
+.company-financial-treemap-controls{align-items:end}
+.company-financial-treemap-expand,.company-financial-treemap-close{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:8px 12px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-surface);color:var(--platform-text);font:inherit;font-size:13px;font-weight:650;cursor:pointer;transition:background-color .15s ease,border-color .15s ease,box-shadow .15s ease}
+.company-financial-treemap-expand{margin-left:auto}
+.company-financial-treemap-expand:hover,.company-financial-treemap-close:hover{border-color:var(--platform-accent);background:var(--platform-raised)}
+.company-financial-treemap-expand:focus-visible,.company-financial-treemap-close:focus-visible{outline:3px solid var(--platform-accent);outline-offset:2px}
+.company-financial-treemap-group{display:flex;flex-direction:column;background:var(--platform-surface)}
+.company-financial-treemap-group>h4{position:relative;inset:auto;flex:0 0 21px;width:100%;max-width:100%;height:21px;padding:3px 6px;border-radius:0;border-bottom:1px solid var(--platform-border);background:var(--platform-raised);font-size:10px;line-height:15px}
+.company-financial-treemap-group-map{position:relative;flex:1 1 auto;min-width:0;min-height:0;overflow:hidden}
+.company-financial-treemap-tile{box-sizing:border-box;gap:2px;padding:3px;contain:paint;line-height:1.12}
+.company-financial-treemap-tile strong{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1}
+.company-financial-treemap-tile span,.company-financial-treemap-tile small{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.1;font-variant-numeric:tabular-nums}
+.company-financial-treemap-tile.is-large strong{font-size:clamp(11px,1vw,15px)}
+.company-financial-treemap-tile.is-large span,.company-financial-treemap-tile.is-large small{font-size:clamp(9px,.78vw,12px)}
+.company-financial-treemap-tile.is-medium strong{font-size:clamp(9px,.8vw,12px)}
+.company-financial-treemap-tile.is-medium small{font-size:clamp(8px,.68vw,10px)}
+.company-financial-treemap-tile.is-small strong{font-size:9px}
+.company-financial-treemap-tile.is-tiny strong,.company-financial-treemap-tile.is-small span,.company-financial-treemap-tile.is-small small{display:none}
+.company-financial-treemap-tile.is-positive{border-color:color-mix(in srgb,#239165 62%,var(--platform-border))}
+.company-financial-treemap-tile.is-negative{border-color:color-mix(in srgb,#c2424c 65%,var(--platform-border))}
+.company-financial-treemap-tile.is-neutral{border-color:color-mix(in srgb,#7d8b97 58%,var(--platform-border))}
+.company-financial-treemap-tile.is-missing{border-style:dotted;color:var(--platform-muted)}
+.company-financial-treemap-legend{justify-content:flex-start;align-items:center}
+.company-financial-treemap-legend>span{display:inline-flex;align-items:center;gap:6px}
+.company-financial-treemap-legend i{display:inline-block;width:12px;height:12px;border:1px solid #ffffff35;border-radius:3px}
+.company-financial-treemap-legend i.is-positive{background:#239165}
+.company-financial-treemap-legend i.is-negative{background:#c2424c}
+.company-financial-treemap-legend i.is-neutral{background:#7d8b97}
+.company-financial-treemap-legend i.is-missing{background:repeating-linear-gradient(135deg,#73808b 0 3px,#53606c 3px 6px)}
+.company-financial-treemap-legend-title{font-weight:700;color:var(--platform-text)}
+.company-financial-treemap-legend-explainer{flex-basis:100%}
+.company-financial-treemap-selected{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0;padding:11px 13px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-raised);color:var(--platform-text)}
+.company-financial-treemap-selected>div{display:grid;gap:3px;min-width:0}
+.company-financial-treemap-selected strong{font-size:14px}
+.company-financial-treemap-selected span,.company-financial-treemap-selected small{overflow-wrap:anywhere;color:var(--platform-muted);font-size:12px;line-height:1.5}
+.company-financial-treemap-selected button{flex:none;min-height:40px;padding:7px 10px;border:1px solid var(--platform-border);border-radius:7px;background:var(--platform-surface);color:var(--platform-text);font:inherit;cursor:pointer}
+.company-financial-treemap-selected button:hover,.company-financial-treemap-selected button:focus-visible{border-color:var(--platform-accent);outline:2px solid var(--platform-accent);outline-offset:1px}
+.company-financial-treemap-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.company-financial-treemap-dialog{position:fixed;inset:0;box-sizing:border-box;width:100vw;height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:0;background:var(--platform-bg);color:var(--platform-text);overflow:hidden}
+.company-financial-treemap-dialog::backdrop{background:rgba(5,10,16,.78);backdrop-filter:blur(3px)}
+.company-financial-treemap-dialog-inner{display:flex;flex-direction:column;gap:8px;width:100%;height:100%;box-sizing:border-box;padding:clamp(10px,2vw,24px);overflow-y:auto;overscroll-behavior:contain}
+.company-financial-treemap-dialog-sticky{position:sticky;top:0;z-index:8;display:flex;flex:none;flex-direction:column;gap:8px;padding-bottom:6px;background:var(--platform-bg)}
+.company-financial-treemap-dialog-header{display:flex;flex:none;align-items:flex-start;justify-content:space-between;gap:16px}
+.company-financial-treemap-dialog-header>div{min-width:0}
+.company-financial-treemap-dialog-header h2{margin:3px 0 5px;font-size:clamp(17px,2.4vw,24px)}
+.company-financial-treemap-dialog-header p{margin:0;color:var(--platform-muted);font-size:12px;line-height:1.5}
+.company-financial-treemap-dialog .company-financial-treemap-controls{flex:none;margin:4px 0}
+.company-financial-treemap-dialog .company-financial-treemap-controls label{min-width:140px}
+.company-financial-treemap-dialog .company-financial-treemap-meta{flex:none;margin:2px 0;font-size:11px}
+.company-financial-treemap-dialog .company-financial-treemap-map{flex:1 0 min(48dvh,520px);height:min(58dvh,680px);min-height:280px}
+.company-financial-treemap-dialog .company-financial-treemap-legend{flex:none;margin:3px 0}
+.company-financial-treemap-dialog .company-financial-treemap-selected{flex:none;margin:2px 0}
+.company-financial-treemap-dialog .company-financial-treemap-group>h4{height:24px;flex-basis:24px;font-size:11px}
+@media(max-width:760px){
+  .company-financial-treemap-expand{grid-column:1/-1;margin-left:0}
+  .company-financial-treemap-controls .company-facts-period-switch{grid-column:1/-1;width:100%;box-sizing:border-box}
+  .company-financial-treemap-selected{align-items:stretch;flex-direction:column}
+  .company-financial-treemap-selected button{width:100%}
+  .company-financial-treemap-dialog-inner{gap:6px;padding:calc(8px + env(safe-area-inset-top)) 10px calc(8px + env(safe-area-inset-bottom))}
+  .company-financial-treemap-dialog-sticky{gap:6px}
+  .company-financial-treemap-dialog-header{gap:8px}
+  .company-financial-treemap-dialog-header p{max-height:3em;overflow:auto}
+  .company-financial-treemap-dialog .company-financial-treemap-controls{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .company-financial-treemap-dialog .company-financial-treemap-controls label{min-width:0;font-size:11px}
+  .company-financial-treemap-dialog .company-financial-treemap-controls label:first-child{grid-column:auto}
+  .company-financial-treemap-dialog .company-financial-treemap-map{flex-basis:38dvh;height:42dvh;min-height:220px}
+  .company-financial-treemap-dialog .company-financial-treemap-legend{gap:5px 10px;font-size:11px}
+  .company-financial-treemap-dialog .company-financial-treemap-legend-explainer{font-size:10px}
+}
+@media(max-width:380px){
+  .company-financial-treemap-expand{grid-column:1/-1}
+  .company-financial-treemap-dialog .company-financial-treemap-controls{grid-template-columns:1fr 1fr}
+  .company-financial-treemap-dialog .company-financial-treemap-map{flex-basis:34dvh;height:38dvh;min-height:200px}
+  .company-financial-treemap-close{min-width:40px;padding:7px}
+  .company-financial-treemap-close span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+}
+@media(max-height:500px){
+  .company-financial-treemap-dialog-inner{gap:4px;padding-top:6px;padding-bottom:6px}
+  .company-financial-treemap-dialog-sticky{gap:3px;padding-bottom:3px}
+  .company-financial-treemap-dialog-header h2{margin:1px 0 2px;font-size:16px}
+  .company-financial-treemap-dialog-header p{display:none}
+  .company-financial-treemap-dialog .company-financial-treemap-controls{gap:4px;margin:2px 0}
+  .company-financial-treemap-dialog .company-financial-treemap-controls label{gap:2px;font-size:10px}
+  .company-financial-treemap-dialog .company-financial-treemap-controls select,.company-financial-treemap-dialog .company-facts-period-switch button{min-height:32px;padding:4px 7px}
+  .company-financial-treemap-dialog .company-financial-treemap-map{flex-basis:30dvh;height:34dvh;min-height:160px}
+}
+
+.company-financial-treemap-controls>label{min-width:0}
+.company-financial-treemap-controls select,.company-financial-treemap-controls input{box-sizing:border-box;width:100%;min-width:0}
+.company-financial-treemap-controls input{min-height:40px;max-width:100%;padding:7px 9px;border:1px solid var(--platform-border);border-radius:7px;background:var(--platform-surface);color:var(--platform-text);font:inherit}
+.company-financial-treemap-controls input:focus-visible{outline:2px solid var(--platform-accent);outline-offset:2px}
+.company-financial-treemap-controls .company-financial-treemap-search{flex:1 1 190px}
+.company-financial-treemap-dialog .company-financial-treemap-controls .company-financial-treemap-search{flex:1 1 160px}
+.company-financial-treemap-tile.is-tiny{padding:0;border:0;border-radius:0;font-size:0;line-height:0}
+@media(max-width:760px){.company-financial-treemap-controls .company-financial-treemap-search{grid-column:1/-1}.company-financial-treemap-dialog .company-financial-treemap-controls .company-financial-treemap-search{grid-column:1/-1}}
