@@ -37,7 +37,7 @@ const expectedSecColumns = {
   financial_company_facts: ["company_id", "source_id", "dataset_id", "taxonomy", "concept", "unit", "value", "fiscal_year", "fiscal_period", "start_date", "end_date", "filed_date", "form", "accession_number", "source_url", "fetched_at"],
 };
 const expectedSecIndexes = ["financial_companies_pkey", "financial_companies_source_cik_unique_idx", "financial_companies_source_ticker_unique_idx", "financial_companies_ticker_idx", "financial_company_facts_pk", "financial_company_facts_end_date_idx", "financial_company_facts_period_idx"];
-const expectedPriceIndexes = ["financial_assets_pkey", "financial_assets_source_asset_unique_idx", "financial_assets_natural_key_idx", "financial_assets_type_active_idx", "financial_daily_prices_pk", "financial_daily_prices_date_asset_idx", "financial_daily_prices_dataset_date_idx"];
+const stablePriceIndexes = ["financial_assets_pkey", "financial_assets_source_asset_unique_idx", "financial_assets_type_active_idx", "financial_daily_prices_pk", "financial_daily_prices_date_asset_idx", "financial_daily_prices_dataset_date_idx"];
 const expectedExistingColumns = {
   indicator_observations: ["indicator_id", "country_iso3", "reference_year", "value", "published_at", "last_checked_at", "last_updated_at"],
   countries: ["iso2", "iso3", "localized_names", "region", "income_group", "is_aggregate"],
@@ -142,6 +142,13 @@ try {
   report.indexes = indexes.rows;
   if (applied.length >= 4) {
     const actualPriceIndexes = new Set(indexes.rows.map((row) => row.indexname));
+    // Migration 0012 intentionally replaces this unique index so assets sharing
+    // a ticker across providers can coexist. Validate the schema expected at
+    // the database's current migration point, allowing the migration to apply.
+    const naturalKeyIndex = applied.length >= 13
+      ? "financial_assets_natural_key_idx"
+      : "financial_assets_natural_key_unique_idx";
+    const expectedPriceIndexes = [...stablePriceIndexes, naturalKeyIndex];
     const missing = expectedPriceIndexes.filter((name) => !actualPriceIndexes.has(name));
     if (missing.length) report.schemaDifferences.push({ missingIndexes: missing });
   }
