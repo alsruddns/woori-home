@@ -6,8 +6,9 @@ export function rankCountryObservations(
   rows: readonly Pick<DataObservation, "country" | "countryName" | "year" | "value">[],
   year: number,
   direction: "asc" | "desc" = "desc",
+  aggregateCodes: ReadonlySet<string> = new Set(["WLD"]),
 ): RankedCountry[] {
-  const selected = rows.filter((row) => row.country !== "WLD" && row.year === year && Number.isFinite(row.value));
+  const selected = rows.filter((row) => !aggregateCodes.has(row.country) && row.year === year && Number.isFinite(row.value));
   const unique = new Map(selected.map((row) => [row.country, row]));
   const ordered = [...unique.values()].sort((a, b) => direction === "desc" ? b.value - a.value || a.country.localeCompare(b.country) : a.value - b.value || a.country.localeCompare(b.country));
   let previousValue: number | undefined;

@@ -131,7 +131,7 @@ test("development stock fixtures stay out of the public dashboard until licensed
   assert.doesNotMatch(productionSnapshot, /DEVELOPMENT MOCK|schema preview|market breadth prototype/i);
 });
 
-test("country detail routes cover observed countries while comparisons support 20 valid countries", async () => {
+test("country detail routes cover observed countries while comparisons support 5 valid countries", async () => {
   const [registry, route, localeLayout] = await Promise.all([read("src/lib/data-platform/countries.ts"), read("src/app/(locale)/[locale]/(platform)/countries/[countryCode]/page.tsx"), read("src/app/(locale)/[locale]/layout.tsx")]);
   const codes = [...registry.matchAll(/\{ code: "([a-z]{2})", iso3: "([A-Z]{3})" \}/g)].map((match) => ({ alpha2: match[1], alpha3: match[2] }));
   const observed = new Set(snapshot.observations.filter((row) => row.country !== "WLD").map((row) => row.country));
@@ -149,7 +149,7 @@ test("country detail routes cover observed countries while comparisons support 2
   assert.match(localeLayout, /if \(!isLocale\(locale\)\) notFound\(\)/);
 });
 
-test("country comparison defaults to ten countries, caps selections at twenty, and keeps source routing", async () => {
+test("country comparison defaults to three countries, caps selections at five, and keeps source routing", async () => {
   const [client, api, route, copy] = await Promise.all([
     read("src/app/(locale)/[locale]/country-comparison.tsx"),
     read("src/lib/db/world-bank-comparison-handler.ts"),
@@ -157,18 +157,18 @@ test("country comparison defaults to ten countries, caps selections at twenty, a
     read("src/lib/data-platform/country-copy.ts"),
   ]);
   assert.match(client, /draftCountries\.length < 2/);
-  assert.match(client, /draftCountries\.length > 20/);
-  assert.match(client, /current\.length < 20/);
-  assert.match(client, /draftCountries\.length}\/20/);
-  assert.match(api, /rawCodes\.length > 20/);
+  assert.match(client, /draftCountries\.length > 5/);
+  assert.match(client, /current\.length < 5/);
+  assert.match(client, /draftCountries\.length}\/5/);
+  assert.match(api, /rawCodes\.length > 5/);
   const repository = await read("src/lib/db/world-bank-repository.ts");
-  assert.match(repository, /countryIso3\.length > 20/);
+  assert.match(repository, /countryIso3\.length > 5/);
   assert.match(client, /fetch\(`\/portal-api\/world-bank\/compare\?/);
   assert.match(route, /handleWorldBankComparison/);
   assert.match(api, /observationsFor\(indicator\.code, country\.iso3\)/);
   assert.doesNotMatch(api, /fetch\(/);
   const worldData = await read("src/app/(locale)/[locale]/world-data.tsx");
-  assert.match(worldData, /\["kr", "us", "jp", "cn", "de", "gb", "fr", "in", "ca", "au"\]/);
+  assert.match(worldData, /\["kr", "us", "jp"\]/);
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
     assert.match(copy, new RegExp(`(?:^|\\n)\\s*(?:"${locale}"|${locale}): \\{`));
   }
