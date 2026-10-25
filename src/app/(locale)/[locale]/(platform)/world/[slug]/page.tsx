@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { alternates, isLocale, origin } from "@/lib/site";
+import { alternatesForLocales, isLocale, origin } from "@/lib/site";
 import { indicators } from "@/lib/data-platform/registry";
 import { IndicatorPage } from "../../../world-data";
 
@@ -16,7 +16,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const description = indicator.definition[locale] ?? indicator.definition.en;
   const path = `/${indicator.category}/${slug}`;
   const url = `${origin}/${locale}${path}`;
-  return { title: `${label}`, description, robots: { index: locale === "ko" || locale === "en", follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label}`, description, url }, twitter: { card: "summary", title: `${label}`, description } };
+  const indexable = locale === "ko" || locale === "en";
+  return { title: `${label}`, description, robots: { index: indexable, follow: true }, alternates: { canonical: url, ...(indexable ? { languages: alternatesForLocales(path, ["ko", "en"], "ko").languages } : {}) }, openGraph: { type: "article", siteName: "WOORI.TODAY", title: `${label}`, description, url }, twitter: { card: "summary", title: `${label}`, description } };
 }
 
 export default async function IndicatorDetailPage({ params }: { params: Promise<{ locale: string; slug: string }> }) {

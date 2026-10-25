@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { alternates, locales, origin, publicDataPaths, publicPortalPaths } from "@/lib/site";
+import { alternates, alternatesForLocales, locales, origin, publicDataPaths, publicPortalPaths } from "@/lib/site";
 import { indicators } from "@/lib/data-platform/registry";
 import { supportedCountries } from "@/lib/data-platform/countries";
 import { latestForCountry } from "@/lib/data-platform/snapshot";
@@ -10,10 +10,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${origin}/${locale}${path}`,
     alternates: alternates(path),
   })));
-  const indexableIndicatorPages = indicators.flatMap((indicator) => ["ko", "en"].map((locale) => {
+  const indexableIndicatorPages = indicators.flatMap((indicator) => {
     const path = `/${indicator.category}/${indicator.id}`;
-    return { url: `${origin}/${locale}${path}`, alternates: alternates(path) };
-  }));
+    const indexableLocales = indicator.category === "world"
+      ? (["ko", "en"] as const)
+      : locales.filter((locale) => Boolean(indicator.definition[locale] && indicator.interpretation[locale]));
+    const preferredDefault = indicator.category === "world" || indicator.id === "electricity-access" ? "ko" : "en";
+    const defaultLocale = indexableLocales.includes(preferredDefault) ? preferredDefault : indexableLocales[0] ?? "en";
+    return indexableLocales.map((locale) => ({
+      url: `${origin}/${locale}${path}`,
+      alternates: alternatesForLocales(path, indexableLocales, defaultLocale),
+    }));
+  });
   const countryPaths = supportedCountries
     .filter((country) => latestForCountry("SP.POP.TOTL", country.iso3))
     .map((country) => `/countries/${country.code}`);
