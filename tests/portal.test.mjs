@@ -100,7 +100,7 @@ test("all locale dictionaries, legal pages, and service names are complete witho
   assert.deepEqual(errors, [], errors.join("\n"));
 });
 
-test("sitemap includes public data hubs and indexable indicators with canonical 26-locale alternates", () => {
+test("sitemap and hreflang include only indexable indicator locales", async () => {
   const publicPaths = [...new Set([...siteData.publicPortalPaths, ...siteData.publicDataPaths])];
   const entries = siteData.locales.flatMap((locale) => publicPaths.map((path) => ({ url: `${siteData.origin}/${locale}${path}`, languages: siteData.alternates(path).languages })));
   assert.equal(entries.length, 26 * publicPaths.length);
@@ -113,6 +113,23 @@ test("sitemap includes public data hubs and indexable indicators with canonical 
   assert.match(sitemap, /publicDataPaths/);
   assert.match(sitemap, /indexableIndicatorPages/);
   assert.match(sitemap, /\["ko", "en"\]/);
+  assert.match(sitemap, /indicator\.definition\[locale\].*indicator\.interpretation\[locale\]/);
+  const fullLocaleIndicator = indicators.find((indicator) => indicator.id === "electricity-access");
+  const fullLocaleAlternates = siteData.alternatesForLocales("/energy/electricity-access", siteData.locales, "ko").languages;
+  assert.equal(Object.keys(fullLocaleAlternates).length, 27);
+  assert.equal(fullLocaleAlternates["x-default"], "https://www.woori.today/ko/energy/electricity-access");
+  assert.ok(siteData.locales.every((locale) => fullLocaleIndicator.definition[locale] && fullLocaleIndicator.interpretation[locale]));
+  const twoLocaleAlternates = siteData.alternatesForLocales("/world/population", ["ko", "en"], "ko").languages;
+  assert.deepEqual(Object.keys(twoLocaleAlternates).sort(), ["en", "ko", "x-default"]);
+  assert.equal(twoLocaleAlternates["x-default"], "https://www.woori.today/ko/world/population");
+  const [categoryRoute, worldIndicatorRoute] = await Promise.all([
+    readFile(new URL("../src/app/(locale)/[locale]/(platform)/[category]/[slug]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/(platform)/world/[slug]/page.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(categoryRoute, /indexableLocales = locales\.filter/);
+  assert.match(categoryRoute, /localized \? \{ languages:/);
+  assert.match(worldIndicatorRoute, /alternatesForLocales\(path, \["ko", "en"\], "ko"\)/);
+  assert.match(worldIndicatorRoute, /indexable \? \{ languages:/);
 });
 
 test("financial dashboard and market labels are translated for every locale", () => {
