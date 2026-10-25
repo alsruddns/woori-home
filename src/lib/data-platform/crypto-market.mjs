@@ -56,9 +56,11 @@ export function cryptoHeatmapWeights(coins) {
   return Object.fromEntries(coins.map((coin) => [coin.id, coin.marketCap / total]));
 }
 
-export function cryptoTreemapLayout(coins) {
+export function cryptoTreemapLayout(coins, bounds = { width: 100, height: 100 }) {
   const weights = cryptoHeatmapWeights(coins);
   if (!weights) return null;
+  const width = Number.isFinite(bounds.width) && bounds.width > 0 ? bounds.width : 100;
+  const height = Number.isFinite(bounds.height) && bounds.height > 0 ? bounds.height : 100;
   const output = {};
   const split = (items, rect) => {
     if (items.length === 1) {
@@ -87,7 +89,7 @@ export function cryptoTreemapLayout(coins) {
       split(right, { x: rect.x, y: rect.y + height, width: rect.width, height: rect.height - height });
     }
   };
-  split(coins, { x: 0, y: 0, width: 100, height: 100 });
+  split(coins, { x: 0, y: 0, width, height });
   return output;
 }
 

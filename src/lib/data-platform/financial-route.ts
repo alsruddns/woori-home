@@ -3,6 +3,9 @@ import { classifyFinancialDatabaseError } from "./financial-db-error.mjs";
 import { isIP } from "node:net";
 import { allowFinancialRequest } from "./financial-rate-limit.mjs";
 import { financialApiErrorResponse, financialApiResponse, financialRateLimitResponse, parseFinancialCompanyFactsQuery, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery, safeErrorCode } from "./financial-api.mjs";
+import { createFinancialResponseCache, secFactsCacheVersion } from "./financial-response-cache.mjs";
+
+const companyFactsResponseCache = createFinancialResponseCache();
 
 export function financialRateLimit(request: Request) {
   const forwarded = request.headers.get("x-real-ip") ?? request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim() ?? "anonymous";
@@ -49,13 +52,21 @@ export async function financialCompanyFactsRoute(request: Request) {
     const parsed = parseFinancialCompanyFactsQuery(new URL(request.url).searchParams);
     if (!parsed.ok) return financialApiResponse({ error: parsed.error }, parsed.status);
     const filters = { ticker: parsed.ticker, period: parsed.period, latest: parsed.latest, fiscalYear: parsed.fiscalYear };
-    const [rows, total, collectionStatus] = await Promise.all([listFinancialCompanyFacts(parsed.pageSize, parsed.offset, filters), countFinancialCompanyFacts(filters), getSecCompanyFactsCollectionStatus()]);
-    const asOf = rows.reduce<string | null>((latest, row) => typeof row.filedDate === "string" && (!latest || row.filedDate > latest) ? row.filedDate : latest, null);
-    const dataObservedAt = rows.reduce<Date | null>((latest, row) => {
-      const candidate = row.dataObservedAt instanceof Date ? row.dataObservedAt : row.dataObservedAt ? new Date(String(row.dataObservedAt)) : null;
-      return candidate && !Number.isNaN(candidate.valueOf()) && (!latest || candidate > latest) ? candidate : latest;
-    }, null);
-    return financialApiResponse({ data: rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total }, source: rows[0]?.sourceName ?? "U.S. SEC EDGAR Company Facts", asOf, dataObservedAt, collectionStatus, dataState: total ? "available" : "no-company-facts" });
+    const collectionStatus = await getSecCompanyFactsCollectionStatus();
+    const cacheKey = JSON.stringify({ version: secFactsCacheVersion(collectionStatus), ...filters, pageSize: parsed.pageSize, offset: parsed.offset });
+    const cached = await companyFactsResponseCache.get(cacheKey, async () => {
+      const [rows, total] = await Promise.all([listFinancialCompanyFacts(parsed.pageSize, parsed.offset, filters), countFinancialCompanyFacts(filters)]);
+      const asOf = rows.reduce<string | null>((latest, row) => typeof row.filedDate === "string" && (!latest || row.filedDate > latest) ? row.filedDate : latest, null);
+      const dataObservedAt = rows.reduce<Date | null>((latest, row) => {
+        const candidate = row.dataObservedAt instanceof Date ? row.dataObservedAt : row.dataObservedAt ? new Date(String(row.dataObservedAt)) : null;
+        return candidate && !Number.isNaN(candidate.valueOf()) && (!latest || candidate > latest) ? candidate : latest;
+      }, null);
+      return { data: rows, pagination: { page: parsed.page, pageSize: parsed.pageSize, total }, source: rows[0]?.sourceName ?? "U.S. SEC EDGAR Company Facts", asOf, dataObservedAt, collectionStatus, dataState: total ? "available" : "no-company-facts" };
+    });
+    return financialApiResponse(cached.value, 200, {
+      cacheControl: "public, max-age=120, stale-while-revalidate=60",
+      headers: { "x-financial-cache": cached.state },
+    });
   } catch (error) {
     const reason = classifyFinancialDatabaseError(error);
     console.error("Financial company-facts read failed", reason, safeErrorCode(error));

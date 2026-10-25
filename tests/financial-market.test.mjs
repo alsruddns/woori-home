@@ -9,6 +9,8 @@ import { FINANCIAL_API_CACHE_CONTROL, financialApiErrorResponse, financialApiRes
 import { allowFinancialRequest } from "../src/lib/data-platform/financial-rate-limit.mjs";
 import { classifyFinancialDatabaseError } from "../src/lib/data-platform/financial-db-error.mjs";
 import { companyFinancialMetrics, sicDivision } from "../src/lib/data-platform/company-financial-treemap.mjs";
+import { createFinancialResponseCache, secFactsCacheVersion } from "../src/lib/data-platform/financial-response-cache.mjs";
+import { fetchCompanyFacts } from "../src/lib/data-platform/company-facts-fetch.mjs";
 
 const providerFixture = (overrides = {}) => ({
   id: "fixture-provider", datasetId: "fixture-daily-prices", licenseStatus: "verified",
@@ -201,9 +203,65 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
   assert.deepEqual(parseFinancialHeatmapQuery(new URLSearchParams("market=krw&date=2026-01-01"), "crypto"), { ok: true, market: "krw", referenceDate: "2026-01-01" });
   assert.equal(FINANCIAL_API_CACHE_CONTROL, "no-store");
   assert.equal(financialApiResponse({ ok: true }).headers.get("cache-control"), "no-store");
+  const cacheableResponse = financialApiResponse({ ok: true }, 200, { cacheControl: "public, max-age=30", headers: { "x-financial-cache": "HIT" } });
+  assert.equal(cacheableResponse.headers.get("cache-control"), "public, max-age=30");
+  assert.equal(cacheableResponse.headers.get("x-financial-cache"), "HIT");
+  const limited = (await import("../src/lib/data-platform/financial-api.mjs")).financialRateLimitResponse(8);
+  assert.equal(limited.status, 429);
+  assert.equal(limited.headers.get("retry-after"), "8");
+  assert.equal(limited.headers.get("ratelimit-limit"), "120");
+  assert.equal(limited.headers.get("ratelimit-remaining"), "0");
   const unavailable = financialApiErrorResponse("financial-db-select-denied");
   assert.equal(unavailable.status, 503);
   assert.deepEqual(await unavailable.json(), { error: "financial_data_unavailable", reason: "financial-db-select-denied", message: "Financial market data is temporarily unavailable." });
+});
+
+test("SEC response cache deduplicates work, expires by time and isolates collection versions", async () => {
+  let now = 0;
+  const cache = createFinancialResponseCache({ maxEntries: 2, maxBytes: 1024, ttlMs: 10, staleMs: 20, now: () => now });
+  let loads = 0;
+  const loader = async () => { loads += 1; await Promise.resolve(); return { value: loads }; };
+  const [first, concurrent] = await Promise.all([cache.get("same", loader), cache.get("same", loader)]);
+  assert.deepEqual(first, { value: { value: 1 }, state: "MISS" });
+  assert.deepEqual(concurrent, { value: { value: 1 }, state: "MISS" });
+  assert.equal((await cache.get("same", loader)).state, "HIT");
+  now = 11;
+  assert.deepEqual(await cache.get("same", async () => { throw new Error("temporary database failure"); }), { value: { value: 1 }, state: "STALE" });
+  now = 32;
+  await assert.rejects(cache.get("same", async () => { throw new Error("expired stale response"); }), /expired stale response/);
+  assert.deepEqual(await cache.get("non-json", () => 1n), { value: 1n, state: "MISS" });
+  assert.notEqual(secFactsCacheVersion({ lastRunStartedAt: new Date("2026-01-01T00:00:00Z") }), secFactsCacheVersion({ lastRunStartedAt: new Date("2026-01-02T00:00:00Z") }));
+});
+
+test("SEC facts 429 retry honors Retry-After once and does not retry other failures", async () => {
+  const calls = [];
+  const waits = [];
+  const fetchImpl = async (_url, options) => {
+    calls.push(options.cache);
+    return calls.length === 1 ? new Response(null, { status: 429, headers: { "retry-after": "3" } }) : new Response("ok", { status: 200 });
+  };
+  const response = await fetchCompanyFacts("/portal-api/finance/companies?period=annual", { fetchImpl, wait: async (ms) => waits.push(ms) });
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls, ["default", "no-store"]);
+  assert.deepEqual(waits, [3000]);
+  let callsWithoutRetryAfter = 0;
+  const failed = await fetchCompanyFacts("/facts", { fetchImpl: async () => { callsWithoutRetryAfter += 1; return new Response(null, { status: 429 }); } });
+  assert.equal(failed.status, 429);
+  assert.equal(callsWithoutRetryAfter, 1);
+  const controller = new AbortController();
+  controller.abort(new DOMException("test cancelled", "AbortError"));
+  let callsAfterAbort = 0;
+  await assert.rejects(fetchCompanyFacts("/facts", {
+    signal: controller.signal,
+    fetchImpl: async () => { callsAfterAbort += 1; return new Response(null, { status: 429, headers: { "retry-after": "1" } }); },
+  }), /test cancelled/);
+  assert.equal(callsAfterAbort, 1);
+});
+
+test("industry zoom labels cover all 26 Portal locales", async () => {
+  const source = await readFile(new URL("../src/lib/data-platform/company-financial-industry-copy.ts", import.meta.url), "utf8");
+  const keys = [...source.matchAll(/^\s*(?:"([^"]+)"|([a-z-]+)):\s*\{/gm)].map((match) => match[1] ?? match[2]);
+  assert.deepEqual(keys, ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]);
 });
 
 test("SEC comparison query selects one latest statement per company and excludes cumulative quarters", async () => {
