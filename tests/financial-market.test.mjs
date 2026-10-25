@@ -12,7 +12,7 @@ import { companyFinancialMetrics, sicDivision } from "../src/lib/data-platform/c
 import { createFinancialResponseCache, secFactsCacheVersion } from "../src/lib/data-platform/financial-response-cache.mjs";
 import { fetchCompanyFacts } from "../src/lib/data-platform/company-facts-fetch.mjs";
 import { adjacentCalendarDate, isDailySnapshotReady, previousDailyReferenceDate } from "../src/lib/data-platform/crypto-daily.mjs";
-import { canCollectCryptoDailySnapshots, canPublishCryptoDailySnapshots } from "../src/lib/data-platform/financial-rights.mjs";
+import { canCollectCryptoDailySnapshots, canCollectCoinrankingDailySnapshots, canPublishCryptoDailySnapshots } from "../src/lib/data-platform/financial-rights.mjs";
 
 const providerFixture = (overrides = {}) => ({
   id: "fixture-provider", datasetId: "fixture-daily-prices", licenseStatus: "verified",
@@ -59,6 +59,25 @@ test("crypto daily collection and publication require explicit daily and ad-supp
   assert.equal(canCollectCryptoDailySnapshots({ ...base, financial_rights: { ...base.financial_rights, dailySnapshot: "pending" } }, now), false);
   assert.equal(canPublishCryptoDailySnapshots({ ...base, financial_rights: { ...base.financial_rights, adSupportedDisplay: "pending" } }, now), false);
   assert.equal(canPublishCryptoDailySnapshots({ ...base, review_due_at: "2026-10-20T00:00:00Z" }, now), false);
+});
+
+test("Coinranking storage and public publication require current verified competitor permission", () => {
+  const now = new Date("2026-10-21T00:00:00Z");
+  const pending = {
+    id: "coinranking-aggregate", license_status: "unknown", collection_enabled: false,
+    source_url: "https://coinranking.com/", attribution: "Data provided by Coinranking",
+    financial_rights: { apiAccess: "pending", publicDisplay: "pending", userApi: "pending", dbStorage: "pending", longTermRetention: "pending",
+      derivedVisualization: "pending", dailySnapshot: "pending", adSupportedDisplay: "pending", competitorPermission: "pending" },
+    terms_version: null, reviewed_at: null, review_due_at: null,
+  };
+  assert.equal(canCollectCoinrankingDailySnapshots(pending, now), false);
+  assert.equal(canPublishCryptoDailySnapshots({ ...pending, terms_version: "terms-v1", reviewed_at: "2026-10-20T00:00:00Z", review_due_at: "2027-10-20T00:00:00Z",
+    license_status: "verified", collection_enabled: true, financial_rights: { ...Object.fromEntries(Object.keys(pending.financial_rights).map((right) => [right, "confirmed"])), competitorPermission: "pending" } }, now), false);
+  const confirmed = { ...pending, license_status: "verified", collection_enabled: true, terms_version: "terms-v1", reviewed_at: "2026-10-20T00:00:00Z", review_due_at: "2027-10-20T00:00:00Z",
+    financial_rights: Object.fromEntries(Object.keys(pending.financial_rights).map((right) => [right, "confirmed"])) };
+  assert.equal(canCollectCoinrankingDailySnapshots(confirmed, now), true);
+  assert.equal(canPublishCryptoDailySnapshots(confirmed, now), true);
+  assert.equal(canCollectCoinrankingDailySnapshots({ ...confirmed, financial_rights: { ...confirmed.financial_rights, competitorPermission: "pending" } }, now), false);
 });
 
 test("price validation preserves NUMERIC decimal strings and rejects invalid precision and nonfinite values", () => {

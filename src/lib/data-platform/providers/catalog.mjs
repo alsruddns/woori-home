@@ -6,6 +6,7 @@ import { createBinanceSpotProvider } from "./binance-spot.mjs";
 import { createTwelveDataUsProvider } from "./twelvedata-us.mjs";
 import { createFscKrxStockProvider } from "./fsc-krx-stocks.mjs";
 import { createCoinGeckoProvider } from "./coingecko.mjs";
+import { createCoinrankingProvider } from "./coinranking.mjs";
 
 export const financialProviderCatalog = [
   {
@@ -74,6 +75,13 @@ export const financialProviderCatalog = [
     collectionEnabled: false, sourceUrl: "https://www.coingecko.com/en/api", termsUrl: "https://www.coingecko.com/en/api_terms", datasetId: "coingecko-usd-daily-prices", createAdapter: createCoinGeckoProvider,
   },
   {
+    id: "coinranking-aggregate", name: "Coinranking API (global aggregate)", markets: ["crypto:USD aggregate"], access: "API key required",
+    apiKeyRequired: true, rightsStatus: "pending-explicit-competition-and-public-display-review",
+    rights: { apiAccess: "pending", publicDisplay: "pending", userApi: "pending", derivedVisualization: "pending", charts: "pending", temporaryCache: "pending", dbStorage: "pending", longTermRetention: "pending", dailySnapshot: "pending", adSupportedDisplay: "pending", competitorPermission: "pending", rawRedistribution: "denied" },
+    collectionEnabled: false, sourceUrl: "https://coinranking.com/", termsUrl: "https://support.coinranking.com/article/131-api-terms-conditions",
+    datasetId: "coinranking-usd-daily-snapshots", createAdapter: createCoinrankingProvider,
+  },
+  {
     id: "twelvedata-us-equities", name: "Twelve Data US Equities", markets: ["us:stocks"], access: "paid-api", apiKeyRequired: true,
     rightsStatus: "pending", rights: { apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending" },
     collectionEnabled: false, sourceUrl: "https://twelvedata.com/docs", termsUrl: "https://twelvedata.com/terms", datasetId: "twelvedata-us-daily-prices", createAdapter: createTwelveDataUsProvider,
@@ -91,7 +99,7 @@ export function listFinancialProviders() {
     return {
       ...provider,
       collectionEnabled: provider.collectionEnabled ?? false,
-      configured: provider.id === "opendart-company-financials" ? Boolean(process.env.OPENDART_API_KEY ?? process.env.DART_API_KEY) : provider.id === "twelvedata-us-equities" ? Boolean(process.env.TWELVEDATA_API_KEY) : provider.id === "fsc-krx-stock-prices" ? Boolean(process.env.DATA_GO_KR_STOCK_KEY) : provider.id === "coingecko-markets" ? Boolean(process.env.COINGECKO_API_KEY) : true,
+      configured: provider.id === "opendart-company-financials" ? Boolean(process.env.OPENDART_API_KEY ?? process.env.DART_API_KEY) : provider.id === "twelvedata-us-equities" ? Boolean(process.env.TWELVEDATA_API_KEY) : provider.id === "fsc-krx-stock-prices" ? Boolean(process.env.DATA_GO_KR_STOCK_KEY) : provider.id === "coingecko-markets" ? Boolean(process.env.COINGECKO_API_KEY) : provider.id === "coinranking-aggregate" ? Boolean(process.env.COINRANKING_API_KEY) : true,
       publicDisplay: provider.rights?.publicDisplay ?? provider.publicDisplay,
       databaseRetention: provider.rights?.longTermRetention ?? provider.databaseRetention,
     };

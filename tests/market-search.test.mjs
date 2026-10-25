@@ -20,7 +20,10 @@ test("crypto name search is local and normalized while dated prices use one dedi
   assert.match(dashboard, /asset\.symbol, asset\.name, \.\.\.asset\.aliases/);
   assert.match(dashboard, /fetch\(`\/portal-api\/finance\/crypto\/daily\?market=\$\{market\}`/);
   assert.doesNotMatch(lower, /fetch\([^)]*[?&]q=/);
-  assert.doesNotMatch(lower, /currentquote|change24hpercent|marketcap/);
+  assert.match(dashboard, /portal-api\/finance\/crypto\/coinranking/);
+  assert.match(dashboard, /change24hPercent/i);
+  assert.match(dashboard, /marketCap/i);
+  assert.doesNotMatch(lower, /fetch\([^)]*[?&]q=/);
 });
 
 test("company aliases only filter the existing SEC company result set", async () => {
@@ -28,4 +31,23 @@ test("company aliases only filter the existing SEC company result set", async ()
   assert.match(panel, /summary\.filter\(\(row\) =>/);
   assert.match(panel, /companySearchAliases\(row\.ticker\)/);
   assert.match(panel, /row\.ticker/);
+});
+
+test("Coinranking public routes are PostgreSQL-only and separate the top-20, top-100, and full 300 search set", async () => {
+  const [marketRoute, historyRoute, queries, dashboard] = await Promise.all([
+    readFile(new URL("../src/app/portal-api/finance/crypto/coinranking/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/portal-api/finance/crypto/coinranking/[uuid]/history/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/db/financial-queries.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/crypto-dashboard.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(marketRoute, /getCoinrankingDailyMarket/);
+  assert.match(historyRoute, /getCoinrankingDailyHistory/);
+  assert.doesNotMatch(`${marketRoute}\n${historyRoute}`, /createCoinrankingProvider|COINRANKING_API_KEY|fetch\(/);
+  assert.match(queries, /competitorPermission/);
+  assert.match(queries, /dailySnapshot/);
+  assert.match(queries, /longTermRetention/);
+  assert.match(dashboard, /visible\.slice\(0, 20\)/);
+  assert.match(dashboard, /visible\.slice\(0, 100\)/);
+  assert.match(dashboard, /visible\.map\(\(coin\)/);
+  assert.match(historyRoute, /daily-observed-aggregate-price/);
 });

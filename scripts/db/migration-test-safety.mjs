@@ -10,6 +10,14 @@ export const EXPECTED_MIGRATION_TAGS = [
   "0003_financial_market_data",
   "0004_sec_company_facts",
   "0005_sec_fact_period_key",
+  "0006_dear_human_robot",
+  "0007_graceful_cerise",
+  "0008_acoustic_loki",
+  "0009_ambiguous_eddie_brock",
+  "0010_melodic_metal_master",
+  "0011_rare_trish_tilby",
+  "0012_coinranking_asset_identity",
+  "0013_coinranking_snapshot_rights",
 ];
 
 export const EXPECTED_TABLES = [
@@ -33,7 +41,7 @@ export const EXPECTED_INDEXES = [
   "data_sources_pkey",
   "datasets_pkey",
   "datasets_source_id_idx",
-  "financial_assets_natural_key_unique_idx",
+  "financial_assets_natural_key_idx",
   "financial_assets_pkey",
   "financial_assets_source_asset_unique_idx",
   "financial_assets_type_active_idx",
@@ -104,7 +112,7 @@ export function classifyMigrationTestState({ publicTables, migrationSchemaExists
     && uniqueApplied.size === EXPECTED_MIGRATION_TAGS.length
     && applied.every((time) => expectedTimes.includes(time))) return "already-migrated";
 
-  throw new MigrationTestSafetyError("Test database is neither empty nor a complete 0000–0003 migration result; refusing to change it.");
+  throw new MigrationTestSafetyError("Test database is neither empty nor a complete current migration result; refusing to change it.");
 }
 
 export function verifyMigrationTestSchema({ appliedRows, migrationTimes, tables, indexes }) {

@@ -10,6 +10,8 @@ const ALLOWED_TOOLS = new Set([
   "scripts/db/migrate-production.mjs",
   "scripts/db/grant-financial-runtime-read-production.mjs",
   "scripts/db/grant-financial-import-production.mjs",
+  "scripts/db/grant-coinranking-import-production.mjs",
+  "scripts/data/coinranking-daily-collection.mjs",
   "scripts/data/import-world-bank-production.mjs",
   "scripts/data/verify-world-bank-production.mjs",
   "scripts/data/financial-sec-production.mjs",

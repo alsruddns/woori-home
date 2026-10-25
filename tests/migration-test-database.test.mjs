@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import {
@@ -11,7 +12,7 @@ import {
   verifyMigrationTestSchema,
 } from "../scripts/db/migration-test-safety.mjs";
 
-const times = [1792547153047, 1792556890666, 1792557184725, 1792558376174, 1792647422261, 1792647749069];
+const times = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8")).entries.map(({ when }) => when);
 const rows = times.map((created_at) => ({ created_at: String(created_at) }));
 
 test("the migration test accepts only its dedicated database and isolated container host", () => {
@@ -63,14 +64,14 @@ test("migration test state permits only an empty first run or the complete expec
   }), /refusing to change/);
 });
 
-test("migration schema verification requires six entries, ten tables and twenty-seven indexes", () => {
+test("migration schema verification matches the current journal, table, and index sets", () => {
   assert.deepEqual(verifyMigrationTestSchema({
     appliedRows: rows,
     migrationTimes: times,
     tables: EXPECTED_TABLES,
     indexes: EXPECTED_INDEXES,
-  }), { applied: 6, pending: 0, tables: 10, indexes: 27 });
-  assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows.slice(1), migrationTimes: times, tables: EXPECTED_TABLES, indexes: EXPECTED_INDEXES }), /6 unique/);
+  }), { applied: times.length, pending: 0, tables: EXPECTED_TABLES.length, indexes: EXPECTED_INDEXES.length });
+  assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows.slice(1), migrationTimes: times, tables: EXPECTED_TABLES, indexes: EXPECTED_INDEXES }), /unique applied entries/);
   assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows, migrationTimes: times, tables: EXPECTED_TABLES.slice(1), indexes: EXPECTED_INDEXES }), /expected table set/);
   assert.throws(() => verifyMigrationTestSchema({ appliedRows: rows, migrationTimes: times, tables: EXPECTED_TABLES, indexes: EXPECTED_INDEXES.slice(1) }), /expected index set/);
 });
@@ -92,5 +93,13 @@ test("test migration command ignores production and development URL variables", 
     "0003_financial_market_data",
     "0004_sec_company_facts",
     "0005_sec_fact_period_key",
+    "0006_dear_human_robot",
+    "0007_graceful_cerise",
+    "0008_acoustic_loki",
+    "0009_ambiguous_eddie_brock",
+    "0010_melodic_metal_master",
+    "0011_rare_trish_tilby",
+    "0012_coinranking_asset_identity",
+    "0013_coinranking_snapshot_rights",
   ]);
 });

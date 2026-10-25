@@ -26,7 +26,8 @@ export const dataSources = pgTable("data_sources", {
   licenseUrl: text("license_url"),
   financialRights: jsonb("financial_rights").$type<Record<string, "confirmed" | "pending" | "restricted" | "denied">>().notNull().default({
     apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending",
-    userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending",
+    userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending", dailySnapshot: "pending",
+    adSupportedDisplay: "pending", competitorPermission: "pending",
   }),
   termsVersion: text("terms_version"),
   reviewDueAt: timestamp("review_due_at", { withTimezone: true, mode: "date" }),
@@ -38,7 +39,7 @@ export const dataSources = pgTable("data_sources", {
   updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 }, (table) => [
   check("data_sources_license_status_check", sql`${table.licenseStatus} in ('verified', 'conditional', 'restricted', 'unknown')`),
-  check("data_sources_financial_rights_check", sql`jsonb_typeof(${table.financialRights}) = 'object' and ${table.financialRights} ?& array['apiAccess','publicDisplay','dbStorage','longTermRetention','userApi','csvRedistribution','derivedVisualization'] and ${table.financialRights}->>'apiAccess' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'publicDisplay' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'dbStorage' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'longTermRetention' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'userApi' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'csvRedistribution' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'derivedVisualization' in ('confirmed','pending','restricted','denied')`),
+  check("data_sources_financial_rights_check", sql`jsonb_typeof(${table.financialRights}) = 'object' and ${table.financialRights} ?& array['apiAccess','publicDisplay','dbStorage','longTermRetention','userApi','csvRedistribution','derivedVisualization','dailySnapshot','adSupportedDisplay','competitorPermission'] and ${table.financialRights}->>'apiAccess' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'publicDisplay' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'dbStorage' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'longTermRetention' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'userApi' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'csvRedistribution' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'derivedVisualization' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'dailySnapshot' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'adSupportedDisplay' in ('confirmed','pending','restricted','denied') and ${table.financialRights}->>'competitorPermission' in ('confirmed','pending','restricted','denied')`),
 ]);
 
 export const datasets = pgTable("datasets", {
@@ -140,7 +141,7 @@ export const financialAssets = pgTable("financial_assets", {
   lastUpdatedAt: timestamp("last_updated_at", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("financial_assets_source_asset_unique_idx").on(table.sourceId, table.sourceAssetId),
-  uniqueIndex("financial_assets_natural_key_unique_idx").on(table.assetType, table.symbol, table.venue, table.currency),
+  index("financial_assets_natural_key_idx").on(table.assetType, table.symbol, table.venue, table.currency),
   index("financial_assets_type_active_idx").on(table.assetType, table.isActive),
   check("financial_assets_type_check", sql`${table.assetType} in ('stock', 'crypto', 'metal', 'energy', 'agriculture', 'fx', 'rate', 'index')`),
   check("financial_assets_symbol_check", sql`length(trim(${table.symbol})) > 0`),

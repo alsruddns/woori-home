@@ -14,6 +14,38 @@ type DailyRow = {
   sourceId: string; sourceName: string; sourceUrl: string; attribution: string;
 };
 type DailySnapshot = { market: "krw" | "usdt"; referenceTimezone: string; referenceDate: string; dataStatus: string; data: DailyRow[]; history: DailyRow[] };
+type CoinrankingQuote = { uuid: string; symbol: string; name: string; aliases: string[]; price: string; change24hPercent: string | null; marketCap: string | null; volume24h: string | null; observedAt: string };
+type CoinrankingPayload = { currency: "USD"; observedAt: string; data: CoinrankingQuote[]; attribution: string; sourceUrl: string };
+type CoinrankingHistoryPoint = { timestamp: string; price: string };
+
+const coinrankingLabels: Record<Locale, { current: string; change24h: string; observed: string; chart: string; loadChart: string }> = {
+  ko: { current: "현재 집계가", change24h: "최근 24시간 변동률", observed: "관측 시각 (UTC)", chart: "Coinranking 가격 이력", loadChart: "가격 차트 불러오기" },
+  en: { current: "Current aggregated price", change24h: "Change over 24 hours", observed: "Observed at (UTC)", chart: "Coinranking price history", loadChart: "Load price chart" },
+  ja: { current: "現在の集計価格", change24h: "過去24時間の変動率", observed: "観測時刻 (UTC)", chart: "Coinranking価格履歴", loadChart: "価格チャートを読み込む" },
+  zh: { current: "当前聚合价格", change24h: "过去24小时涨跌幅", observed: "观测时间 (UTC)", chart: "Coinranking 价格历史", loadChart: "加载价格图表" },
+  es: { current: "Precio agregado actual", change24h: "Cambio en 24 horas", observed: "Hora de observación (UTC)", chart: "Historial de precios de Coinranking", loadChart: "Cargar gráfico" },
+  "pt-br": { current: "Preço agregado atual", change24h: "Variação em 24 horas", observed: "Horário da observação (UTC)", chart: "Histórico de preços Coinranking", loadChart: "Carregar gráfico" },
+  de: { current: "Aktueller aggregierter Preis", change24h: "Änderung über 24 Stunden", observed: "Beobachtet um (UTC)", chart: "Coinranking-Kursverlauf", loadChart: "Kursdiagramm laden" },
+  fr: { current: "Prix agrégé actuel", change24h: "Variation sur 24 heures", observed: "Heure d’observation (UTC)", chart: "Historique des prix Coinranking", loadChart: "Charger le graphique" },
+  vi: { current: "Giá tổng hợp hiện tại", change24h: "Biến động trong 24 giờ", observed: "Thời điểm ghi nhận (UTC)", chart: "Lịch sử giá Coinranking", loadChart: "Tải biểu đồ giá" },
+  id: { current: "Harga agregat saat ini", change24h: "Perubahan 24 jam", observed: "Waktu pengamatan (UTC)", chart: "Riwayat harga Coinranking", loadChart: "Muat grafik harga" },
+  th: { current: "ราคารวมปัจจุบัน", change24h: "การเปลี่ยนแปลงใน 24 ชั่วโมง", observed: "เวลาที่สังเกต (UTC)", chart: "ประวัติราคา Coinranking", loadChart: "โหลดกราฟราคา" },
+  "zh-tw": { current: "目前彙總價格", change24h: "過去 24 小時漲跌幅", observed: "觀測時間 (UTC)", chart: "Coinranking 價格歷史", loadChart: "載入價格圖表" },
+  it: { current: "Prezzo aggregato attuale", change24h: "Variazione in 24 ore", observed: "Ora di rilevazione (UTC)", chart: "Storico prezzi Coinranking", loadChart: "Carica grafico" },
+  nl: { current: "Huidige geaggregeerde prijs", change24h: "Verandering in 24 uur", observed: "Waargenomen om (UTC)", chart: "Coinranking-prijsgeschiedenis", loadChart: "Prijsgrafiek laden" },
+  hi: { current: "वर्तमान समेकित मूल्य", change24h: "24 घंटे का बदलाव", observed: "अवलोकन समय (UTC)", chart: "Coinranking मूल्य इतिहास", loadChart: "मूल्य चार्ट लोड करें" },
+  ru: { current: "Текущая агрегированная цена", change24h: "Изменение за 24 часа", observed: "Время наблюдения (UTC)", chart: "История цен Coinranking", loadChart: "Загрузить график" },
+  tr: { current: "Güncel toplu fiyat", change24h: "24 saatlik değişim", observed: "Gözlem zamanı (UTC)", chart: "Coinranking fiyat geçmişi", loadChart: "Fiyat grafiğini yükle" },
+  pl: { current: "Aktualna cena zagregowana", change24h: "Zmiana w ciągu 24 godzin", observed: "Czas obserwacji (UTC)", chart: "Historia cen Coinranking", loadChart: "Wczytaj wykres" },
+  fil: { current: "Kasalukuyang pinagsama-samang presyo", change24h: "Pagbabago sa loob ng 24 oras", observed: "Oras ng obserbasyon (UTC)", chart: "Kasaysayan ng presyo sa Coinranking", loadChart: "I-load ang chart" },
+  bn: { current: "বর্তমান সমন্বিত মূল্য", change24h: "২৪ ঘণ্টার পরিবর্তন", observed: "পর্যবেক্ষণের সময় (UTC)", chart: "Coinranking মূল্য ইতিহাস", loadChart: "মূল্য চার্ট লোড করুন" },
+  uk: { current: "Поточна агрегована ціна", change24h: "Зміна за 24 години", observed: "Час спостереження (UTC)", chart: "Історія цін Coinranking", loadChart: "Завантажити графік" },
+  ms: { current: "Harga agregat semasa", change24h: "Perubahan dalam 24 jam", observed: "Masa pemerhatian (UTC)", chart: "Sejarah harga Coinranking", loadChart: "Muatkan carta harga" },
+  sv: { current: "Aktuellt aggregerat pris", change24h: "Förändring under 24 timmar", observed: "Observationstid (UTC)", chart: "Coinranking-prishistorik", loadChart: "Läs in prisdiagram" },
+  cs: { current: "Aktuální agregovaná cena", change24h: "Změna za 24 hodin", observed: "Čas pozorování (UTC)", chart: "Historie cen Coinranking", loadChart: "Načíst cenový graf" },
+  ro: { current: "Preț agregat actual", change24h: "Modificare în 24 de ore", observed: "Ora observării (UTC)", chart: "Istoricul prețurilor Coinranking", loadChart: "Încarcă graficul" },
+  el: { current: "Τρέχουσα συγκεντρωτική τιμή", change24h: "Μεταβολή 24 ωρών", observed: "Ώρα παρατήρησης (UTC)", chart: "Ιστορικό τιμών Coinranking", loadChart: "Φόρτωση γραφήματος" },
+};
 
 const cryptoAssets: CryptoAsset[] = [
   { symbol: "BTC", name: "Bitcoin", aliases: ["비트코인"] },
@@ -108,6 +140,8 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
     <nav className="platform-breadcrumb" aria-label={ui.directoryTitle}><Link href={`/${locale}`}>{copy.nav}</Link><span>/</span><span>{copy.title}</span></nav>
     <header className="platform-page-heading crypto-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1><p>{copy.description}</p></header>
 
+    <CoinrankingMarket locale={locale} copy={copy} searchLabel={ui.search} searchPlaceholder={ui.searchPlaceholder} />
+
     <section className="crypto-daily-dashboard" aria-labelledby="crypto-daily-heading" aria-busy={pending}>
       <header className="crypto-daily-heading">
         <div><span className="platform-eyebrow">{copy.market}</span><h2 id="crypto-daily-heading">{copy.price}</h2></div>
@@ -182,6 +216,95 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
 
     <section className="crypto-issue-link"><h2>{copy.issues}</h2><p>{copy.issueDescription}</p><Link href={`/${locale}/crypto/issues`}>{copy.issueTitle}</Link></section>
   </>;
+}
+
+function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { locale: Locale; copy: ReturnType<typeof getCryptoPageCopy>; searchLabel: string; searchPlaceholder: string }) {
+  const labels = coinrankingLabels[locale];
+  const [payload, setPayload] = useState<CoinrankingPayload | null>(null);
+  const [query, setQuery] = useState("");
+  const [selectedUuid, setSelectedUuid] = useState("");
+  const [period, setPeriod] = useState("7d");
+  const [history, setHistory] = useState<CoinrankingHistoryPoint[]>([]);
+  const [loadingChart, setLoadingChart] = useState(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/portal-api/finance/crypto/coinranking", { signal: controller.signal, cache: "no-store" })
+      .then(async (response) => response.ok ? await response.json() as CoinrankingPayload : null)
+      .then((result) => { if (!controller.signal.aborted && result?.data?.length) { setPayload(result); setSelectedUuid(result.data[0].uuid); } })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+
+  const normalizedQuery = normalize(query.trim());
+  const visible = (payload?.data ?? []).filter((coin) => !normalizedQuery || [coin.symbol, coin.name, ...coin.aliases].some((value) => normalize(value).includes(normalizedQuery)));
+  const featured = visible.slice(0, 20);
+  const heatmap = visible.slice(0, 100);
+  const selected = visible.find((coin) => coin.uuid === selectedUuid) ?? visible[0];
+
+  async function loadChart() {
+    if (!selected) return;
+    setLoadingChart(true);
+    try {
+      const response = await fetch(`/portal-api/finance/crypto/coinranking/${encodeURIComponent(selected.uuid)}/history?period=${period}`, { cache: "no-store" });
+      const result = response.ok ? await response.json() as { data?: CoinrankingHistoryPoint[] } : null;
+      setHistory(result?.data ?? []);
+    } catch {
+      setHistory([]);
+    } finally {
+      setLoadingChart(false);
+    }
+  }
+
+  if (!payload?.data?.length) return null;
+  return <section className="crypto-daily-dashboard coinranking-market" aria-labelledby="coinranking-market-heading">
+    <header className="crypto-daily-heading">
+      <div><span className="platform-eyebrow">{copy.market} · USD</span><h2 id="coinranking-market-heading">{labels.current}</h2></div>
+      <label className="crypto-directory-search"><span>{searchLabel}</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} autoComplete="off" /></label>
+    </header>
+    <p className="crypto-daily-asof"><span>{labels.observed}</span><strong>{payload.observedAt}</strong><span>·</span><a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution}</a></p>
+    <div className="crypto-daily-featured" aria-label={`${labels.current}: 20`}>
+      {featured.map((coin) => <button key={`featured-${coin.uuid}`} type="button" className={`crypto-daily-tile ${changeState(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
+        <span>{locale === "ko" && coin.aliases.at(-1) ? coin.aliases.at(-1) : coin.name} <b>{coin.symbol}</b></span>
+        <strong>{formatClose(coin.price, "USD", locale)}</strong>
+        <small>{labels.change24h}: {formatChange(coin.change24hPercent, locale)}</small>
+      </button>)}
+    </div>
+    <div className="crypto-daily-heatmap" aria-label={`${labels.change24h}: 100`}>
+      {heatmap.map((coin) => <button key={`heatmap-${coin.uuid}`} type="button" className={`crypto-daily-tile ${changeState(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
+        <span>{coin.symbol}</span><strong>{formatChange(coin.change24hPercent, locale)}</strong>
+      </button>)}
+    </div>
+    <div className="crypto-daily-list">
+      {visible.map((coin) => <button key={`list-${coin.uuid}`} type="button" className={selected?.uuid === coin.uuid ? "is-selected" : ""} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
+        <span>{locale === "ko" && coin.aliases.at(-1) ? coin.aliases.at(-1) : coin.name} <b>{coin.symbol}</b></span>
+        <span>{formatClose(coin.price, "USD", locale)}</span>
+        <span className={changeState(coin.change24hPercent)}>{formatChange(coin.change24hPercent, locale)}</span>
+      </button>)}
+    </div>
+    {selected && <div className="crypto-daily-detail">
+      <dl className="crypto-daily-metrics">
+        <div><dt>{labels.current}</dt><dd>{formatClose(selected.price, "USD", locale)}</dd></div>
+        <div><dt>{labels.change24h}</dt><dd className={changeState(selected.change24hPercent)}>{formatChange(selected.change24hPercent, locale)}</dd></div>
+        {selected.marketCap && <div><dt>{copy.marketCap}</dt><dd>{formatClose(selected.marketCap, "USD", locale)}</dd></div>}
+        {selected.volume24h && <div><dt>{copy.volume} (24h)</dt><dd>{formatClose(selected.volume24h, "USD", locale)}</dd></div>}
+      </dl>
+      <div className="crypto-daily-controls">
+        <label><span>{labels.chart}</span><select value={period} onChange={(event) => setPeriod(event.target.value)}><option value="7d">7d</option><option value="30d">30d</option><option value="3m">90d</option><option value="1y">1y</option></select></label>
+        <button type="button" onClick={loadChart} disabled={loadingChart}>{loadingChart ? copy.sourcePending : labels.loadChart}</button>
+      </div>
+      {history.length > 1 && <div className="crypto-daily-chart-panel"><h3>{selected.name} · {labels.chart}</h3><CoinrankingPriceChart points={history} title={`${selected.symbol} ${labels.chart}`} /></div>}
+      <p className="crypto-daily-attribution">{labels.observed}: {selected.observedAt} UTC · <a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution}</a></p>
+    </div>}
+  </section>;
+}
+
+function CoinrankingPriceChart({ points, title }: { points: CoinrankingHistoryPoint[]; title: string }) {
+  const values = points.map(({ price }) => Number(price)).filter(Number.isFinite);
+  if (values.length < 2) return null;
+  const low = Math.min(...values); const high = Math.max(...values); const range = high - low || 1;
+  const coordinates = points.map((point, index) => `${(index / (points.length - 1)) * 100},${92 - ((Number(point.price) - low) / range) * 80}`).join(" ");
+  return <svg className="crypto-daily-chart" viewBox="0 0 100 100" role="img" aria-label={title} preserveAspectRatio="none"><line x1="0" y1="92" x2="100" y2="92" /><polyline points={coordinates} /></svg>;
 }
 
 export function CryptoDashboardLoading({ locale }: { locale: Locale }) {
