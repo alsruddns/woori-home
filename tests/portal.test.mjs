@@ -130,16 +130,21 @@ test("crypto search labels cover all locales and the market overview leads with 
   for (const locale of siteData.locales) {
     for (const [key, value] of Object.entries(cryptoDirectoryCopy[locale])) assert.ok(value.trim(), `${locale}: missing crypto directory ${key}`);
   }
-  const [financeDashboard, categoryPage] = await Promise.all([
+  const [financeDashboard, categoryPage, cryptoPageCopy] = await Promise.all([
     readFile(new URL("../src/app/(locale)/[locale]/financial-overview-dashboard.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/(locale)/[locale]/(platform)/[category]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/data-platform/crypto-page-copy.ts", import.meta.url), "utf8"),
   ]);
   assert.match(financeDashboard, /CompanyFinancialTreemap locale=\{locale\}/);
   assert.match(financeDashboard, /router\.push\(`\/\$\{locale\}\/stocks#company-fundamentals-title`\)/);
   assert.doesNotMatch(financeDashboard, /fetch\(/);
-  assert.match(cryptoPage, /<h1>\{ui\.directoryTitle\}<\/h1>/);
+  assert.match(cryptoPage, /<h1>\{copy\.title\}<\/h1>/);
   assert.match(categoryPage, /FinancialOverviewDashboard locale=\{locale\}/);
-  assert.match(categoryPage, /cryptoDirectoryCopy\[locale\]\.directoryTitle/);
+  assert.match(categoryPage, /getCryptoPageCopy\(locale\)\.title/);
+  const dailyDescriptionBlock = cryptoPageCopy.match(/const dailyMarketDescription: Record<Locale, string> = \{([\s\S]*?)\n\};/)?.[1] ?? "";
+  const dailyDescriptionLocales = [...dailyDescriptionBlock.matchAll(/^\s*(?:"([a-z-]+)"|([a-z]+)):/gm)].map((match) => match[1] ?? match[2]).sort();
+  assert.deepEqual(dailyDescriptionLocales, [...siteData.locales].sort());
+  assert.match(cryptoPageCopy, /KST for KRW markets and UTC for USDT markets/);
   assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
   assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\} compactHeader/);
   assert.match(companyFactsPanel, /compactHeader \? "company-financial-treemap-title"/);

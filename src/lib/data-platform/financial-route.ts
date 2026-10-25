@@ -1,9 +1,10 @@
-import { countFinancialCompanyFacts, getFinancialDataStatus, getFinancialHistory, getFinancialOverview, getSecCompanyFactsCollectionStatus, listFinancialCompanyFacts, listFinancialMarketAssets } from "@/lib/db/financial-queries";
+import { countFinancialCompanyFacts, getCryptoDailySnapshot, getFinancialDataStatus, getFinancialHistory, getFinancialOverview, getSecCompanyFactsCollectionStatus, listFinancialCompanyFacts, listFinancialMarketAssets } from "@/lib/db/financial-queries";
 import { classifyFinancialDatabaseError } from "./financial-db-error.mjs";
 import { isIP } from "node:net";
 import { allowFinancialRequest } from "./financial-rate-limit.mjs";
-import { financialApiErrorResponse, financialApiResponse, financialRateLimitResponse, parseFinancialCompanyFactsQuery, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery, safeErrorCode } from "./financial-api.mjs";
+import { financialApiErrorResponse, financialApiResponse, financialRateLimitResponse, parseFinancialCompanyFactsQuery, parseFinancialCryptoDailyQuery, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery, safeErrorCode } from "./financial-api.mjs";
 import { createFinancialResponseCache, secFactsCacheVersion } from "./financial-response-cache.mjs";
+import { previousDailyReferenceDate } from "./crypto-daily.mjs";
 
 const companyFactsResponseCache = createFinancialResponseCache();
 
@@ -12,6 +13,28 @@ export function financialRateLimit(request: Request) {
   const clientId = isIP(forwarded) ? forwarded : "anonymous";
   const decision = allowFinancialRequest(clientId);
   return decision.allowed ? null : financialRateLimitResponse(decision.retryAfterSeconds);
+}
+
+export async function financialCryptoDailyRoute(request: Request) {
+  const throttled = financialRateLimit(request);
+  if (throttled) return throttled;
+  const parsed = parseFinancialCryptoDailyQuery(new URL(request.url).searchParams);
+  if (!parsed.ok) return financialApiResponse({ error: parsed.error }, parsed.status);
+  const timeZone = parsed.market === "krw" ? "Asia/Seoul" : "UTC";
+  const referenceDate = previousDailyReferenceDate(new Date(), timeZone);
+  try {
+    const snapshot = await getCryptoDailySnapshot(parsed.market, referenceDate);
+    const sources = [...new Map(snapshot.data.map((row) => [row.sourceId, { id: row.sourceId, name: row.sourceName, url: row.sourceUrl, attribution: row.attribution }])).values()];
+    return financialApiResponse({
+      market: parsed.market, referenceTimezone: timeZone, referenceDate,
+      dataStatus: snapshot.data.length ? "available" : "no-authorized-daily-snapshot",
+      sources, data: snapshot.data, history: snapshot.history,
+    });
+  } catch (error) {
+    const reason = classifyFinancialDatabaseError(error);
+    console.error("Financial crypto daily read failed", reason, safeErrorCode(error));
+    return financialApiErrorResponse(reason);
+  }
 }
 
 export async function financialListRoute(request: Request, type: string) {

@@ -11,6 +11,8 @@ import { classifyFinancialDatabaseError } from "../src/lib/data-platform/financi
 import { companyFinancialMetrics, sicDivision } from "../src/lib/data-platform/company-financial-treemap.mjs";
 import { createFinancialResponseCache, secFactsCacheVersion } from "../src/lib/data-platform/financial-response-cache.mjs";
 import { fetchCompanyFacts } from "../src/lib/data-platform/company-facts-fetch.mjs";
+import { adjacentCalendarDate, isDailySnapshotReady, previousDailyReferenceDate } from "../src/lib/data-platform/crypto-daily.mjs";
+import { canCollectCryptoDailySnapshots, canPublishCryptoDailySnapshots } from "../src/lib/data-platform/financial-rights.mjs";
 
 const providerFixture = (overrides = {}) => ({
   id: "fixture-provider", datasetId: "fixture-daily-prices", licenseStatus: "verified",
@@ -31,6 +33,32 @@ test("financial dates require a real calendar date and preserve UTC daily bounda
   assert.equal(isValidMarketDate("2026-10-21"), true);
   assert.equal(isValidMarketDate("2026-02-30"), false);
   assert.equal(isValidMarketDate("2026-10-21T00:00:00Z"), false);
+});
+
+test("crypto reference dates use the market calendar and wait for the finalized daily candle", () => {
+  const beforeKstMidnight = new Date("2026-10-21T14:59:00.000Z");
+  const afterKstMidnight = new Date("2026-10-21T15:01:00.000Z");
+  assert.equal(previousDailyReferenceDate(beforeKstMidnight, "Asia/Seoul"), "2026-10-20");
+  assert.equal(previousDailyReferenceDate(afterKstMidnight, "Asia/Seoul"), "2026-10-21");
+  assert.equal(previousDailyReferenceDate(new Date("2026-10-22T00:01:00Z"), "UTC"), "2026-10-21");
+  assert.equal(isDailySnapshotReady(new Date("2026-10-21T00:59:00Z"), "Asia/Seoul", 10), false);
+  assert.equal(isDailySnapshotReady(new Date("2026-10-21T01:00:00Z"), "Asia/Seoul", 10), true);
+  assert.equal(adjacentCalendarDate("2026-03-01"), "2026-02-28");
+  assert.equal(adjacentCalendarDate("2026-02-30"), null);
+});
+
+test("crypto daily collection and publication require explicit daily and ad-supported rights", () => {
+  const base = {
+    collection_enabled: true, attribution: "Provider", source_url: "https://example.test/terms",
+    financial_rights: { apiAccess: "confirmed", publicDisplay: "confirmed", dbStorage: "confirmed", longTermRetention: "confirmed", userApi: "confirmed", derivedVisualization: "confirmed", dailySnapshot: "confirmed", adSupportedDisplay: "confirmed" },
+    terms_version: "daily-terms-v1", reviewed_at: "2026-10-20T00:00:00Z", review_due_at: "2027-10-20T00:00:00Z",
+  };
+  const now = new Date("2026-10-21T00:00:00Z");
+  assert.equal(canCollectCryptoDailySnapshots(base, now), true);
+  assert.equal(canPublishCryptoDailySnapshots(base, now), true);
+  assert.equal(canCollectCryptoDailySnapshots({ ...base, financial_rights: { ...base.financial_rights, dailySnapshot: "pending" } }, now), false);
+  assert.equal(canPublishCryptoDailySnapshots({ ...base, financial_rights: { ...base.financial_rights, adSupportedDisplay: "pending" } }, now), false);
+  assert.equal(canPublishCryptoDailySnapshots({ ...base, review_due_at: "2026-10-20T00:00:00Z" }, now), false);
 });
 
 test("price validation preserves NUMERIC decimal strings and rejects invalid precision and nonfinite values", () => {
@@ -122,8 +150,10 @@ test("Upbit adapter normalizes KRW daily candles without inventing market caps",
         ok: true,
         status: 200,
         headers: { get: () => null },
-        async json() {
-          const market = new URL(requested.at(-1)).searchParams.get("market");
+    async json() {
+          const requestUrl = requested.at(-1);
+          if (requestUrl.pathname.endsWith("/market/all")) return ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "BNB", "TRX", "DOT", "LINK", "LTC", "AVAX"].map((symbol) => ({ market: `KRW-${symbol}` }));
+          const market = requestUrl.searchParams.get("market");
           return [{
             market,
             candle_date_time_utc: "2026-10-21T00:00:00",
@@ -139,17 +169,18 @@ test("Upbit adapter normalizes KRW daily candles without inventing market caps",
     },
   });
   const result = await provider.fetchDailyPrices({ startDate: "2026-10-21", endDate: "2026-10-21", signal: new AbortController().signal });
-  assert.equal(result.assets.length, 8);
-  assert.equal(result.prices.length, 8);
+  assert.equal(result.assets.length, 12);
+  assert.equal(result.prices.length, 12);
   assert.equal(result.prices[0].referenceDate, "2026-10-21");
   assert.equal(result.prices[0].referenceTimezone, "Asia/Seoul");
   assert.equal(result.prices[0].close, "90500000");
   assert.equal(result.prices[0].marketCap, null);
   assert.equal(result.assets[0].currency, "KRW");
   assert.equal(result.assets[0].venue, "upbit-krw");
-  assert.equal(requested.length, 8);
-  assert.equal(requested[0].searchParams.get("market"), "KRW-BTC");
-  assert.equal(upbitKrwAssets.length, 8);
+  assert.equal(requested.length, 13);
+  assert.equal(requested[0].pathname.endsWith("/market/all"), true);
+  assert.equal(requested[1].searchParams.get("market"), "KRW-BTC");
+  assert.equal(upbitKrwAssets.length, 12);
 });
 
 test("provider catalog distinguishes free technical API access from public data rights", () => {
@@ -161,6 +192,8 @@ test("provider catalog distinguishes free technical API access from public data 
   assert.equal(upbit.rightsStatus, "pending");
   assert.equal(upbit.publicDisplay, "pending");
   assert.equal(upbit.databaseRetention, "pending");
+  assert.equal(upbit.rights.dailySnapshot, "pending");
+  assert.equal(upbit.rights.adSupportedDisplay, "pending");
   assert.equal(getFinancialProvider("upbit-quotation").licenseStatus, "unverified");
   assert.equal(typeof getFinancialProvider("sec-edgar-companyfacts").collect, "function");
   assert.equal(sec.rightsStatus, "verified-sec-edgar-public-filings");
@@ -179,6 +212,10 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
   assert.equal(parseFinancialListQuery(new URLSearchParams("sort=close%20desc"), "stock").ok, false);
   assert.equal(parseFinancialListQuery(new URLSearchParams("market=usd"), "stock").ok, false);
   assert.equal(parseFinancialListQuery(new URLSearchParams("date=2026-02-30"), "crypto").ok, false);
+  const { parseFinancialCryptoDailyQuery } = await import("../src/lib/data-platform/financial-api.mjs");
+  assert.deepEqual(parseFinancialCryptoDailyQuery(new URLSearchParams()), { ok: true, market: "krw" });
+  assert.deepEqual(parseFinancialCryptoDailyQuery(new URLSearchParams("market=usdt")), { ok: true, market: "usdt" });
+  assert.equal(parseFinancialCryptoDailyQuery(new URLSearchParams("market=usd")).ok, false);
   assert.deepEqual(parseFinancialHistoryQuery(new URLSearchParams("from=2026-01-01&to=2026-01-31&limit=5000"), "00000000-0000-4000-8000-000000000001"), {
     ok: true, limit: 1000, from: "2026-01-01", to: "2026-01-31",
   });

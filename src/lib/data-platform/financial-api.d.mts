@@ -7,6 +7,7 @@ export function parseFinancialListQuery(searchParams: URLSearchParams, type: str
 export function parseFinancialHistoryQuery(searchParams: URLSearchParams, assetId: string): FinancialHistoryQuery | Invalid;
 export function parseFinancialCompanyFactsQuery(searchParams: URLSearchParams): { ok: true; page: number; pageSize: number; offset: number; period: "annual" | "quarterly" | null; ticker: string | null; latest: boolean; fiscalYear: number | null } | Invalid;
 export function parseFinancialHeatmapQuery(searchParams: URLSearchParams, type: string): FinancialHeatmapQuery | Invalid;
+export function parseFinancialCryptoDailyQuery(searchParams: URLSearchParams): { ok: true; market: "krw" | "usdt" } | Invalid;
 export function financialApiResponse(payload: unknown, status?: number, options?: { cacheControl?: string; headers?: Record<string, string> }): Response;
 export function financialApiErrorResponse(reason?: string): Response;
 export function financialRateLimitResponse(retryAfterSeconds: number): Response;
