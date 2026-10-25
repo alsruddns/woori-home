@@ -20,7 +20,10 @@ test("crypto name search is local and normalized while dated prices use one dedi
   assert.match(dashboard, /asset\.symbol, asset\.name, \.\.\.asset\.aliases/);
   assert.match(dashboard, /fetch\(`\/portal-api\/finance\/crypto\/daily\?market=\$\{market\}`/);
   assert.doesNotMatch(lower, /fetch\([^)]*[?&]q=/);
-  assert.doesNotMatch(lower, /currentquote|change24hpercent|marketcap/);
+  assert.match(dashboard, /portal-api\/finance\/crypto\/coinranking/);
+  assert.match(dashboard, /change24hPercent/i);
+  assert.match(dashboard, /marketCap/i);
+  assert.doesNotMatch(lower, /fetch\([^)]*[?&]q=/);
 });
 
 test("company aliases only filter the existing SEC company result set", async () => {
