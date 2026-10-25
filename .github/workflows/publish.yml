@@ -353,15 +353,19 @@ jobs:
               preflight_args=""
               if [ "$APPLY_MIGRATIONS" = "true" ] || [ "$IMPORT_SEC" = "true" ] || [ "$IMPORT_COINRANKING" = "true" ]; then preflight_args="--allow-pending-sec-grants"; fi
               preflight_report="$(db_tools_run scripts/db/preflight-financial-production.mjs $preflight_args)"
-              printf '%s\n' "$preflight_report" | jq -e '.blockers | length == 0' >/dev/null
+              if ! printf '%s\n' "$preflight_report" | jq -e '.blockers | length == 0' >/dev/null; then
+                printf '[DEPLOY DB BLOCKER] Production preflight rejected the selected operation:\n' >&2
+                printf '%s\n' "$preflight_report" | jq -r '.blockers[]' >&2
+                exit 2
+              fi
               if [ "$SCHEDULED_SEC_REFRESH" = "true" ]; then
                 printf '%s\n' "$preflight_report" | jq -e '.permissionFindings | length == 0' >/dev/null
               fi
               if [ "$IMPORT_SEC" = "true" ] && [ "$APPLY_MIGRATIONS" != "true" ]; then
-                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 13' >/dev/null
+                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 14' >/dev/null
               fi
               if [ "$IMPORT_COINRANKING" = "true" ] && [ "$APPLY_MIGRATIONS" != "true" ]; then
-                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 13' >/dev/null
+                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 14' >/dev/null
               fi
               stage="Check production database migration status"
               printf '[DEPLOY DB] %s\n' "$stage"
@@ -416,7 +420,7 @@ jobs:
                 stage="Verify migration status after migration"
                 migration_status="$(db_tools_run scripts/db/status-production.mjs)"
                 printf '%s\n' "$migration_status"
-                printf '%s\n' "$migration_status" | grep -Eq '12 applied, 0 pending'
+                printf '%s\n' "$migration_status" | grep -Eq '14 applied, 0 pending'
                 stage="Grant and verify Runtime SELECT-only access to SEC tables"
                 db_tools_run scripts/db/grant-financial-runtime-read-production.mjs --apply --backup-reference="$backup_reference"
                 stage="Grant and verify restricted SEC Import access"
