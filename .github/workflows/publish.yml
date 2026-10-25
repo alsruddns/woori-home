@@ -30,6 +30,11 @@ on:
         type: boolean
         required: true
         default: false
+      import_coinranking:
+        description: Collect the approved Coinranking daily snapshot into PostgreSQL
+        type: boolean
+        required: true
+        default: false
       confirm_production_db_write:
         description: Explicitly approve the selected production database write for this run
         type: boolean
@@ -42,13 +47,14 @@ on:
         default: ''
   schedule:
     - cron: '17 10 * * 1-5'
+    - cron: '17 2 * * *'
 
 permissions:
   contents: read
 
 jobs:
   release-guard:
-    if: github.event_name != 'schedule' || vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true'
+    if: github.event_name != 'schedule' || (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,12 +62,12 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ vars.SEC_EDGAR_AUTO_REFRESH_ENABLED }}
+          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') }}
         run: node scripts/deploy/release-guard.mjs
 
   image:
     needs: release-guard
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking)))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -103,7 +109,7 @@ jobs:
 
   deploy:
     needs: image
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking)))
     runs-on: ubuntu-latest
     environment: production
     concurrency:
@@ -132,20 +138,23 @@ jobs:
           PREFLIGHT_DATABASE: ${{ github.event_name == 'workflow_dispatch' && inputs.preflight_database || 'false' }}
           APPLY_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_migrations || 'false' }}
           IMPORT_WORLD_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.import_world_bank || 'false' }}
-          IMPORT_SEC: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || 'false' }}
-          SCHEDULED_SEC_REFRESH: ${{ github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' || 'false' }}
-          CONFIRM_PRODUCTION_DB_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true') || 'false' }}
+          IMPORT_SEC: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || 'false' }}
+          IMPORT_COINRANKING: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_coinranking) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || 'false' }}
+          SCHEDULED_SEC_REFRESH: ${{ github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' || 'false' }}
+          SCHEDULED_COINRANKING_REFRESH: ${{ github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' || 'false' }}
+          CONFIRM_PRODUCTION_DB_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write) || (github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || 'false' }}
           RESTORE_VALIDATION_REFERENCE: ${{ inputs.restore_validation_reference || vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE || '' }}
           EXPECTED_RESTORE_VALIDATION_REFERENCE: ${{ vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE }}
-          PRODUCTION_OPERATION_APPROVAL: ${{ ((github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec)) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true')) && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
+          PRODUCTION_OPERATION_APPROVAL: ${{ ((github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking)) || (github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) && secrets.PRODUCTION_OPERATION_APPROVAL || '' }}
           PRODUCTION_DB_ALLOWED_HOSTS: ${{ secrets.PRODUCTION_DB_ALLOWED_HOSTS }}
           PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
           SEC_EDGAR_USER_AGENT: ${{ ((github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true')) && secrets.SEC_EDGAR_USER_AGENT || '' }}
+          COINRANKING_API_KEY: ${{ (github.event_name == 'push' || inputs.deploy_portal || inputs.import_coinranking || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *')) && secrets.COINRANKING_API_KEY || '' }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,SCHEDULED_SEC_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT
+          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,IMPORT_COINRANKING,SCHEDULED_SEC_REFRESH,SCHEDULED_COINRANKING_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY
           script: |
             set -Eeuo pipefail
             umask 077
@@ -160,11 +169,13 @@ jobs:
             database_write_requested=false
             database_operation_requested=false
             operation_count=0
-            for selected in "$DEPLOY_PORTAL" "$PREFLIGHT_DATABASE" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC"; do
+            for selected in "$DEPLOY_PORTAL" "$PREFLIGHT_DATABASE" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC" "$IMPORT_COINRANKING"; do
               case "$selected" in true) operation_count=$((operation_count + 1));; false) :;; *) echo "Invalid operation selector." >&2; exit 2;; esac
             done
             case "$SCHEDULED_SEC_REFRESH" in true|false) :;; *) echo "Invalid SEC schedule selector." >&2; exit 2;; esac
+            case "$SCHEDULED_COINRANKING_REFRESH" in true|false) :;; *) echo "Invalid Coinranking schedule selector." >&2; exit 2;; esac
             if [ "$SCHEDULED_SEC_REFRESH" = "true" ] && [ "$IMPORT_SEC" != "true" ]; then echo "Scheduled SEC refresh must select SEC import." >&2; exit 2; fi
+            if [ "$SCHEDULED_COINRANKING_REFRESH" = "true" ] && [ "$IMPORT_COINRANKING" != "true" ]; then echo "Scheduled Coinranking refresh must select Coinranking import." >&2; exit 2; fi
             if [ "$operation_count" -gt 1 ]; then
               echo "Select one operation per protected run; each result and approval must remain independent." >&2
               exit 2
@@ -173,8 +184,13 @@ jobs:
             [ "$APPLY_MIGRATIONS" = "true" ] && database_write_requested=true && database_operation_requested=true
             [ "$IMPORT_WORLD_BANK" = "true" ] && database_write_requested=true && database_operation_requested=true
             [ "$IMPORT_SEC" = "true" ] && database_write_requested=true && database_operation_requested=true
+            [ "$IMPORT_COINRANKING" = "true" ] && database_write_requested=true && database_operation_requested=true
             if [ "$database_write_requested" = "true" ] && [ "$CONFIRM_PRODUCTION_DB_WRITE" != "true" ]; then
               echo "Production database writes require the explicit confirm_production_db_write input." >&2
+              exit 2
+            fi
+            if [ "$DEPLOY_PORTAL" = "true" ] && [ -z "${COINRANKING_API_KEY:-}" ]; then
+              printf '[DEPLOY CHECK FAILED] COINRANKING_API_KEY is not configured as a repository secret.\n' >&2
               exit 2
             fi
 
@@ -185,7 +201,7 @@ jobs:
                 printf '[DEPLOY ERROR] Stage: %s, Exit code: %s\n' "$stage" "$status" >&2
                 if [ "$deploy_started" = "1" ]; then
                   printf '[DEPLOY ROLLBACK] Restoring the previous Portal image.\n' >&2
-                  printf 'services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' "$rollback_tag" > "$override"
+                  printf 'services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n      COINRANKING_API_KEY: "${COINRANKING_API_KEY:?}"\n' "$rollback_tag" > "$override"
                   if ! compose -f "$override" up -d --no-deps portal; then
                     printf '[DEPLOY ROLLBACK ERROR] Could not restore the previous Portal image.\n' >&2
                   else
@@ -235,6 +251,7 @@ jobs:
             stage="Validate Compose configuration"
             printf '[DEPLOY 2] %s\n' "$stage"
             printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' > "$override"
+            if [ "$DEPLOY_PORTAL" = "true" ]; then printf '      COINRANKING_API_KEY: "${COINRANKING_API_KEY:?}"\n' >> "$override"; fi
             compose -f "$override" config --quiet
             config_json="$(compose -f "$override" config --format json)"
 
@@ -305,6 +322,25 @@ jobs:
                 docker rm "$container_name" >/dev/null
                 return "$run_status"
               }
+              coinranking_tools_run() {
+                local external_network container_name run_status
+                external_network="$(docker inspect --format='{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' portal | grep -vx compose_database | sed -n '1p')"
+                test -n "$external_network"
+                test -n "${COINRANKING_API_KEY:-}"
+                container_name="woori-coinranking-tools-$(date +%s%N)"
+                docker create --name "$container_name" --network compose_database \
+                  --mount type=bind,src=/opt/services/compose/.env.portal,dst=/app/.portal.env,readonly \
+                  --mount "type=bind,src=$approval_file,dst=/app/.production-approval,readonly" \
+                  -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
+                  -e PRODUCTION_OPERATION_APPROVAL_FILE=/app/.production-approval -e PRODUCTION_DB_ALLOWED_HOSTS \
+                  -e PRODUCTION_BACKUP_CONFIRMED="${backup_reference:+true}" -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
+                  -e COINRANKING_API_KEY \
+                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env scripts/data/coinranking-daily-collection.mjs --target=production "$@" >/dev/null
+                docker network connect "$external_network" "$container_name"
+                if docker start --attach "$container_name"; then run_status=0; else run_status=$?; fi
+                docker rm "$container_name" >/dev/null
+                return "$run_status"
+              }
               validate_backup_archive() {
                 docker run --rm \
                   --mount "type=bind,src=$1,dst=/tmp/production.dump,readonly" \
@@ -315,14 +351,17 @@ jobs:
               printf '[DEPLOY DB] %s\n' "$stage"
               db_tools_run scripts/db/preflight-production.mjs
               preflight_args=""
-              if [ "$APPLY_MIGRATIONS" = "true" ] || [ "$IMPORT_SEC" = "true" ]; then preflight_args="--allow-pending-sec-grants"; fi
+              if [ "$APPLY_MIGRATIONS" = "true" ] || [ "$IMPORT_SEC" = "true" ] || [ "$IMPORT_COINRANKING" = "true" ]; then preflight_args="--allow-pending-sec-grants"; fi
               preflight_report="$(db_tools_run scripts/db/preflight-financial-production.mjs $preflight_args)"
               printf '%s\n' "$preflight_report" | jq -e '.blockers | length == 0' >/dev/null
               if [ "$SCHEDULED_SEC_REFRESH" = "true" ]; then
                 printf '%s\n' "$preflight_report" | jq -e '.permissionFindings | length == 0' >/dev/null
               fi
               if [ "$IMPORT_SEC" = "true" ] && [ "$APPLY_MIGRATIONS" != "true" ]; then
-                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 12' >/dev/null
+                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 13' >/dev/null
+              fi
+              if [ "$IMPORT_COINRANKING" = "true" ] && [ "$APPLY_MIGRATIONS" != "true" ]; then
+                printf '%s\n' "$preflight_report" | jq -e '.migrations.applied == 13' >/dev/null
               fi
               stage="Check production database migration status"
               printf '[DEPLOY DB] %s\n' "$stage"
@@ -419,6 +458,17 @@ jobs:
                 stage="Verify SEC Company Facts after import"
                 db_tools_run scripts/data/financial-sec-production.mjs verify
               fi
+              if [ "$IMPORT_COINRANKING" = "true" ]; then
+                test -n "${COINRANKING_API_KEY:-}"
+                if [ "$APPLY_MIGRATIONS" != "true" ]; then
+                  stage="Grant and verify restricted Coinranking Import access"
+                  db_tools_run scripts/db/grant-coinranking-import-production.mjs --apply --backup-reference="$backup_reference"
+                fi
+                stage="Validate Coinranking collection rights and request budget"
+                coinranking_tools_run --dry-run
+                stage="Collect and UPSERT approved Coinranking daily snapshot"
+                coinranking_tools_run --apply --backup-reference="$backup_reference"
+              fi
             fi
 
             if [ "$DEPLOY_PORTAL" = "true" ]; then
@@ -450,7 +500,7 @@ jobs:
             old_image_id="$(docker inspect --format='{{.Image}}' portal)"
             rollback_tag="ghcr.io/alsruddns/woori-home:rollback-${old_image_id#sha256:}"
             docker tag "$old_image_id" "$rollback_tag"
-            printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' "$PORTAL_DIGEST" > "$override"
+            printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n      COINRANKING_API_KEY: "${COINRANKING_API_KEY:?}"\n' "$PORTAL_DIGEST" > "$override"
             compose -f "$override" config --quiet
 
             stage="Deploy Portal image"
@@ -489,7 +539,10 @@ jobs:
             rm -f "$smoke_body" "$smoke_headers"
             smoke_body=""
             smoke_headers=""
+            stage="Verify Coinranking runtime secret presence"
+            printf '[DEPLOY 9.1] %s\n' "$stage"
+            docker exec portal node --input-type=module -e 'if(!process.env.COINRANKING_API_KEY){console.error("Coinranking runtime key is missing");process.exit(1)};console.log("Coinranking runtime key is present; value was not read to output.")'
             deploy_started=0
             echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained; World Bank DB/JSON source smoke tests passed."
             fi
-            echo "Database operations: preflight=${PREFLIGHT_DATABASE}, migrations=${APPLY_MIGRATIONS}, world_bank=${IMPORT_WORLD_BANK}, sec=${IMPORT_SEC}; Portal deploy=${DEPLOY_PORTAL}."
+            echo "Database operations: preflight=${PREFLIGHT_DATABASE}, migrations=${APPLY_MIGRATIONS}, world_bank=${IMPORT_WORLD_BANK}, sec=${IMPORT_SEC}, coinranking=${IMPORT_COINRANKING}; Portal deploy=${DEPLOY_PORTAL}."

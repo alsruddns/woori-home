@@ -33,7 +33,17 @@ html[data-theme="light"] .platform-shell option {
 .crypto-daily-controls .crypto-directory-search input{min-width:min(260px,45vw)}
 .crypto-daily-asof{display:flex;align-items:center;gap:9px;margin:10px 0;color:var(--platform-muted);font-size:11px}
 .crypto-daily-asof strong{color:var(--platform-text);font-variant-numeric:tabular-nums}
-.crypto-daily-heatmap{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(135px,100%),1fr));gap:7px}
+.crypto-daily-heatmap,.crypto-daily-featured{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(135px,100%),1fr));gap:7px}
+.crypto-daily-featured{grid-template-columns:repeat(auto-fit,minmax(min(175px,100%),1fr))}
+.crypto-daily-list{display:grid;max-height:420px;overflow:auto;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-raised)}
+.crypto-daily-list>button{display:grid;grid-template-columns:minmax(0,1fr) minmax(95px,auto) minmax(65px,auto);gap:10px;align-items:center;min-width:0;padding:8px 11px;border:0;border-bottom:1px solid var(--platform-border);background:transparent;color:var(--platform-text);text-align:left;font-variant-numeric:tabular-nums;cursor:pointer}
+.crypto-daily-list>button:last-child{border-bottom:0}
+.crypto-daily-list>button:hover,.crypto-daily-list>button.is-selected{background:color-mix(in srgb,var(--platform-accent) 10%,var(--platform-raised))}
+.crypto-daily-list>button:focus-visible{outline:3px solid var(--platform-accent);outline-offset:-3px}
+.crypto-daily-list>button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crypto-daily-list>button>span:first-child{color:var(--platform-muted)}
+.crypto-daily-list>button>span:first-child b{color:var(--platform-text)}
+.crypto-daily-list .is-positive{color:#16844a}.crypto-daily-list .is-negative{color:#cf3d47}.crypto-daily-list .is-neutral,.crypto-daily-list .is-unknown{color:var(--platform-muted)}
 .crypto-daily-tile{min-width:0;min-height:86px;display:grid;align-content:center;gap:4px;padding:10px 12px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-raised);color:var(--platform-text);text-align:left;cursor:pointer}
 .crypto-daily-tile>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--platform-muted);font-size:10px}
 .crypto-daily-tile>span b{color:var(--platform-text)}

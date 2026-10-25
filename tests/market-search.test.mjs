@@ -32,3 +32,22 @@ test("company aliases only filter the existing SEC company result set", async ()
   assert.match(panel, /companySearchAliases\(row\.ticker\)/);
   assert.match(panel, /row\.ticker/);
 });
+
+test("Coinranking public routes are PostgreSQL-only and separate the top-20, top-100, and full 300 search set", async () => {
+  const [marketRoute, historyRoute, queries, dashboard] = await Promise.all([
+    readFile(new URL("../src/app/portal-api/finance/crypto/coinranking/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/portal-api/finance/crypto/coinranking/[uuid]/history/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/db/financial-queries.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/crypto-dashboard.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(marketRoute, /getCoinrankingDailyMarket/);
+  assert.match(historyRoute, /getCoinrankingDailyHistory/);
+  assert.doesNotMatch(`${marketRoute}\n${historyRoute}`, /createCoinrankingProvider|COINRANKING_API_KEY|fetch\(/);
+  assert.match(queries, /competitorPermission/);
+  assert.match(queries, /dailySnapshot/);
+  assert.match(queries, /longTermRetention/);
+  assert.match(dashboard, /visible\.slice\(0, 20\)/);
+  assert.match(dashboard, /visible\.slice\(0, 100\)/);
+  assert.match(dashboard, /visible\.map\(\(coin\)/);
+  assert.match(historyRoute, /daily-observed-aggregate-price/);
+});

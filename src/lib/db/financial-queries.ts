@@ -136,6 +136,67 @@ export async function getCryptoDailySnapshot(market: "krw" | "usdt", referenceDa
   return { referenceDate, history, data };
 }
 
+const coinrankingRightsWhere = `s.id='coinranking-aggregate' and s.license_status='verified'
+  and s.financial_rights->>'apiAccess'='confirmed'
+  and s.financial_rights->>'publicDisplay'='confirmed'
+  and s.financial_rights->>'userApi'='confirmed'
+  and s.financial_rights->>'dbStorage'='confirmed'
+  and s.financial_rights->>'longTermRetention'='confirmed'
+  and s.financial_rights->>'derivedVisualization'='confirmed'
+  and s.financial_rights->>'dailySnapshot'='confirmed'
+  and s.financial_rights->>'adSupportedDisplay'='confirmed'
+  and s.financial_rights->>'competitorPermission'='confirmed'
+  and s.reviewed_at is not null and s.terms_version is not null and s.review_due_at > now()`;
+
+export async function getCoinrankingDailyMarket() {
+  const result = await getFinancialReadOnlyPool().query(`with eligible as (
+      select p.reference_date,p.fetched_at from financial_daily_prices p
+      join data_sources s on s.id=p.source_id and ${coinrankingRightsWhere}
+      where p.price_kind='quote-24h' and p.source_id='coinranking-aggregate'
+      order by p.reference_date desc limit 1
+    ), snapshot as (
+      select a.id as "assetId",a.source_asset_id as uuid,a.symbol,a.name,a.currency,
+        p.reference_date as "referenceDate",p.reference_timezone as "referenceTimezone",p.price_kind as "priceKind",
+        p.close::text as price,p.market_cap::text as "marketCap",p.volume::text as volume,
+        p.quote_change_percent::text as "change24hPercent",p.quote_window as "quoteWindow",p.fetched_at as "observedAt",
+        s.source_url as "sourceUrl",s.attribution
+      from financial_daily_prices p
+      join financial_assets a on a.id=p.asset_id and a.source_id=p.source_id and a.asset_type='crypto' and a.is_active=true
+      join data_sources s on s.id=p.source_id and ${coinrankingRightsWhere}
+      join eligible e on e.reference_date=p.reference_date
+      where p.price_kind='quote-24h' and p.source_id='coinranking-aggregate' and a.currency='USD'
+    ) select * from snapshot order by "marketCap"::numeric desc,uuid asc limit 300`);
+  const data = result.rows;
+  return {
+    provider: "Coinranking",
+    currency: "USD" as const,
+    referenceDate: data[0]?.referenceDate ?? null,
+    observedAt: data[0]?.observedAt ?? null,
+    quoteType: "daily-observed-aggregate-price",
+    quoteWindow: "24h",
+    sourceUrl: data[0]?.sourceUrl ?? "https://coinranking.com/",
+    attribution: data[0]?.attribution ?? "Data provided by Coinranking",
+    data,
+  };
+}
+
+export async function getCoinrankingDailyHistory(uuid: string, period: "7d" | "30d" | "3m" | "1y") {
+  const days = period === "7d" ? 7 : period === "30d" ? 30 : period === "3m" ? 90 : 365;
+  const endDate = new Date().toISOString().slice(0, 10);
+  const start = new Date(`${endDate}T00:00:00.000Z`);
+  start.setUTCDate(start.getUTCDate() - days + 1);
+  const startDate = start.toISOString().slice(0, 10);
+  const result = await getFinancialReadOnlyPool().query(`select p.reference_date as "referenceDate",p.fetched_at as "timestamp",
+      p.close::text as price,p.reference_timezone as "referenceTimezone",a.symbol,a.currency,s.source_url as "sourceUrl",s.attribution
+    from financial_daily_prices p
+    join financial_assets a on a.id=p.asset_id and a.source_id=p.source_id and a.source_asset_id=$1 and a.asset_type='crypto'
+    join data_sources s on s.id=p.source_id and ${coinrankingRightsWhere}
+    where p.price_kind='quote-24h' and p.source_id='coinranking-aggregate' and p.reference_date >= $2::date
+      and p.reference_date <= $3::date
+    order by p.reference_date asc`, [uuid, startDate, endDate]);
+  return result.rows;
+}
+
 export async function getFinancialProviderRuntimeStatus(providerIds: string[]) {
   if (!providerIds.length) return [];
   const result = await getFinancialReadOnlyPool().query(`select s.id as "providerId",s.financial_rights as rights,s.collection_enabled as "collectionEnabled",

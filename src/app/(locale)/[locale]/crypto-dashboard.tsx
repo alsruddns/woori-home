@@ -238,6 +238,8 @@ function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { l
 
   const normalizedQuery = normalize(query.trim());
   const visible = (payload?.data ?? []).filter((coin) => !normalizedQuery || [coin.symbol, coin.name, ...coin.aliases].some((value) => normalize(value).includes(normalizedQuery)));
+  const featured = visible.slice(0, 20);
+  const heatmap = visible.slice(0, 100);
   const selected = visible.find((coin) => coin.uuid === selectedUuid) ?? visible[0];
 
   async function loadChart() {
@@ -261,11 +263,23 @@ function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { l
       <label className="crypto-directory-search"><span>{searchLabel}</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} autoComplete="off" /></label>
     </header>
     <p className="crypto-daily-asof"><span>{labels.observed}</span><strong>{payload.observedAt}</strong><span>·</span><a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution}</a></p>
-    <div className="crypto-daily-heatmap" aria-label={labels.change24h}>
-      {visible.map((coin) => <button key={coin.uuid} type="button" className={`crypto-daily-tile ${changeState(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
+    <div className="crypto-daily-featured" aria-label={`${labels.current}: 20`}>
+      {featured.map((coin) => <button key={`featured-${coin.uuid}`} type="button" className={`crypto-daily-tile ${changeState(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
         <span>{locale === "ko" && coin.aliases.at(-1) ? coin.aliases.at(-1) : coin.name} <b>{coin.symbol}</b></span>
         <strong>{formatClose(coin.price, "USD", locale)}</strong>
         <small>{labels.change24h}: {formatChange(coin.change24hPercent, locale)}</small>
+      </button>)}
+    </div>
+    <div className="crypto-daily-heatmap" aria-label={`${labels.change24h}: 100`}>
+      {heatmap.map((coin) => <button key={`heatmap-${coin.uuid}`} type="button" className={`crypto-daily-tile ${changeState(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
+        <span>{coin.symbol}</span><strong>{formatChange(coin.change24hPercent, locale)}</strong>
+      </button>)}
+    </div>
+    <div className="crypto-daily-list">
+      {visible.map((coin) => <button key={`list-${coin.uuid}`} type="button" className={selected?.uuid === coin.uuid ? "is-selected" : ""} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
+        <span>{locale === "ko" && coin.aliases.at(-1) ? coin.aliases.at(-1) : coin.name} <b>{coin.symbol}</b></span>
+        <span>{formatClose(coin.price, "USD", locale)}</span>
+        <span className={changeState(coin.change24hPercent)}>{formatChange(coin.change24hPercent, locale)}</span>
       </button>)}
     </div>
     {selected && <div className="crypto-daily-detail">

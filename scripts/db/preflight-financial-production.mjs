@@ -37,7 +37,7 @@ const expectedSecColumns = {
   financial_company_facts: ["company_id", "source_id", "dataset_id", "taxonomy", "concept", "unit", "value", "fiscal_year", "fiscal_period", "start_date", "end_date", "filed_date", "form", "accession_number", "source_url", "fetched_at"],
 };
 const expectedSecIndexes = ["financial_companies_pkey", "financial_companies_source_cik_unique_idx", "financial_companies_source_ticker_unique_idx", "financial_companies_ticker_idx", "financial_company_facts_pk", "financial_company_facts_end_date_idx", "financial_company_facts_period_idx"];
-const expectedPriceIndexes = ["financial_assets_pkey", "financial_assets_source_asset_unique_idx", "financial_assets_natural_key_unique_idx", "financial_assets_type_active_idx", "financial_daily_prices_pk", "financial_daily_prices_date_asset_idx", "financial_daily_prices_dataset_date_idx"];
+const expectedPriceIndexes = ["financial_assets_pkey", "financial_assets_source_asset_unique_idx", "financial_assets_natural_key_idx", "financial_assets_type_active_idx", "financial_daily_prices_pk", "financial_daily_prices_date_asset_idx", "financial_daily_prices_dataset_date_idx"];
 const expectedExistingColumns = {
   indicator_observations: ["indicator_id", "country_iso3", "reference_year", "value", "published_at", "last_checked_at", "last_updated_at"],
   countries: ["iso2", "iso3", "localized_names", "region", "income_group", "is_aggregate"],
@@ -46,7 +46,7 @@ const expectedExistingColumns = {
   data_sources: ["id", "name", "provider", "source_url", "license_status", "license_name", "license_url", "attribution", "rights_note", "reviewed_at"],
   data_collection_runs: ["id", "dataset_id", "started_at", "finished_at", "status", "record_count", "scope", "inserted_count", "updated_count", "error_category", "error_message"],
   financial_assets: ["id", "source_id", "source_asset_id", "asset_type", "symbol", "name", "venue", "currency", "unit", "timezone", "metadata", "is_active"],
-  financial_daily_prices: ["asset_id", "source_id", "dataset_id", "reference_date", "reference_timezone", "price_kind", "open", "high", "low", "close", "volume", "market_cap", "is_adjusted", "fetched_at"],
+  financial_daily_prices: ["asset_id", "source_id", "dataset_id", "reference_date", "reference_timezone", "price_kind", "open", "high", "low", "close", "volume", "market_cap", "quote_change_percent", "quote_window", "is_adjusted", "fetched_at"],
 };
 
 function assert(condition, message) {
@@ -267,7 +267,7 @@ try {
   const databaseSize = await pool.query("select pg_database_size(current_database())::text as size_bytes");
   report.worldBank = { tablePresent: true, observations: worldBank.rows[0].observations };
   report.databaseSizeBytes = databaseSize.rows[0].size_bytes;
-  report.comparison = { checkedInSchemaVersion: 6, productionAppliedVersion: applied.length, difference: Math.max(0, 6 - applied.length), method: "production catalog and migration history compared with checked-in schema snapshot; no development DB connection used" };
+  report.comparison = { checkedInMigrationCount: journal.entries.length, productionAppliedCount: applied.length, difference: Math.max(0, journal.entries.length - applied.length), method: "production catalog and migration history compared with checked-in migration journal; no development DB connection used" };
 
   if (!allowPendingSecGrants && report.permissionFindings.length) report.blockers.push("Required Runtime or Import privileges are missing; run the separately approved grant step, then preflight again.");
 
