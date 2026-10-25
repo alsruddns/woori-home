@@ -77,9 +77,9 @@ export const financialProviderCatalog = [
   {
     id: "coinranking-aggregate", name: "Coinranking API (global aggregate)", markets: ["crypto:USD aggregate"], access: "API key required",
     apiKeyRequired: true, rightsStatus: "pending-explicit-competition-and-public-display-review",
-    rights: { apiAccess: "pending", publicDisplay: "pending", userApi: "pending", derivedVisualization: "pending", charts: "pending", temporaryCache: "pending", dbStorage: "pending", longTermRetention: "pending", rawRedistribution: "denied" },
+    rights: { apiAccess: "pending", publicDisplay: "pending", userApi: "pending", derivedVisualization: "pending", charts: "pending", temporaryCache: "pending", dbStorage: "pending", longTermRetention: "pending", dailySnapshot: "pending", adSupportedDisplay: "pending", competitorPermission: "pending", rawRedistribution: "denied" },
     collectionEnabled: false, sourceUrl: "https://coinranking.com/", termsUrl: "https://support.coinranking.com/article/131-api-terms-conditions",
-    datasetId: "coinranking-usd-aggregate-quotes", createAdapter: createCoinrankingProvider,
+    datasetId: "coinranking-usd-daily-snapshots", createAdapter: createCoinrankingProvider,
   },
   {
     id: "twelvedata-us-equities", name: "Twelve Data US Equities", markets: ["us:stocks"], access: "paid-api", apiKeyRequired: true,

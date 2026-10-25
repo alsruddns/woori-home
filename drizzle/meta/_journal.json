@@ -85,6 +85,20 @@
       "when": 1792750848204,
       "tag": "0011_rare_trish_tilby",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792936584551,
+      "tag": "0012_coinranking_asset_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792936965033,
+      "tag": "0013_coinranking_snapshot_rights",
+      "breakpoints": true
     }
   ]
 }

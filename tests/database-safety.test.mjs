@@ -111,6 +111,18 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /SEC_EDGAR_AUTO_REFRESH_ENABLED/);
   assert.match(workflow, /cron: '17 10 \* \* 1-5'/);
   assert.match(workflow, /PORTAL_DIGEST/);
+  assert.match(workflow, /COINRANKING_API_KEY: \$\{\{ \(github\.event_name == 'push' \|\| inputs\.deploy_portal \|\| inputs\.import_coinranking \|\| \(github\.event_name == 'schedule' && vars\.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 2 \* \* \*'\)\) && secrets\.COINRANKING_API_KEY \|\| '' \}\}/);
+  assert.match(workflow, /inputs\.import_coinranking/);
+  assert.match(workflow, /COINRANKING_AUTO_REFRESH_ENABLED/);
+  assert.match(workflow, /github\.event\.schedule == '17 10 \* \* 1-5'/);
+  assert.match(workflow, /github\.event\.schedule == '17 2 \* \* \*'/);
+  assert.match(workflow, /vars\.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 2 \* \* \*'/);
+  assert.match(workflow, /vars\.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 10 \* \* 1-5'/);
+  assert.match(workflow, /SEC_EDGAR_AUTO_REFRESH_ENABLED: \$\{\{ \(vars\.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 10 \* \* 1-5'\) \|\| \(vars\.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 2 \* \* \*'\) \}\}/);
+  assert.match(workflow, /SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY/);
+  assert.match(workflow, /COINRANKING_API_KEY: "\$\{COINRANKING_API_KEY:\?\}"/);
+  assert.match(workflow, /Verify Coinranking runtime secret presence/);
+  assert.match(workflow, /Coinranking runtime key is present; value was not read to output/);
   assert.match(workflow, /--env-file \.env\.moneybook --env-file \.env\.portal/);
   assert.match(workflow, /test -r \.env\.portal/);
   assert.match(workflow, /\[DEPLOY 1\] %s/);
@@ -234,6 +246,21 @@ test("financial currency widening only removes padding while broadening the curr
   const sql = await readFile(new URL("../drizzle/0008_acoustic_loki.sql", import.meta.url), "utf8");
   assert.doesNotThrow(() => assertNoDestructiveMigration(sql, "0008_acoustic_loki.sql"));
   assert.throws(() => assertNoDestructiveMigration(`${sql}DROP TABLE financial_assets;`, "0008_acoustic_loki.sql"), /destructive SQL/);
+});
+
+test("Coinranking migrations relax symbol collisions and extend rights only after dropping the old constraint", async () => {
+  const sql = await readFile(new URL("../drizzle/0012_coinranking_asset_identity.sql", import.meta.url), "utf8");
+  assert.doesNotThrow(() => assertNoDestructiveMigration(sql, "0012_coinranking_asset_identity.sql"));
+  assert.match(sql, /CREATE INDEX "financial_assets_natural_key_idx"/);
+  assert.match(sql, /"dbStorage":"pending"/);
+  assert.match(sql, /false,'Data provided by Coinranking'/);
+  assert.throws(() => assertNoDestructiveMigration(`${sql}DROP TABLE financial_assets;`, "0012_coinranking_asset_identity.sql"), /destructive SQL/);
+  assert.doesNotMatch(sql, /SET "financial_rights" = "financial_rights" \|\|/);
+  const rightsSql = await readFile(new URL("../drizzle/0013_coinranking_snapshot_rights.sql", import.meta.url), "utf8");
+  assert.match(rightsSql, /DROP CONSTRAINT "data_sources_financial_rights_check";[\s\S]*UPDATE "data_sources" SET "financial_rights" = "financial_rights" \|\|/);
+  assert.doesNotThrow(() => assertNoDestructiveMigration(rightsSql, "0013_coinranking_snapshot_rights.sql"));
+  assert.match(rightsSql, /'competitorPermission'/);
+  assert.throws(() => assertNoDestructiveMigration(`${rightsSql}DROP TABLE financial_assets;`, "0013_coinranking_snapshot_rights.sql"), /destructive SQL/);
 });
 
 test("financial production DB tools require the three split production roles, exact role names, host allowlist, main Actions context and approval", () => {

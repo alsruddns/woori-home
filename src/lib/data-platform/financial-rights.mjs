@@ -1,4 +1,4 @@
-export const FINANCIAL_RIGHTS = Object.freeze(["apiAccess", "publicDisplay", "dbStorage", "longTermRetention", "userApi", "csvRedistribution", "derivedVisualization"]);
+export const FINANCIAL_RIGHTS = Object.freeze(["apiAccess", "publicDisplay", "dbStorage", "longTermRetention", "userApi", "csvRedistribution", "derivedVisualization", "dailySnapshot", "adSupportedDisplay", "competitorPermission"]);
 export const FINANCIAL_RIGHTS_STATUSES = Object.freeze(["confirmed", "pending", "restricted", "denied"]);
 
 export function isFinancialRightsReviewCurrent(source, now = new Date()) {
@@ -27,6 +27,18 @@ export function canCollectCryptoDailySnapshots(source, now = new Date()) {
     && Boolean(source.attribution && (source.source_url ?? source.sourceUrl));
 }
 
+/** Coinranking snapshots require explicit written scope for a competing crypto service as well as storage. */
+export function canCollectCoinrankingDailySnapshots(source, now = new Date()) {
+  const rights = source?.financial_rights ?? source?.financialRights ?? {};
+  return (source?.id ?? source?.providerId) === "coinranking-aggregate"
+    && (source?.license_status ?? source?.licenseStatus) === "verified"
+    && Boolean(source?.collection_enabled ?? source?.collectionEnabled)
+    && rights.dailySnapshot === "confirmed"
+    && rights.competitorPermission === "confirmed"
+    && ["apiAccess", "dbStorage", "longTermRetention"].every((right) => hasFinancialRight(source, right, now))
+    && Boolean(source.attribution && (source.source_url ?? source.sourceUrl));
+}
+
 /** Public crypto snapshots are hidden unless the exact daily, ad-supported, visitor API scope is current. */
 export function canPublishCryptoDailySnapshots(source, now = new Date()) {
   const rights = source?.financial_rights ?? source?.financialRights ?? {};
@@ -34,6 +46,7 @@ export function canPublishCryptoDailySnapshots(source, now = new Date()) {
     .every((right) => hasFinancialRight(source, right, now))
     && rights.dailySnapshot === "confirmed"
     && rights.adSupportedDisplay === "confirmed"
+    && ((source?.id ?? source?.providerId) !== "coinranking-aggregate" || ((source?.license_status ?? source?.licenseStatus) === "verified" && rights.competitorPermission === "confirmed"))
     && Boolean(source.attribution && (source.source_url ?? source.sourceUrl));
 }
 
