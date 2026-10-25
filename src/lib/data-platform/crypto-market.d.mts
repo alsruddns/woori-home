@@ -18,6 +18,6 @@ export function cryptoDates(snapshot: CryptoSnapshot): string[];
 export function adjacentCryptoDates(dates: readonly string[], selectedDate: string): { previous?: string; next?: string };
 export function dailyCloseChange(current: CryptoCoinQuote | undefined, previous: CryptoCoinQuote | undefined): { amount: number; percent: number } | null;
 export function cryptoHeatmapWeights(coins: CryptoCoinQuote[]): Record<string, number> | null;
-export function cryptoTreemapLayout(coins: CryptoCoinQuote[]): Record<string, { x: number; y: number; width: number; height: number }> | null;
+export function cryptoTreemapLayout(coins: CryptoCoinQuote[], bounds?: { width: number; height: number }): Record<string, { x: number; y: number; width: number; height: number }> | null;
 export function deduplicateMarketIssues<T extends MarketIssue>(issues: T[]): T[];
 export function validUtcDate(value: string): boolean;

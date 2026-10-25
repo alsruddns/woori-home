@@ -69,14 +69,20 @@ export function financialApiErrorResponse(reason = "financial-db-query-failed") 
   return response;
 }
 
-export function financialApiResponse(payload, status = 200) {
-  return Response.json(payload, { status, headers: { "cache-control": FINANCIAL_API_CACHE_CONTROL, "x-content-type-options": "nosniff" } });
+export function financialApiResponse(payload, status = 200, { cacheControl = FINANCIAL_API_CACHE_CONTROL, headers = {} } = {}) {
+  return Response.json(payload, { status, headers: { "cache-control": cacheControl, "x-content-type-options": "nosniff", ...headers } });
 }
 
 export function financialRateLimitResponse(retryAfterSeconds) {
   return Response.json({ error: "rate_limit_exceeded", message: "Too many financial data requests." }, {
     status: 429,
-    headers: { "cache-control": FINANCIAL_API_CACHE_CONTROL, "retry-after": String(Math.max(1, Math.min(60, Math.trunc(retryAfterSeconds) || 60))) },
+    headers: {
+      "cache-control": FINANCIAL_API_CACHE_CONTROL,
+      "retry-after": String(Math.max(1, Math.min(60, Math.trunc(retryAfterSeconds) || 60))),
+      "ratelimit-limit": "120",
+      "ratelimit-remaining": "0",
+      "ratelimit-reset": String(Math.max(1, Math.min(60, Math.trunc(retryAfterSeconds) || 60))),
+    },
   });
 }
 

@@ -7,6 +7,8 @@ import { cryptoTreemapLayout } from "@/lib/data-platform/crypto-market.mjs";
 import { companyFinancialMetrics, sicDivision } from "@/lib/data-platform/company-financial-treemap.mjs";
 import { companyFinancialTreemapCopy } from "@/lib/data-platform/company-financial-treemap-copy";
 import { companyFinancialTreemapControlsCopy } from "@/lib/data-platform/company-financial-treemap-controls-copy";
+import { companyFinancialIndustryCopy } from "@/lib/data-platform/company-financial-industry-copy";
+import { fetchCompanyFacts } from "@/lib/data-platform/company-facts-fetch.mjs";
 import { companyFactsCopy } from "@/lib/data-platform/company-facts-copy";
 import { companyFactsPeriodCopy } from "@/lib/data-platform/company-facts-period-copy";
 import { companyFactsStatusCopy } from "@/lib/data-platform/company-facts-status-copy";
@@ -23,7 +25,7 @@ type Size = { width: number; height: number };
 type PositionedRect = { x: number; y: number; width: number; height: number };
 
 async function getFacts(query: URLSearchParams, signal: AbortSignal) {
-  const response = await fetch(`/portal-api/finance/companies?${query}`, { cache: "no-store", signal });
+  const response = await fetchCompanyFacts(`/portal-api/finance/companies?${query}`, { signal });
   if (!response.ok) throw new Error("SEC company facts unavailable");
   return response.json() as Promise<Response>;
 }
@@ -56,6 +58,7 @@ function tileSizeClass(width: number, height: number) {
 export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSelectCompany }: { locale: Locale; period: "annual" | "quarterly"; onPeriodChange: (period: "annual" | "quarterly") => void; onSelectCompany: (ticker: string) => void }) {
   const copy = companyFinancialTreemapCopy[locale];
   const ui = companyFinancialTreemapControlsCopy[locale];
+  const industryCopy = companyFinancialIndustryCopy[locale];
   const factsCopy = companyFactsCopy[locale];
   const periodCopy = companyFactsPeriodCopy[locale];
   const statusCopy = companyFactsStatusCopy[locale];
@@ -74,6 +77,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTicker, setActiveTicker] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [zoomedIndustry, setZoomedIndustry] = useState<{ key: string; label: string } | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
   const dialogScrollYRef = useRef(0);
@@ -180,10 +184,9 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
       return value !== null && value > 0;
     });
     const candidates = eligible.map(({ row, metrics }) => ({ id: row.ticker, symbol: row.ticker, name: row.name, currency: "USD", close: 1, marketCap: metrics[areaMetric] as number }));
-    return { group, eligible, rects: cryptoTreemapLayout(candidates), groupValue: candidates.reduce((sum, entry) => sum + entry.marketCap, 0) };
+    return { group, eligible, candidates, groupValue: candidates.reduce((sum, entry) => sum + entry.marketCap, 0) };
   });
-  const renderableGroups = groupedTiles.filter(({ groupValue, rects }) => groupValue > 0 && rects !== null);
-  const groupRects = cryptoTreemapLayout(renderableGroups.map(({ group, groupValue }) => ({ id: group.key, symbol: group.key, name: group.label, currency: "USD", close: 1, marketCap: groupValue })));
+  const renderableGroups = groupedTiles.filter(({ groupValue }) => groupValue > 0);
   const totalMissing = filteredRows.filter(({ metrics }) => metrics[areaMetric] === null).length;
   const netLosses = filteredRows.filter(({ metrics }) => metrics.netIncome !== null && metrics.netIncome < 0).length;
   const amount = (value: number | null) => value === null ? "—" : new Intl.NumberFormat(locale, { style: "currency", currency: "USD", notation: "compact", maximumFractionDigits: 1 }).format(value);
@@ -207,6 +210,14 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
     <label><span>{copy.color}</span><select value={colorMetric} onChange={(event) => setColorMetric(event.target.value as ColorMetric)} aria-label={copy.color}>
       <option value="revenueGrowth">{copy.revenueGrowth}</option><option value="operatingMargin">{copy.operatingMargin}</option><option value="netMargin">{copy.netMargin}</option>
     </select></label>
+    {idPrefix === "expanded" ? <label className="company-financial-treemap-industry-control"><span>{industryCopy.industry}</span><select value={zoomedIndustry?.key ?? ""} onChange={(event) => {
+      const group = groups.find((candidate) => candidate.key === event.target.value);
+      setZoomedIndustry(group ? { key: group.key, label: group.label } : null);
+    }} aria-label={industryCopy.zoomIndustry}>
+      <option value="">{industryCopy.allIndustries}</option>
+      {zoomedIndustry && !groups.some((group) => group.key === zoomedIndustry.key) ? <option value={zoomedIndustry.key}>{zoomedIndustry.label}</option> : null}
+      {groups.map((group) => <option key={group.key} value={group.key}>{group.label} ({group.entries.length})</option>)}
+    </select></label> : null}
     <label className="company-financial-treemap-search"><span>{ui.search}</span><input type="search" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder={ui.searchPlaceholder} aria-label={ui.search} />
     </label>
     {idPrefix === "normal" ? <button ref={fullscreenButtonRef} type="button" className="company-financial-treemap-expand" onClick={() => { dialogScrollYRef.current = window.scrollY; setIsExpanded(true); }} aria-haspopup="dialog">
@@ -229,23 +240,37 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
     <button type="button" onClick={() => { setIsExpanded(false); onSelectCompany(activeEntry.row.ticker); }}>{copy.detail}</button>
   </aside> : null;
 
-  const renderMap = (mapRef: (node: HTMLElement | null) => void, mapSize: Size, hintId: string) => <div ref={mapRef} className="company-financial-treemap-map" role="group" aria-label={`${copy.year} ${fiscalYear}, ${areaLabel}, ${colorLabel}`}>
+  const renderMap = (mapRef: (node: HTMLElement | null) => void, mapSize: Size, hintId: string) => {
+    const zoomed = hintId.includes("dialog") && zoomedIndustry !== null;
+    const visibleGroups = zoomed ? renderableGroups.filter(({ group }) => group.key === zoomedIndustry.key) : renderableGroups;
+    const mapWidth = Math.max(1, mapSize.width);
+    const mapHeight = Math.max(1, mapSize.height);
+    const visibleGroupRects = zoomed && visibleGroups.length
+      ? { [visibleGroups[0].group.key]: { x: 0, y: 0, width: mapWidth, height: mapHeight } }
+      : cryptoTreemapLayout(renderableGroups.map(({ group, groupValue }) => ({ id: group.key, symbol: group.key, name: group.label, currency: "USD", close: 1, marketCap: groupValue })), { width: mapWidth, height: mapHeight });
+    return <div ref={mapRef} className="company-financial-treemap-map" role="group" aria-label={`${copy.year} ${fiscalYear}, ${areaLabel}, ${colorLabel}`}>
     <span id={hintId} className="company-financial-treemap-sr-only">{ui.touchHint}</span>
-    {renderableGroups.map(({ group, eligible, rects }) => {
-      const groupRect = groupRects?.[group.key] as PositionedRect | undefined;
-      if (!groupRect || !rects) return null;
-      const groupWidth = mapSize.width * groupRect.width / 100;
-      const groupHeight = mapSize.height * groupRect.height / 100;
+    {visibleGroups.map(({ group, eligible, candidates }) => {
+      const groupRect = visibleGroupRects?.[group.key] as PositionedRect | undefined;
+      if (!groupRect) return null;
+      const groupWidth = groupRect.width;
+      const groupHeight = groupRect.height;
       const showGroupLabel = groupWidth >= 70 && groupHeight >= 36;
-      return <section key={group.key} className="company-financial-treemap-group" style={{ left: `${groupRect.x}%`, top: `${groupRect.y}%`, width: `${groupRect.width}%`, height: `${groupRect.height}%` }} aria-label={`${group.label}, ${group.entries.length} ${copy.companies}`}>
-        {showGroupLabel ? <h4 title={`${group.label} · ${group.division.key}`}>{group.label}</h4> : null}
+      const headerHeight = showGroupLabel ? hintId.includes("dialog") ? 24 : 21 : 0;
+      const tileAreaHeight = Math.max(1, groupHeight - headerHeight);
+      const rects = cryptoTreemapLayout(candidates, { width: groupWidth, height: tileAreaHeight });
+      if (!rects) return null;
+      return <section key={group.key} className="company-financial-treemap-group" style={{ left: `${groupRect.x / mapWidth * 100}%`, top: `${groupRect.y / mapHeight * 100}%`, width: `${groupRect.width / mapWidth * 100}%`, height: `${groupRect.height / mapHeight * 100}%` }} aria-label={`${group.label}, ${group.entries.length} ${copy.companies}`}>
+        {showGroupLabel ? <h4 title={`${group.label} · ${group.division.key}`}>{hintId.includes("dialog")
+          ? <button type="button" onClick={() => setZoomedIndustry({ key: group.key, label: group.label })} aria-label={`${industryCopy.zoomIndustry}: ${group.label}, ${group.entries.length} ${copy.companies}`}>{group.label}</button>
+          : group.label}</h4> : null}
         <div className="company-financial-treemap-group-map">
           {eligible.map(({ row, metrics }) => {
             const rect = rects[row.ticker] as PositionedRect | undefined;
             if (!rect) return null;
             const metricValue = metrics[colorMetric];
-            const tileWidth = groupWidth * rect.width / 100;
-            const tileHeight = Math.max(0, groupHeight - (showGroupLabel ? 22 : 0)) * rect.height / 100;
+            const tileWidth = rect.width;
+            const tileHeight = rect.height;
             const sizeClass = tileSizeClass(tileWidth, tileHeight);
             const intensity = metricValue === null ? 0 : Math.min(1, Math.abs(metricValue) / maxAbs);
             const colorClass = metricValue === null ? "is-missing" : Math.abs(metricValue) < 0.05 ? "is-neutral" : metricValue > 0 ? "is-positive" : "is-negative";
@@ -257,7 +282,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
                   ? `rgba(35,145,101,${0.2 + intensity * 0.42})`
                   : `rgba(194,66,76,${0.2 + intensity * 0.42})`;
             const detail = `${row.name} (${row.ticker}) · ${row.industry || row.sector || copy.sector} · ${areaLabel}: ${amount(metrics[areaMetric])} · ${colorLabel}: ${percent(metricValue)} · ${row.fiscalPeriod} ${row.fiscalYear} · ${row.endDate} · filed ${row.filedDate}`;
-            const tileStyle: CSSProperties = { left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.width}%`, height: `${rect.height}%`, backgroundColor: fill };
+            const tileStyle: CSSProperties = { left: `${rect.x / groupWidth * 100}%`, top: `${rect.y / tileAreaHeight * 100}%`, width: `${rect.width / groupWidth * 100}%`, height: `${rect.height / tileAreaHeight * 100}%`, backgroundColor: fill };
             return <button key={row.ticker} type="button" className={`company-financial-treemap-tile ${sizeClass} ${colorClass}${metrics.netIncome !== null && metrics.netIncome < 0 ? " is-loss" : ""}`}
               style={tileStyle} title={detail} aria-label={detail} aria-describedby={hintId}
               onMouseEnter={() => setActiveTicker(row.ticker)} onFocus={() => setActiveTicker(row.ticker)} onClick={() => setActiveTicker(row.ticker)}>
@@ -270,6 +295,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
       </section>;
     })}
   </div>;
+  };
 
   const renderStatus = () => <>
     <p className="company-financial-treemap-meta">{period === "annual" ? periodCopy.annual : periodCopy.quarterly} · {copy.year}: {fiscalYear} · {copy.area}: {areaLabel} · {copy.color}: {colorLabel} · {copy.companies}: {filteredRows.length} / {rows.length} · {copy.losses}: {netLosses} · {copy.missing}: {totalMissing}</p>
@@ -308,7 +334,15 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
         </div>
         {displayState === "ready" ? <>
           {renderStatus()}
-          {renderableGroups.length ? renderMap(expandedMap.ref, expandedMap.size, "company-financial-treemap-dialog-touch-hint") : <p role="status">{filteredRows.length === 0 && searchQuery.trim() ? ui.noMatches : copy.noData}</p>}
+          {zoomedIndustry ? <nav className="company-financial-treemap-industry-breadcrumb" aria-label={industryCopy.industry}>
+            <button type="button" onClick={() => setZoomedIndustry(null)}>{industryCopy.allIndustries}</button>
+            <span aria-hidden="true">/</span><strong>{zoomedIndustry.label}</strong>
+            <span>{groupedTiles.find(({ group }) => group.key === zoomedIndustry.key)?.eligible.length ?? 0} {copy.companies}</span>
+            <button type="button" className="company-financial-treemap-back" onClick={() => setZoomedIndustry(null)}>{industryCopy.backToIndustries}</button>
+          </nav> : null}
+          {renderableGroups.length && (!zoomedIndustry || renderableGroups.some(({ group }) => group.key === zoomedIndustry.key))
+            ? renderMap(expandedMap.ref, expandedMap.size, "company-financial-treemap-dialog-touch-hint")
+            : <p role="status">{zoomedIndustry ? industryCopy.emptyIndustry : filteredRows.length === 0 && searchQuery.trim() ? ui.noMatches : copy.noData}</p>}
           {renderSelectedDetail()}
           {renderLegend()}
         </> : <p role="status">{displayState === "loading" ? `${copy.year}: ${fiscalYear ?? "—"}` : copy.noData}</p>}

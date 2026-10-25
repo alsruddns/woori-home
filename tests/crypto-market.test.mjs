@@ -46,6 +46,10 @@ test("market-cap treemap weights require complete positive market-cap values", (
   const layout = cryptoTreemapLayout(sample);
   assert.ok(Math.abs(layout["provider:bitcoin"].width * layout["provider:bitcoin"].height / 10000 - weights["provider:bitcoin"]) < 1e-10);
   assert.ok(Math.abs(layout["provider:ether"].width * layout["provider:ether"].height / 10000 - weights["provider:ether"]) < 1e-10);
+  const portrait = cryptoTreemapLayout(sample, { width: 100, height: 300 });
+  assert.ok(Math.abs(portrait["provider:bitcoin"].width * portrait["provider:bitcoin"].height / 30000 - weights["provider:bitcoin"]) < 1e-10);
+  assert.ok(portrait["provider:ether"].y > portrait["provider:bitcoin"].y);
+  assert.equal(Math.max(...Object.values(portrait).map((rect) => rect.y + rect.height)), 300);
   assert.equal(cryptoHeatmapWeights([coin(), coin({ id: "provider:ether", marketCap: null })]), null);
   assert.equal(cryptoTreemapLayout([coin(), coin({ id: "provider:ether", marketCap: null })]), null);
 });

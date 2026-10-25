@@ -6,6 +6,7 @@ import { companyFactsCopy, companyFactsUnavailableCopy } from "@/lib/data-platfo
 import { companyFactsPeriodCopy } from "@/lib/data-platform/company-facts-period-copy";
 import { companyFactsExtraCopy, companySectorLabel } from "@/lib/data-platform/company-facts-extra-copy";
 import { companyFactsStatusCopy } from "@/lib/data-platform/company-facts-status-copy";
+import { fetchCompanyFacts } from "@/lib/data-platform/company-facts-fetch.mjs";
 import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 import { CompanyFinancialTreemap } from "./company-financial-treemap";
@@ -65,7 +66,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
   useEffect(() => {
     const controller = new AbortController();
     const params = new URLSearchParams({ period, latest: "true", pageSize: "100" });
-    fetch(`/portal-api/finance/companies?${params}`, { cache: "no-store", signal: controller.signal })
+    fetchCompanyFacts(`/portal-api/finance/companies?${params}`, { signal: controller.signal })
       .then(async (response) => { if (!response.ok) throw new Error("Financial facts unavailable."); return response.json(); })
       .then((payload) => {
         const data = Array.isArray(payload.data) ? payload.data as CompanyFactRow[] : [];
@@ -80,7 +81,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
     const controller = new AbortController();
     if (!selectedTicker) return () => controller.abort();
     const params = new URLSearchParams({ period, ticker: selectedTicker, pageSize: "200" });
-    fetch(`/portal-api/finance/companies?${params}`, { cache: "no-store", signal: controller.signal })
+    fetchCompanyFacts(`/portal-api/finance/companies?${params}`, { signal: controller.signal })
       .then(async (response) => { if (!response.ok) throw new Error("Financial history unavailable."); return response.json(); })
       .then((payload) => { setHistoryResult({ key: historyKey, data: Array.isArray(payload.data) ? payload.data as CompanyFactRow[] : [] }); })
       .catch(() => { if (!controller.signal.aborted) setHistoryErrorKey(historyKey); });
