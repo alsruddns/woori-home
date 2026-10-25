@@ -15,6 +15,7 @@ const companyFactsPanel = await readFile(new URL("../src/app/(locale)/[locale]/c
 const companyFactsPeriods = await readFile(new URL("../src/lib/data-platform/company-facts-period-copy.ts", import.meta.url), "utf8");
 const companyFactsStatus = await readFile(new URL("../src/lib/data-platform/company-facts-status-copy.ts", import.meta.url), "utf8");
 const platformStyles = await readFile(new URL("../src/app/(locale)/[locale]/platform.css", import.meta.url), "utf8");
+const platformExperienceStyles = await readFile(new URL("../src/app/(locale)/[locale]/platform-experience.css", import.meta.url), "utf8");
 const worldData = await readFile(new URL("../src/app/(locale)/[locale]/world-data.tsx", import.meta.url), "utf8");
 const portalFooter = await readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8");
 const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx", import.meta.url), "utf8");
@@ -55,9 +56,10 @@ const { stockCopy, weekdayNoSnapshot } = require("../src/lib/data-platform/stock
 const { categoryNavigation: getCategoryNavigation } = require("../src/lib/data-platform/category-navigation.ts");
 const { classifyStockDate, adjacentAvailableDates } = require("../src/lib/data-platform/stock-selection.ts");
 const { snapshotDatesForMarket, stockSnapshotForDate } = require("../src/lib/data-platform/published-stocks.ts");
-const { stockMarkets } = require("../src/lib/data-platform/registry.ts");
+const { stockMarkets, indicators } = require("../src/lib/data-platform/registry.ts");
 const { financialOverviewCopy } = require("../src/lib/data-platform/financial-overview-copy.ts");
 const { financialUiCopy } = require("../src/lib/data-platform/financial-ui-copy.ts");
+const { cryptoDirectoryCopy } = require("../src/lib/data-platform/crypto-directory-copy.ts");
 
 test("portal defines all supported locales and localized home content", () => {
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) assert.ok(site.includes(`route: "${locale}"`), `missing locale config: ${locale}`);
@@ -97,14 +99,19 @@ test("all locale dictionaries, legal pages, and service names are complete witho
   assert.deepEqual(errors, [], errors.join("\n"));
 });
 
-test("sitemap has 104 canonical portal URLs with 26 hreflang entries and x-default", () => {
-  const entries = siteData.locales.flatMap((locale) => siteData.publicPortalPaths.map((path) => ({ url: `${siteData.origin}/${locale}${path}`, languages: siteData.alternates(path).languages })));
-  assert.equal(entries.length, 104);
-  assert.equal(new Set(entries.map((entry) => entry.url)).size, 104);
+test("sitemap includes public data hubs and indexable indicators with canonical 26-locale alternates", () => {
+  const publicPaths = [...new Set([...siteData.publicPortalPaths, ...siteData.publicDataPaths])];
+  const entries = siteData.locales.flatMap((locale) => publicPaths.map((path) => ({ url: `${siteData.origin}/${locale}${path}`, languages: siteData.alternates(path).languages })));
+  assert.equal(entries.length, 26 * publicPaths.length);
+  assert.equal(new Set(entries.map((entry) => entry.url)).size, entries.length);
   for (const entry of entries) {
     assert.equal(Object.keys(entry.languages).length, 27);
     assert.equal(entry.languages["x-default"], entry.url.replace(/^https:\/\/www\.woori\.today\/(?:[^/]+)(.*)$/, "https://www.woori.today/ko$1"));
   }
+  assert.equal(indicators.length, 11);
+  assert.match(sitemap, /publicDataPaths/);
+  assert.match(sitemap, /indexableIndicatorPages/);
+  assert.match(sitemap, /\["ko", "en"\]/);
 });
 
 test("financial dashboard and market labels are translated for every locale", () => {
@@ -115,6 +122,30 @@ test("financial dashboard and market labels are translated for every locale", ()
     for (const [key, value] of Object.entries(financialUiCopy[locale])) assert.ok(value.trim(), `${locale}: missing financial UI ${key}`);
     if (locale !== "en") assert.notEqual(financialOverviewCopy[locale].title, financialOverviewCopy.en.title, `${locale}: English fallback in finance page`);
   }
+});
+
+test("crypto search labels cover all locales and the market overview leads with SEC data", async () => {
+  assert.deepEqual(Object.keys(cryptoDirectoryCopy).sort(), [...siteData.locales].sort());
+  for (const locale of siteData.locales) {
+    for (const [key, value] of Object.entries(cryptoDirectoryCopy[locale])) assert.ok(value.trim(), `${locale}: missing crypto directory ${key}`);
+  }
+  const [financeDashboard, categoryPage] = await Promise.all([
+    readFile(new URL("../src/app/(locale)/[locale]/financial-overview-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/(platform)/[category]/page.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(financeDashboard, /CompanyFinancialTreemap locale=\{locale\}/);
+  assert.match(financeDashboard, /router\.push\(`\/\$\{locale\}\/stocks#company-fundamentals-title`\)/);
+  assert.doesNotMatch(financeDashboard, /fetch\(/);
+  assert.match(categoryPage, /FinancialOverviewDashboard locale=\{locale\}/);
+  assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
+  assert.match(companyFactsPanel, /companySearchAliases\(row\.ticker\)/);
+  assert.match(companyFactsPanel, /locale === "ko"/);
+});
+
+test("native selects follow the site theme and expose a visible keyboard focus", () => {
+  assert.match(platformExperienceStyles, /\.platform-shell select,\s*\.platform-shell option\s*\{\s*color-scheme: dark/);
+  assert.match(platformExperienceStyles, /html\[data-theme="light"\] \.platform-shell select,\s*html\[data-theme="light"\] \.platform-shell option/);
+  assert.match(platformExperienceStyles, /\.platform-shell select:focus-visible/);
 });
 
 test("language selection preserves each supported page path", async () => {
@@ -284,15 +315,9 @@ test("stock markets have translated labels and live data controls in all 26 loca
   }
   assert.equal(stockMarkets.find((item) => item.id === "kospi").benchmark, "KOSPI");
   assert.equal(stockMarkets.find((item) => item.id === "kosdaq").benchmark, "KOSDAQ");
-  assert.match(stockPage, /search\.get\("market"\)/);
-  assert.match(stockPage, /search\.get\("date"\)/);
-  assert.match(stockPage, /router\.push\(`\/\$\{locale\}\/stocks\?/);
-  assert.match(stockPage, /setSelection\(nextMarket\.id, rawDate \?\? undefined\)/);
-  assert.match(stockPage, /useSnapshotQueryDate/);
-  assert.match(stockPage, /fetch\(`\/portal-api\/finance\/stocks\?/);
-  assert.match(stockPage, /\/portal-api\/finance\/stocks\/heatmap/);
-  assert.match(stockPage, /financialUiCopy\[locale\]/);
-  assert.match(stockPage, /max=\{today\}/);
+  assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
+  assert.doesNotMatch(stockPage, /\/portal-api\/finance\/stocks(?:\/heatmap)?\?/);
+  assert.doesNotMatch(stockPage, /search\.get\("market"\)|search\.get\("date"\)/);
   assert.match(categoryRoute, /<Suspense fallback=\{<StockMarketLoading locale=\{locale\} \/>\}>/);
   assert.match(categoryRoute, /const index = category === "finance" \|\| category === "about" \|\| category === "economy"/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
@@ -311,18 +336,15 @@ test("stock date selection never substitutes another market date and distinguish
   assert.deepEqual(adjacentAvailableDates(["2026-10-21", "2026-10-19", "2026-10-20"], "2026-10-20"), { previous: "2026-10-19", next: "2026-10-21" });
 });
 
-test("market snapshots are disclosed, accessible, theme-aware, and free of internal labels", () => {
+test("SEC facts lead the stock page while unapproved price snapshots stay compact and disclosed", () => {
   assert.doesNotMatch(stockPage + worldData + platformHome, /WOORI\.DATA|MARKET SNAPSHOT UI|Market breadth prototype|Snapshot schema preview|Market cap weighted layout|6 mock securities/i);
   assert.doesNotMatch(stockPage, /mockDisclosure|mockLabel|mock-stocks/);
   assert.match(stockPage, /copy\.sourceDisclosure/);
-  assert.match(stockPage, /stock-sector-heatmap/);
-  assert.match(stockPage, /stock-market-index-overview/);
-  assert.match(stockPage, /stock-market-movers/);
-  assert.match(stockPage, /stock-market-filter-heading/);
+  assert.doesNotMatch(stockPage, /stock-sector-heatmap|stock-market-index-overview|stock-market-movers|stock-market-filter-heading/);
   assert.doesNotMatch(stockPage, /crypto-heatmap stock-market-heatmap/);
   assert.match(stockPage, /stockUnavailableCopy\[locale\]/);
   assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
-  assert.match(stockPage, /stockUnavailableCopy\[locale\]/);
+  assert.ok(stockPage.indexOf("CompanyFundamentalsPanel") < stockPage.indexOf("stock-price-availability"));
   assert.match(companyFactsPanel, /latest: "true"/);
   assert.match(companyFactsPanel, /ticker: selectedTicker/);
   assert.match(companyFactsPanel, /notation: "compact"/);
@@ -360,7 +382,6 @@ test("shared calendar opens from both controls, uses localized Intl dates, and a
   assert.match(rootProxy, /accept-language/);
   assert.match(rootProxy, /woori-locale/);
   assert.match(rootProxy, /crawler/);
-  assert.match(stockPage, /const date = rawDate \?\? ""/);
   const order = ["finance", "stocks", "crypto", "gold", "commodities", "economy", "science", "world"];
   for (const locale of siteData.locales) {
     const entries = getCategoryNavigation(locale);
@@ -386,7 +407,9 @@ test("root favicon and PNG site icons are declared and use square public PNG ass
 
 test("portal sitemap contains locale home and privacy pages with matching alternates", () => {
   assert.match(sitemap, /url: `\$\{origin\}\/\$\{locale\}\$\{path\}`/);
-  assert.match(sitemap, /publicPortalPaths\.map/);
+  assert.match(sitemap, /publicPaths\.map/);
+  assert.match(sitemap, /publicPortalPaths/);
+  assert.match(sitemap, /publicDataPaths/);
   assert.match(sitemap, /locales\.flatMap/);
   assert.match(sitemap, /flatMap/);
   assert.doesNotMatch(sitemap, /money|calculators|tools|docs|quiz/);

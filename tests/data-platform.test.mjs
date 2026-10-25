@@ -73,7 +73,7 @@ test("NASA NeoWs snapshot is validated, date-scoped, and kept independent of vis
   assert.match(audit, /APOD image and video embedding remains deferred/);
 });
 
-test("energy and science data copy covers all 26 locales without an English-only fallback", async () => {
+test("energy and science data copy covers all 26 locales and public data routes are sitemap eligible", async () => {
   const [energy, science, route, sitemap] = await Promise.all([
     read("src/lib/data-platform/energy-copy.ts"), read("src/lib/data-platform/science-copy.ts"),
     read("src/app/(locale)/[locale]/(platform)/[category]/page.tsx"), read("src/app/sitemap.ts"),
@@ -86,7 +86,9 @@ test("energy and science data copy covers all 26 locales without an English-only
   assert.match(energy, /distinct from electricity consumption/i);
   assert.match(route, /category === "energy" \|\| category === "science"/);
   assert.match(sitemap, /publicPortalPaths/);
-  assert.doesNotMatch(sitemap, /energyDetails|publicDataPaths|localizedDataPaths/);
+  assert.match(sitemap, /publicDataPaths/);
+  assert.match(sitemap, /indicators\.flatMap/);
+  assert.match(sitemap, /alternates\(path\)/);
   assert.doesNotMatch(route, /indicator\.definition\[locale\] \?\? platformCopy\[locale\]\.sourceNote/);
 });
 

@@ -5,6 +5,7 @@ import { platformCopy } from "@/lib/data-platform/locales";
 import { PlatformLayout } from "./platform-layout";
 import { PlatformHome } from "./platform-home";
 import "./platform.css";
+import "./platform-experience.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
