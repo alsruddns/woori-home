@@ -86,8 +86,16 @@ test("production preflight inspects migration hashes, catalog seeds, World Bank 
   assert.match(source, /secIdentityDiagnostic/);
   assert.match(source, /c\.ticker='XOM'/);
   assert.match(source, /createHash\("sha256"\)/);
+  assert.match(source, /applied\.length >= 13[\s\S]*financial_assets_natural_key_idx[\s\S]*financial_assets_natural_key_unique_idx/);
   assert.match(source, /PRODUCTION_ROLE_NAMES|validateFinancialProductionContext/);
   assert.match(source, /has_table_privilege/);
+});
+
+test("production migration workflow verifies the current Coinranking migration journal count", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+  assert.match(workflow, /\.migrations\.applied == 14/);
+  assert.match(workflow, /14 applied, 0 pending/);
+  assert.doesNotMatch(workflow, /12 applied, 0 pending|\.migrations\.applied == 13/);
 });
 
 test("financial production preflight reports missing production access as skipped without connecting", () => {
