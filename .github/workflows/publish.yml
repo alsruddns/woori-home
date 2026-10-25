@@ -484,7 +484,8 @@ jobs:
             : > "$smoke_headers"
             curl --fail --silent --show-error --max-time 20 --dump-header "$smoke_headers" --output "$smoke_body" 'https://www.woori.today/portal-api/finance/companies?pageSize=1'
             jq -e '.dataState == "available" and .pagination.total > 0 and (.data | length == 1)' "$smoke_body" >/dev/null
-            grep -Eiq '^cache-control:[[:space:]]*no-store' "$smoke_headers"
+            grep -Eiq '^cache-control:[[:space:]]*public,[[:space:]]*max-age=120,[[:space:]]*stale-while-revalidate=60' "$smoke_headers"
+            grep -Eiq '^x-financial-cache:[[:space:]]*(MISS|HIT|STALE)' "$smoke_headers"
             rm -f "$smoke_body" "$smoke_headers"
             smoke_body=""
             smoke_headers=""
