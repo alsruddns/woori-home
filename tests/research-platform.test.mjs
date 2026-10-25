@@ -12,6 +12,8 @@ require.extensions[".ts"] = (module, filename) => {
   module._compile(output, filename);
 };
 const { rankCountryObservations, periodChange } = require("../src/lib/data-platform/rankings.ts");
+const { rankingScopeCopy } = require("../src/lib/data-platform/ranking-scope-copy.ts");
+const { rankingCopy } = require("../src/lib/data-platform/ranking-copy.ts");
 const { researchCopy, localizedNewCategories, researchFilterCopy } = require("../src/lib/data-platform/research-copy.ts");
 const { homeBriefingCopy } = require("../src/lib/data-platform/home-briefing-copy.ts");
 const { mineralCopy } = require("../src/lib/data-platform/mineral-copy.ts");
@@ -31,6 +33,16 @@ test("country rankings use exact-year country values, exclude aggregates, sort b
   assert.deepEqual(rankCountryObservations(rows, 2024).map((row) => [row.country, row.rank]), [["AAA", 1], ["BBB", 1], ["CCC", 3]]);
   assert.deepEqual(rankCountryObservations(rows, 2024, "asc").map((row) => row.country), ["CCC", "AAA", "BBB"]);
   assert.deepEqual(rankCountryObservations(rows, 2022), []);
+  assert.deepEqual(rankCountryObservations(rows, 2024, "desc", new Set(["WLD", "HIC"])).map((row) => row.country), ["AAA", "BBB", "CCC"]);
+});
+
+test("World Bank ranking scope copy is localized and does not claim a fixed country count", () => {
+  assert.deepEqual(Object.keys(rankingScopeCopy).sort(), [...supportedLocales].sort());
+  for (const locale of supportedLocales) {
+    assert.ok(rankingScopeCopy[locale].length > 40, `${locale}: ranking scope`);
+    assert.equal(rankingCopy[locale].scope, rankingScopeCopy[locale], `${locale}: rendered ranking scope`);
+    assert.doesNotMatch(rankingScopeCopy[locale], /15 (countries|países|pa[ií]ses|Länder|国|countries)/i, `${locale}: stale sample count`);
+  }
 });
 
 test("period change requires both observed endpoints and distinguishes absolute from relative change", () => {
@@ -142,6 +154,17 @@ test("country comparison uses exact observed endpoints and keeps percentage poin
   assert.match(page, /periodCopy\.percentagePoints/);
   assert.match(page, /periodCopy\.percent/);
   assert.match(page, /availableYears/);
+  assert.match(page, /current\.length < 5/);
+  assert.match(page, /draftCountries\.length > 5/);
+  assert.match(page, /draftCountries\.length}\/5/);
+  const [comparisonPage, apiHandler] = await Promise.all([
+    read("src/app/(locale)/[locale]/world-data.tsx"),
+    read("src/lib/db/world-bank-comparison-handler.ts"),
+  ]);
+  assert.match(comparisonPage, /validSelection\.length <= 5/);
+  assert.match(comparisonPage, /\["kr", "us", "jp"\]/);
+  assert.match(apiHandler, /rawCodes\.length > 5/);
+  assert.match(apiHandler, /codes\.length > 5/);
 });
 
 test("papers are daily Crossref metadata, article detail remains noindex, and commodity prices stay withheld", async () => {

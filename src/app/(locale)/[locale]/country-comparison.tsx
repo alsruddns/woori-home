@@ -39,11 +39,11 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   function toggleCountry(code: string) {
     setDraftCountries((current) => current.includes(code)
       ? current.length > 2 ? current.filter((item) => item !== code) : current
-      : current.length < 20 ? [...current, code] : current);
+      : current.length < 5 ? [...current, code] : current);
   }
 
   async function compare() {
-    if (draftCountries.length < 2 || draftCountries.length > 20) return;
+    if (draftCountries.length < 2 || draftCountries.length > 5) return;
     const id = ++requestId.current;
     setError(false);
     setBusy(true);
@@ -97,7 +97,7 @@ export function CountryComparisonDashboard({ locale, initialCountries, initialSe
   return <section className="country-comparison-dashboard" aria-busy={busy}>
     <div className="country-comparison-controls">
       <div className="country-control-group"><label htmlFor="comparison-indicator">{copy.metric}</label><select id="comparison-indicator" value={draftIndicator} onChange={(event) => setDraftIndicator(event.target.value)}>{availableIndicators.map((item) => <option key={item.id} value={item.id}>{item.label[locale] ?? item.label.en}</option>)}</select></div>
-      <details className="country-picker"><summary>{copy.chooseCountries} · {draftCountries.length}/20</summary><div className="country-picker-panel"><p>{copy.maxCountries.replace(/5/g, "20")}</p><input className="country-picker-search" type="search" value={countryQuery} onChange={(event) => setCountryQuery(event.target.value)} placeholder={countrySearchPlaceholder(locale)} aria-label={countrySearchPlaceholder(locale)}/>{visibleCountries.map((country) => <label key={country.code}><input type="checkbox" checked={draftCountries.includes(country.code)} disabled={!draftCountries.includes(country.code) && draftCountries.length >= 20 || draftCountries.includes(country.code) && draftCountries.length <= 2} onChange={() => toggleCountry(country.code)}/><span suppressHydrationWarning>{countryName(country.code, locale)}</span></label>)}</div></details>
+      <details className="country-picker"><summary>{copy.chooseCountries} · {draftCountries.length}/5</summary><div className="country-picker-panel"><p>{copy.maxCountries}</p><input className="country-picker-search" type="search" value={countryQuery} onChange={(event) => setCountryQuery(event.target.value)} placeholder={countrySearchPlaceholder(locale)} aria-label={countrySearchPlaceholder(locale)}/>{visibleCountries.map((country) => <label key={country.code}><input type="checkbox" checked={draftCountries.includes(country.code)} disabled={!draftCountries.includes(country.code) && draftCountries.length >= 5 || draftCountries.includes(country.code) && draftCountries.length <= 2} onChange={() => toggleCountry(country.code)}/><span suppressHydrationWarning>{countryName(country.code, locale)}</span></label>)}</div></details>
       <button className="country-compare-button" type="button" disabled={!hasChanges || draftCountries.length < 2} onClick={compare}>{copy.compareCountries}</button>
       {error ? <p className="country-comparison-error" role="alert">{copy.loadError}</p> : null}
     </div>
