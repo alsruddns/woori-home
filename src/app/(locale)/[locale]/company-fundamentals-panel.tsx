@@ -9,6 +9,7 @@ import { companyFactsStatusCopy } from "@/lib/data-platform/company-facts-status
 import { fetchCompanyFacts } from "@/lib/data-platform/company-facts-fetch.mjs";
 import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
+import { companySearchAliases, normalizeCompanySearch } from "@/lib/data-platform/company-search-aliases.mjs";
 import { CompanyFinancialTreemap } from "./company-financial-treemap";
 
 type Period = "annual" | "quarterly";
@@ -52,14 +53,15 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
   const historyState = historyResult?.key === historyKey ? "ready" : historyErrorKey === historyKey ? "unavailable" : "loading";
   const summary = useMemo(() => summaryResult?.period === period ? summaryResult.data : [], [summaryResult, period]);
   const visibleSummary = useMemo(() => summary.filter((row) => {
-    const term = search.trim().toLocaleLowerCase(locale);
-    const matchesSearch = !term || [row.ticker, row.name, row.industry ?? ""].some((value) => value.toLocaleLowerCase(locale).includes(term));
+    const term = normalizeCompanySearch(search.trim());
+    const matchesSearch = !term || [row.ticker, row.name, row.industry ?? "", ...companySearchAliases(row.ticker)]
+      .some((value) => normalizeCompanySearch(value).includes(term));
     return matchesSearch && (!sectorFilter || row.sector === sectorFilter);
   }).sort((left, right) => {
     const a = left[sortMetric] === null ? null : Number(left[sortMetric]);
     const b = right[sortMetric] === null ? null : Number(right[sortMetric]);
     return a === null ? (b === null ? left.ticker.localeCompare(right.ticker) : 1) : b === null ? -1 : b - a;
-  }), [summary, search, sectorFilter, sortMetric, locale]);
+  }), [summary, search, sectorFilter, sortMetric]);
   const sectorOptions = [...new Set(summary.map((row) => row.sector))].sort();
   const history = useMemo(() => historyResult?.key === historyKey ? historyResult.data : [], [historyResult, historyKey]);
 
@@ -145,7 +147,7 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
       </div>
       <div className="company-facts-summary-grid" aria-label={copy.title}>
         {visibleSummary.map((row) => <button key={`${row.companyId}-${row.accessionNumber}-${row.startDate ?? "instant"}`} type="button" className={`company-facts-summary-card${row.ticker === selectedTicker ? " is-selected" : ""}`} aria-pressed={row.ticker === selectedTicker} onClick={() => setSelectedTicker(row.ticker)}>
-          <span className="company-facts-company"><strong>{row.ticker}</strong><small>{row.name}</small></span>
+          <span className="company-facts-company"><strong>{row.ticker}</strong><small>{locale === "ko" ? `${companySearchAliases(row.ticker).find((alias) => /[가-힣]/.test(alias)) ? `${companySearchAliases(row.ticker).find((alias) => /[가-힣]/.test(alias))} · ` : ""}${row.name}` : row.name}</small></span>
           <span className="company-facts-period">{periodLabel(row)} <small>{row.form} · {date(row.startDate)} – {date(row.endDate)}</small></span>
           <span className="company-facts-industry"><small>{companySectorLabel(locale, row.sector, stock.sectors)}</small>{row.industry ? <small>{row.industry}</small> : null}</span>
           <span className="company-facts-metrics">
