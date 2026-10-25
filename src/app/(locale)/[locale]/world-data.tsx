@@ -13,6 +13,7 @@ import { rankingCopy } from "@/lib/data-platform/ranking-copy";
 import { RankingControls } from "./ranking-controls";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
 import { resolveWorldBankDataSource, worldBankIndicatorSource } from "../../../lib/db/world-bank-mode.mjs";
+import { createIndicatorDatasetDescription, validateDatasetSchema } from "@/lib/data-platform/dataset-schema.mjs";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -76,7 +77,9 @@ export function IndicatorPage({ locale, slug }: { locale: Locale; slug: string }
   const definition = indicator.definition[locale] ?? copy.sourceNote;
   const interpretation = indicator.interpretation[locale] ?? copy.sourceNote;
   const url = `${origin}/${locale}/${indicator.category}/${indicator.id}`;
-  const structuredData = { "@context": "https://schema.org", "@type": "Dataset", name: label, description: definition, url, creator: { "@type": "Organization", name: "World Bank" }, temporalCoverage: reference ? `${series[0]?.year ?? reference.year}/${reference.year}` : undefined, variableMeasured: label, license: indicator.id === "electricity-access" ? "https://creativecommons.org/licenses/by/4.0/" : "https://data.worldbank.org/summary-terms-of-use", distribution: { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: `https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json` } };
+  const years = observationsFor(indicator.code).map((row) => row.year);
+  const period = years.length ? `${Math.min(...years)}–${Math.max(...years)}` : "";
+  const structuredData = validateDatasetSchema({ "@context": "https://schema.org", "@type": "Dataset", name: label, description: createIndicatorDatasetDescription({ definition, interpretation, source: copy.sourceNote, label, code: indicator.code, periodLabel: copy.referenceYear, period }), url, creator: { "@type": "Organization", name: "World Bank", url: "https://www.worldbank.org/" }, temporalCoverage: reference ? `${Math.min(...years)}/${Math.max(...years)}` : undefined, variableMeasured: label, license: indicator.id === "electricity-access" ? "https://creativecommons.org/licenses/by/4.0/" : "https://data.worldbank.org/summary-terms-of-use", distribution: { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: `https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json` } });
   const prior = reference ? series.filter((item) => item.year < reference.year).at(-1) : undefined;
   const delta = prior && reference ? (reference.value - prior.value) / Math.abs(prior.value) * 100 : null;
   return <>
@@ -95,7 +98,15 @@ export function IndicatorCategory({ locale, category, title }: { locale: Locale;
   const entries = indicators.filter((item) => item.category === category);
   const energy = category === "energy" ? energyPageCopy[locale] : null;
   const pageUrl = `${origin}/${locale}/${category}`;
-  const structuredData = { "@context": "https://schema.org", "@type": "CollectionPage", name: title, description: energy?.intro ?? copy.overviewBody, url: pageUrl, inLanguage: locale, hasPart: entries.map((item) => ({ "@type": "Dataset", name: item.label[locale], url: `${origin}/${locale}/${category}/${item.id}` })) };
+  const structuredData = { "@context": "https://schema.org", "@type": "CollectionPage", name: title, description: energy?.intro ?? copy.overviewBody, url: pageUrl, inLanguage: locale, hasPart: entries.map((item) => {
+    const label = item.label[locale] ?? item.label.en;
+    const definition = item.definition[locale] ?? copy.sourceNote;
+    const interpretation = item.interpretation[locale] ?? copy.sourceNote;
+    const years = observationsFor(item.code).map((row) => row.year);
+    const period = years.length ? `${Math.min(...years)}–${Math.max(...years)}` : "";
+    const itemUrl = `${origin}/${locale}/${category}/${item.id}`;
+    return validateDatasetSchema({ "@type": "Dataset", name: label, description: createIndicatorDatasetDescription({ definition, interpretation, source: copy.sourceNote, label, code: item.code, periodLabel: copy.referenceYear, period }), url: itemUrl, creator: { "@type": "Organization", name: "World Bank", url: "https://www.worldbank.org/" }, isBasedOn: { "@type": "CreativeWork", name: "World Development Indicators", url: "https://databank.worldbank.org/source/world-development-indicators" }, temporalCoverage: years.length ? `${Math.min(...years)}/${Math.max(...years)}` : undefined, variableMeasured: label });
+  }) };
   const breadcrumbs = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: copy.categories[0], item: `${origin}/${locale}` }, { "@type": "ListItem", position: 2, name: title, item: pageUrl }] };
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />

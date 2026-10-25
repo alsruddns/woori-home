@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Locale } from "@/lib/site";
+import { origin, type Locale } from "@/lib/site";
 import { indicators } from "@/lib/data-platform/registry";
 import { countryByCode, countryName } from "@/lib/data-platform/countries";
 import { countryCopy } from "@/lib/data-platform/country-copy";
@@ -7,6 +7,7 @@ import { unitFor } from "@/lib/data-platform/country-units";
 import { platformCopy } from "@/lib/data-platform/locales";
 import { getSnapshotMetadata, latestForCountry, observationsFor } from "@/lib/data-platform/snapshot";
 import { CountryTrendChart } from "./country-charts";
+import { createCountryDatasetDescription, validateDatasetSchema } from "@/lib/data-platform/dataset-schema.mjs";
 
 const trendIds = ["population", "gdp", "fertility", "life-expectancy"] as const;
 const coreIds = new Set(["population", "gdp", "gdp-per-capita", "fertility", "life-expectancy", "population-growth"]);
@@ -29,7 +30,10 @@ export function CountryDashboard({ locale, countryCode }: { locale: Locale; coun
   const trends = trendIds.map((id) => ({ indicator: indicators.find((item) => item.id === id)!, series: observationsFor(indicators.find((item) => item.id === id)!.code, country.iso3).map(({ year, value, unit }) => ({ year, value, unit })) }));
   const allYears = indicators.flatMap((indicator) => observationsFor(indicator.code, country.iso3).map((row) => row.year));
   const updated = latestRows.map((row) => row.observation?.lastCheckedAt).filter(Boolean).sort().at(-1) ?? snapshot.generatedAt;
-  const schema = { "@context": "https://schema.org", "@type": "Dataset", name: `${name} · ${copy.dashboard}`, description: copy.intro, creator: { "@type": "Organization", name: "World Bank" }, temporalCoverage: allYears.length ? `${Math.min(...allYears)}/${Math.max(...allYears)}` : undefined, spatialCoverage: { "@type": "Place", name }, variableMeasured: latestRows.map(({ indicator }) => indicator.label[locale]), license: "https://data.worldbank.org/summary-terms-of-use" };
+  const datasetUrl = `${origin}/${locale}/countries/${country.code}`;
+  const availableMeasures = latestRows.filter(({ observation }) => observation).map(({ indicator }) => indicator.label[locale] ?? indicator.label.en);
+  const period = allYears.length ? `${Math.min(...allYears)}–${Math.max(...allYears)}` : "";
+  const schema = validateDatasetSchema({ "@context": "https://schema.org", "@type": "Dataset", name: `${name} · ${copy.dashboard}`, description: createCountryDatasetDescription({ summary: copy.intro, country: name, iso3: country.iso3, measuresLabel: platform.indicators, measures: availableMeasures, periodLabel: platform.referenceYear, period, source: copy.sourceNote, caveat: copy.dataGapNote, updatedLabel: copy.updatedOn, updatedAt: new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(updated)) }), url: datasetUrl, creator: { "@type": "Organization", name: "WOORI.TODAY", url: origin }, provider: { "@type": "Organization", name: "World Bank", url: "https://www.worldbank.org/" }, isBasedOn: { "@type": "CreativeWork", name: "World Development Indicators", url: "https://databank.worldbank.org/source/world-development-indicators" }, temporalCoverage: allYears.length ? `${Math.min(...allYears)}/${Math.max(...allYears)}` : undefined, spatialCoverage: { "@type": "Place", name }, variableMeasured: availableMeasures });
 
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, "\\u003c") }} />
