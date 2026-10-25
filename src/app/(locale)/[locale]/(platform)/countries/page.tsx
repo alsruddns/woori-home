@@ -16,7 +16,7 @@ export default async function CountriesPage({ params, searchParams }: { params: 
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
   const selected = query.countries;
-  const requestedCountries = typeof selected === "string" ? selected.split(",").slice(0, 21) : [];
+  const requestedCountries = typeof selected === "string" ? selected.split(",").slice(0, 6) : [];
   const indicator = query.indicator;
   return <CountryComparison locale={locale} requestedCountries={requestedCountries} requestedIndicator={indicator} />;
 }

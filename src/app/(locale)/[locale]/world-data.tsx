@@ -2,7 +2,7 @@ import Link from "next/link";
 import { origin, type Locale } from "@/lib/site";
 import { platformCopy } from "@/lib/data-platform/locales";
 import { indicators } from "@/lib/data-platform/registry";
-import { getSnapshotMetadata, latestByCountry, latestForCountry, observationsFor } from "@/lib/data-platform/snapshot";
+import { aggregateCountryCodes, getSnapshotMetadata, latestByCountry, latestForCountry, observationsFor } from "@/lib/data-platform/snapshot";
 import { countryByCode, countryCodeForIso3, countryName } from "@/lib/data-platform/countries";
 import { unitFor } from "@/lib/data-platform/country-units";
 import { CountryComparisonDashboard } from "./country-comparison";
@@ -10,6 +10,7 @@ import type { CountrySeries } from "./country-charts";
 import { energyAccessCopy, energyPageCopy } from "@/lib/data-platform/energy-copy";
 import { rankCountryObservations } from "@/lib/data-platform/rankings";
 import { rankingCopy } from "@/lib/data-platform/ranking-copy";
+import { rankingScopeCopy } from "@/lib/data-platform/ranking-scope-copy";
 import { RankingControls } from "./ranking-controls";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
 import { resolveWorldBankDataSource, worldBankIndicatorSource } from "../../../lib/db/world-bank-mode.mjs";
@@ -32,14 +33,14 @@ export function WorldOverview({ locale, requestedIndicator, requestedYear, reque
   const copy = platformCopy[locale];
   const ranking = rankingCopy[locale];
   const meta = getSnapshotMetadata();
-  const count = latestByCountry("SP.POP.TOTL").filter((item) => item.country !== "WLD").length;
-  const rankable = indicators.filter((item) => latestByCountry(item.code).some((row) => row.country !== "WLD"));
+  const count = latestByCountry("SP.POP.TOTL").filter((item) => !aggregateCountryCodes.has(item.country)).length;
+  const rankable = indicators.filter((item) => latestByCountry(item.code).some((row) => !aggregateCountryCodes.has(row.country)));
   const selectedIndicator = rankable.find((item) => item.code === requestedIndicator) ?? rankable[0];
-  const yearRows = selectedIndicator ? observationsFor(selectedIndicator.code).filter((row) => row.country !== "WLD") : [];
+  const yearRows = selectedIndicator ? observationsFor(selectedIndicator.code).filter((row) => !aggregateCountryCodes.has(row.country)) : [];
   const years = [...new Set(yearRows.map((row) => row.year))].sort((a, b) => b - a);
   const year = years.includes(Number(requestedYear)) ? Number(requestedYear) : years[0];
   const direction = requestedDirection === "asc" ? "asc" : "desc";
-  const ranked = selectedIndicator && year ? rankCountryObservations(yearRows, year, direction) : [];
+  const ranked = selectedIndicator && year ? rankCountryObservations(yearRows, year, direction, aggregateCountryCodes) : [];
   const structuredData = { "@context": "https://schema.org", "@type": "WebPage", name: copy.overview, description: copy.description, url: `${origin}/${locale}/world`, inLanguage: locale };
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
@@ -57,7 +58,7 @@ export function WorldOverview({ locale, requestedIndicator, requestedYear, reque
       })}</div>
     </section>
     <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">SP.POP.TOTL</span><h2>{copy.compare}: {platformCopy[locale].categories[3]}</h2></div><span>{copy.referenceYear} · {copy.latest}</span></div><DataTable locale={locale} indicator="SP.POP.TOTL" /></section>
-    <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{ranking.included}: {count}</span><h2>{ranking.title}</h2></div><span>{ranking.scope}</span></div>
+    <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{ranking.included}: {count}</span><h2>{ranking.title}</h2></div><span>{rankingScopeCopy[locale]}</span></div>
       {selectedIndicator && year ? <RankingControls locale={locale} indicators={rankable} years={years} selectedIndicator={selectedIndicator.code} selectedYear={year} selectedDirection={direction} /> : null}
       {ranked.length ? <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{ranking.rank}</th><th>{ranking.country}</th><th>{ranking.year}</th><th>{ranking.value} ({selectedIndicator ? unitFor(locale, selectedIndicator) : ""})</th></tr></thead><tbody>{ranked.map((row) => { const code = countryCodeForIso3(row.country); return <tr key={row.country}><td>{row.rank}</td><th scope="row">{code && countryByCode(code) ? <Link href={`/${locale}/countries/${code}`}>{localizedCountryName(row.country, row.countryName, locale)}</Link> : localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>; })}</tbody></table></div> : <p className="platform-empty-row">{ranking.noData}</p>}
       <p className="platform-data-note">{ranking.included}: {ranked.length} · {ranking.missing}: {Math.max(count - ranked.length, 0)}. Tied values share the same rank; missing values are omitted.</p>
@@ -115,7 +116,7 @@ export function IndicatorCategory({ locale, category, title }: { locale: Locale;
     <header className="platform-page-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank WDI</span><h1>{title}</h1><p>{energy?.intro ?? copy.overviewBody}</p></header>
     <section className="platform-indicator-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{title}</h2></div><span>{copy.referenceYear}</span></div>
       <div className="platform-indicator-grid">{entries.map((indicator) => {
-        const latest = latestByCountry(indicator.code).filter((item) => item.country !== "WLD").sort((a, b) => b.year - a.year)[0];
+        const latest = latestByCountry(indicator.code).filter((item) => !aggregateCountryCodes.has(item.country)).sort((a, b) => b.year - a.year)[0];
         return <Link className="platform-indicator-card" href={`/${locale}/${category}/${indicator.id}`} key={indicator.id}>
           <span className="platform-card-label">{indicator.label[locale]}</span>
           <strong>{latest ? format(latest.value, locale, 2) : copy.missing}</strong>
@@ -132,7 +133,7 @@ export function IndicatorCategory({ locale, category, title }: { locale: Locale;
 export async function CountryComparison({ locale, requestedCountries, requestedIndicator }: { locale: Locale; requestedCountries?: string[]; requestedIndicator?: string }) {
   const copy = platformCopy[locale];
   const validSelection = [...new Set(requestedCountries?.map((code) => code.toLowerCase()).filter((code) => countryByCode(code)) ?? [])];
-  const initialCountries = validSelection && validSelection.length >= 2 && validSelection.length <= 20 ? [...new Set(validSelection)] : ["kr", "us", "jp", "cn", "de", "gb", "fr", "in", "ca", "au"];
+  const initialCountries = validSelection.length >= 2 && validSelection.length <= 5 ? validSelection : ["kr", "us", "jp"];
   const selectedSource = resolveWorldBankDataSource().source as "json" | "db";
   const requestedIndicatorMeta = indicators.find((item) => item.id === requestedIndicator);
   let initialIndicatorId = requestedIndicatorMeta?.id ?? "population";
@@ -166,7 +167,7 @@ export function EmptyCategory({ locale, title }: { locale: Locale; title: string
 
 function DataTable({ locale, indicator, limit = 12 }: { locale: Locale; indicator: string; limit?: number }) {
   const copy = platformCopy[locale];
-  const rows = latestByCountry(indicator).filter((row) => row.country !== "WLD").slice(0, limit);
+  const rows = latestByCountry(indicator).filter((row) => !aggregateCountryCodes.has(row.country)).slice(0, limit);
   return <div className="platform-table-scroll"><table className="platform-table"><thead><tr><th>{copy.country}</th><th>{copy.year}</th><th>{copy.value}</th></tr></thead><tbody>{rows.map((row) => { const code = countryCodeForIso3(row.country); return <tr key={row.country}><th scope="row">{code ? <Link href={`/${locale}/countries/${code}`}>{localizedCountryName(row.country, row.countryName, locale)}</Link> : localizedCountryName(row.country, row.countryName, locale)}</th><td>{row.year}</td><td>{format(row.value, locale, 2)}</td></tr>; })}</tbody></table>{rows.length === 0 ? <p className="platform-empty-row">{copy.missing}</p> : null}</div>;
 }
 

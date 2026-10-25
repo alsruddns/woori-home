@@ -9,7 +9,7 @@ export async function handleWorldBankComparison(request: Request) {
   const rawCodes = (url.searchParams.get("countries") ?? "").split(",").map((value) => value.toLowerCase()).filter(Boolean);
   const codes = [...new Set(rawCodes)];
   const indicator = indicators.find((item) => item.id === url.searchParams.get("indicator"));
-  if (rawCodes.length > 20 || codes.length < 2 || codes.length > 20 || codes.some((code) => !countryByCode(code)) || !indicator) {
+  if (rawCodes.length > 5 || codes.length < 2 || codes.length > 5 || codes.some((code) => !countryByCode(code)) || !indicator) {
     return Response.json({ error: "Invalid comparison selection" }, { status: 400 });
   }
 

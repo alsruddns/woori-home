@@ -2,6 +2,9 @@ import snapshotData from "@/data/world-bank.json";
 import type { DataObservation, DataSnapshot } from "./model";
 
 const storedSnapshot = snapshotData as DataSnapshot;
+export const aggregateCountryCodes = new Set(
+  (storedSnapshot.countryMetadata ?? []).filter((country) => country.isAggregate).map((country) => country.iso3),
+);
 const snapshot = {
   ...storedSnapshot,
   observations: storedSnapshot.observations.map((row) => ({ ...row, ...storedSnapshot.indicatorMetadata[row.indicator] })),
