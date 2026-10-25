@@ -11,6 +11,7 @@ const dashboardHome = await readFile(new URL("../src/app/(locale)/[locale]/page.
 const platformHome = await readFile(new URL("../src/app/(locale)/[locale]/platform-home.tsx", import.meta.url), "utf8");
 const categoryRoute = await readFile(new URL("../src/app/(locale)/[locale]/(platform)/[category]/page.tsx", import.meta.url), "utf8");
 const stockPage = await readFile(new URL("../src/app/(locale)/[locale]/stock-market-dashboard.tsx", import.meta.url), "utf8");
+const cryptoPage = await readFile(new URL("../src/app/(locale)/[locale]/crypto-dashboard.tsx", import.meta.url), "utf8");
 const companyFactsPanel = await readFile(new URL("../src/app/(locale)/[locale]/company-fundamentals-panel.tsx", import.meta.url), "utf8");
 const companyFactsPeriods = await readFile(new URL("../src/lib/data-platform/company-facts-period-copy.ts", import.meta.url), "utf8");
 const companyFactsStatus = await readFile(new URL("../src/lib/data-platform/company-facts-status-copy.ts", import.meta.url), "utf8");
@@ -136,7 +137,9 @@ test("crypto search labels cover all locales and the market overview leads with 
   assert.match(financeDashboard, /CompanyFinancialTreemap locale=\{locale\}/);
   assert.match(financeDashboard, /router\.push\(`\/\$\{locale\}\/stocks#company-fundamentals-title`\)/);
   assert.doesNotMatch(financeDashboard, /fetch\(/);
+  assert.match(cryptoPage, /<h1>\{ui\.directoryTitle\}<\/h1>/);
   assert.match(categoryPage, /FinancialOverviewDashboard locale=\{locale\}/);
+  assert.match(categoryPage, /cryptoDirectoryCopy\[locale\]\.directoryTitle/);
   assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
   assert.match(companyFactsPanel, /companySearchAliases\(row\.ticker\)/);
   assert.match(companyFactsPanel, /locale === "ko"/);

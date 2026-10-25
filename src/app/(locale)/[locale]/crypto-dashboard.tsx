@@ -38,8 +38,8 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
   }, [search]);
 
   return <>
-    <nav className="platform-breadcrumb" aria-label={copy.nav}><Link href={`/${locale}`}>{copy.nav}</Link><span>/</span><span>{copy.title}</span></nav>
-    <header className="platform-page-heading crypto-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1></header>
+    <nav className="platform-breadcrumb" aria-label={ui.directoryTitle}><Link href={`/${locale}`}>{copy.nav}</Link><span>/</span><span>{ui.directoryTitle}</span></nav>
+    <header className="platform-page-heading crypto-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{ui.directoryTitle}</h1></header>
 
     <section className="crypto-directory" aria-labelledby="crypto-directory-title">
       <header className="crypto-directory-heading">
