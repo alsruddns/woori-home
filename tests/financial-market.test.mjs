@@ -258,6 +258,32 @@ test("SEC facts 429 retry honors Retry-After once and does not retry other failu
   assert.equal(callsAfterAbort, 1);
 });
 
+test("SEC facts session cache reuses fresh responses, expires them, and keeps URLs separate", async () => {
+  const values = new Map();
+  const storage = {
+    get length() { return values.size; },
+    key(index) { return [...values.keys()][index] ?? null; },
+    getItem(key) { return values.get(key) ?? null; },
+    setItem(key, value) { values.set(key, value); },
+    removeItem(key) { values.delete(key); },
+  };
+  let now = 1_000;
+  let calls = 0;
+  const fetchImpl = async (url) => { calls += 1; return Response.json({ url, rows: [1, 2] }); };
+  const url = "/portal-api/finance/companies?period=annual&pageSize=200";
+  const first = await fetchCompanyFacts(url, { fetchImpl, storage, now: () => now });
+  assert.deepEqual(await first.json(), { url, rows: [1, 2] });
+  const second = await fetchCompanyFacts(url, { fetchImpl, storage, now: () => now });
+  assert.deepEqual(await second.json(), { url, rows: [1, 2] });
+  assert.equal(second.headers.get("x-financial-cache"), "SESSION");
+  assert.equal(calls, 1);
+  await fetchCompanyFacts(`${url}&fiscalYear=2025`, { fetchImpl, storage, now: () => now });
+  assert.equal(calls, 2);
+  now += 120_000;
+  await fetchCompanyFacts(url, { fetchImpl, storage, now: () => now });
+  assert.equal(calls, 3);
+});
+
 test("industry zoom labels cover all 26 Portal locales", async () => {
   const source = await readFile(new URL("../src/lib/data-platform/company-financial-industry-copy.ts", import.meta.url), "utf8");
   const keys = [...source.matchAll(/^\s*(?:"([^"]+)"|([a-z-]+)):\s*\{/gm)].map((match) => match[1] ?? match[2]);
