@@ -208,7 +208,13 @@ export const messages = {
 } as const;
 
 export type Messages = (typeof messages)[Locale];
-export const alternates = (path = "") => ({ languages: { ...Object.fromEntries(localeConfig.map((item) => [item.hreflang, `${origin}/${item.route}${path}`])), "x-default": `${origin}/ko${path}` } });
+export const alternatesForLocales = (path = "", selectedLocales: readonly Locale[] = locales, defaultLocale: Locale = "en") => ({
+  languages: {
+    ...Object.fromEntries(selectedLocales.map((locale) => [hreflangFor(locale), `${origin}/${locale}${path}`])),
+    "x-default": `${origin}/${defaultLocale}${path}`,
+  },
+});
+export const alternates = (path = "") => alternatesForLocales(path, locales, "ko");
 
 const calculatorEntries = [
   { slug: "compound-interest", category: "finance", names: { ko: "복리 계산기", en: "Compound interest", ja: "複利計算", zh: "复利计算器" } },
