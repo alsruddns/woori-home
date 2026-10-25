@@ -15,6 +15,7 @@ import { ScienceDashboard } from "../../science-dashboard";
 import { CryptoDashboard, CryptoDashboardLoading } from "../../crypto-dashboard";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-copy";
+import { cryptoDirectoryCopy } from "@/lib/data-platform/crypto-directory-copy";
 import { FinancialOverviewDashboard } from "../../financial-overview-dashboard";
 
 const valid = new Set(["economy", "stocks", "crypto", "population", "energy", "science", "about", "finance"]);
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const { locale, category } = await params;
   if (!isLocale(locale) || !valid.has(category)) notFound();
   const copy = platformCopy[locale];
-  const title = category === "finance" ? financialOverviewCopy[locale].title : category === "stocks" ? stockCopy[locale].title : category === "crypto" ? cryptoCopy[locale].title : category === "about" ? portalContent[locale].aboutTitle : category === "science" ? scienceCopy[locale].title : copy.categories[categoryIndex[category]];
+  const title = category === "finance" ? financialOverviewCopy[locale].title : category === "stocks" ? stockCopy[locale].title : category === "crypto" ? cryptoDirectoryCopy[locale].directoryTitle : category === "about" ? portalContent[locale].aboutTitle : category === "science" ? scienceCopy[locale].title : copy.categories[categoryIndex[category]];
   const description = category === "finance" ? financialOverviewCopy[locale].description : category === "stocks" ? stockCopy[locale].description : category === "crypto" ? cryptoCopy[locale].unavailableBody : category === "about" ? portalContent[locale].about : category === "science" ? scienceCopy[locale].description : category === "energy" ? energyPageCopy[locale].intro : copy.overviewBody;
   const path = `/${category}`; const url = `${origin}/${locale}${path}`;
   const index = category === "finance" || category === "about" || category === "economy" || category === "population" || category === "energy" || category === "science";
