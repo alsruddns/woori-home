@@ -7,7 +7,8 @@ import pg from "pg";
 import { resolveDatabaseTarget } from "../db/connection-safety.mjs";
 import { collectFinancialProviderSnapshot } from "../../src/lib/data-platform/financial-provider.mjs";
 import { getFinancialProvider, listFinancialProviders } from "../../src/lib/data-platform/providers/catalog.mjs";
-import { canCollectFinancialPrices } from "../../src/lib/data-platform/financial-rights.mjs";
+import { canCollectCryptoDailySnapshots, canCollectFinancialPrices } from "../../src/lib/data-platform/financial-rights.mjs";
+import { isDailySnapshotReady, previousDailyReferenceDate } from "../../src/lib/data-platform/crypto-daily.mjs";
 import { normalizeCurrentQuoteRows } from "../../src/lib/data-platform/financial-quotes.mjs";
 
 function parseOptions(args) {
@@ -36,13 +37,22 @@ async function runCollection(command, args) {
   const providerId = options.provider;
   const provider = getFinancialProvider(providerId);
   const market = options.market ?? provider?.market ?? "krw";
-  const limit = Math.max(1, Math.min(8, Math.trunc(Number(options.limit ?? 8)) || 8));
+  const maximumLimit = provider?.assetType === "crypto" ? 12 : 8;
+  const limit = Math.max(1, Math.min(maximumLimit, Math.trunc(Number(options.limit ?? maximumLimit)) || maximumLimit));
   if (!provider || !provider.marketTimezone || !provider.datasetId) throw new Error("A supported provider with a configured daily-price adapter is required. Use `pnpm data:financial:providers` to view the catalog.");
   if (market !== provider.market) throw new Error(`This adapter only represents its own ${provider.market} market; quote currencies are never combined.`);
   if (options.date && (options["start-date"] || options["end-date"])) throw new Error("Use either --date or the --start-date/--end-date pair, not both.");
   if ((options["start-date"] && !options["end-date"]) || (!options["start-date"] && options["end-date"])) throw new Error("Both --start-date and --end-date are required together.");
-  const startDate = options.date ?? options["start-date"] ?? dateInZone(new Date(Date.now() - 86_400_000), provider.marketTimezone);
-  const endDate = options.date ?? options["end-date"] ?? startDate;
+  let startDate = options.date ?? options["start-date"] ?? dateInZone(new Date(Date.now() - 86_400_000), provider.marketTimezone);
+  let endDate = options.date ?? options["end-date"] ?? startDate;
+  if (provider.assetType === "crypto") {
+    if (options["start-date"] || options["end-date"]) throw new Error("Crypto collection is daily-only; use one finalized prior-calendar-day snapshot.");
+    if (!isDailySnapshotReady(new Date(), provider.marketTimezone, 10)) throw new Error("The prior daily candle is not considered final until 10:00 in the market timezone.");
+    const expectedDate = previousDailyReferenceDate(new Date(), provider.marketTimezone);
+    if (options.date && options.date !== expectedDate) throw new Error("Crypto daily collection is restricted to the prior finalized calendar day.");
+    startDate = expectedDate;
+    endDate = expectedDate;
+  }
   const dryRun = command === "dry-run" || options["dry-run"] === true;
 
   const target = resolveDatabaseTarget({ target: "development", databaseUrl: process.env.DATABASE_URL });
@@ -52,7 +62,7 @@ async function runCollection(command, args) {
   const { rows: [source] } = await pool.query(`select s.id,s.attribution,s.source_url,s.financial_rights,s.terms_version,s.reviewed_at,s.review_due_at,s.collection_enabled,d.id as dataset_id
       from data_sources s join datasets d on d.source_id=s.id where s.id=$1 and d.id=$2`, [provider.id, provider.datasetId]);
     if (!source) throw new Error("Collection is disabled: the provider and dataset must be reviewed and registered in the local development DB first.");
-    if (!canCollectFinancialPrices(source)) {
+    if (provider.assetType === "crypto" ? !canCollectCryptoDailySnapshots(source) : !canCollectFinancialPrices(source)) {
       throw new Error("Collection is disabled: activate this provider only after API access, database storage, long-term retention, attribution, terms version, and a current rights review are recorded.");
     }
     provider.licenseStatus = "verified";
@@ -63,12 +73,18 @@ async function runCollection(command, args) {
       (dataset_id,started_at,status,scope) values ($1,now(),'partial',$2) returning id`, [provider.datasetId, JSON.stringify({ kind: "financial-collection", provider: provider.id, market, startDate, endDate, limit, dryRun })]);
     runId = run.id;
     const snapshot = await collectFinancialProviderSnapshot(provider, { startDate, endDate, marketTimezone: provider.marketTimezone, limit }, { maxAttempts: 3, timeoutMs: 15_000, maxRecords: 2_000 });
-    if (typeof provider.fetchTickers === "function") {
+    if (provider.assetType !== "crypto" && typeof provider.fetchTickers === "function") {
       const markets = snapshot.assets.map((asset) => asset.metadata?.market ?? asset.sourceAssetId);
       const quotes = await provider.fetchTickers(markets, { signal: AbortSignal.timeout(30_000) });
       snapshot.prices.push(...normalizeCurrentQuoteRows(snapshot.assets, quotes, { fetchedAt: new Date().toISOString() }));
     }
-    if (options.verbose) console.log(`Normalized ${snapshot.assets.length} assets and ${snapshot.prices.length} daily candles from ${provider.id}.`);
+    if (provider.assetType === "crypto" && snapshot.prices.some((price) => price.referenceDate !== startDate || price.referenceTimezone !== provider.marketTimezone)) {
+      throw new Error("Crypto snapshot did not match the finalized prior-day boundary.");
+    }
+    if (options.verbose) {
+      console.log(`Normalized ${snapshot.assets.length} assets and ${snapshot.prices.length} daily candles from ${provider.id}; live crypto ticker calls are disabled.`);
+      if (snapshot.failures.length) console.log(`Unavailable crypto markets: ${snapshot.failures.map(({ symbol, reason }) => `${symbol}:${reason}`).join(", ")}`);
+    }
 
     if (!dryRun) {
       const directory = await mkdtemp(path.join(os.tmpdir(), "woori-financial-"));

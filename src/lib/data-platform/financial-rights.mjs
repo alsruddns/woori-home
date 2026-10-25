@@ -18,6 +18,25 @@ export function canCollectFinancialPrices(source, now = new Date()) {
     && Boolean(source.attribution && (source.source_url ?? source.sourceUrl));
 }
 
+/** Crypto daily candles need an explicit scope review in addition to generic API/storage rights. */
+export function canCollectCryptoDailySnapshots(source, now = new Date()) {
+  const rights = source?.financial_rights ?? source?.financialRights ?? {};
+  return Boolean(source?.collection_enabled ?? source?.collectionEnabled)
+    && rights.dailySnapshot === "confirmed"
+    && ["apiAccess", "dbStorage", "longTermRetention"].every((right) => hasFinancialRight(source, right, now))
+    && Boolean(source.attribution && (source.source_url ?? source.sourceUrl));
+}
+
+/** Public crypto snapshots are hidden unless the exact daily, ad-supported, visitor API scope is current. */
+export function canPublishCryptoDailySnapshots(source, now = new Date()) {
+  const rights = source?.financial_rights ?? source?.financialRights ?? {};
+  return ["apiAccess", "publicDisplay", "userApi", "dbStorage", "longTermRetention", "derivedVisualization"]
+    .every((right) => hasFinancialRight(source, right, now))
+    && rights.dailySnapshot === "confirmed"
+    && rights.adSupportedDisplay === "confirmed"
+    && Boolean(source.attribution && (source.source_url ?? source.sourceUrl));
+}
+
 export function canPublishFinancialMarketData(source, now = new Date()) {
   return ["apiAccess", "publicDisplay", "userApi"].every((right) => hasFinancialRight(source, right, now));
 }

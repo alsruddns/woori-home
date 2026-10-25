@@ -5,7 +5,7 @@ import path from "node:path";
 import pg from "pg";
 import { resolveDatabaseTarget } from "../db/connection-safety.mjs";
 import { validateMarketPriceRecord } from "../../src/lib/data-platform/financial-market.mjs";
-import { canCollectFinancialPrices } from "../../src/lib/data-platform/financial-rights.mjs";
+import { canCollectCryptoDailySnapshots, canCollectFinancialPrices } from "../../src/lib/data-platform/financial-rights.mjs";
 
 const options = { dryRun: false, file: null };
 for (const arg of process.argv.slice(2)) {
@@ -32,21 +32,32 @@ for (const asset of input.assets) {
   if (!/^(stock|crypto|metal|energy|agriculture|fx|rate|index)$/.test(asset.assetType) || !asset.symbol || !asset.name || !/^[A-Z]{3,8}$/.test(asset.currency) || !asset.unit || !asset.timezone) throw new Error(`Invalid asset metadata for ${asset.sourceAssetId}.`);
 }
 const uniquePriceKeys = new Set();
+const cryptoReferenceDates = new Set();
+const cryptoAssets = new Map(input.assets.filter((asset) => asset.assetType === "crypto").map((asset) => [asset.sourceAssetId, asset]));
 for (const price of input.prices) {
   if (!sourceAssetIds.has(price.sourceAssetId)) throw new Error(`Unknown sourceAssetId in prices: ${price.sourceAssetId}.`);
   const result = validateMarketPriceRecord({ ...price, assetId: price.sourceAssetId, sourceId: input.sourceId, datasetId: input.datasetId });
   if (!result.ok) throw new Error(`Invalid price record (${price.sourceAssetId}, ${price.referenceDate}): ${result.reason}.`);
   const key = `${price.sourceAssetId}\u0000${price.referenceDate}\u0000${price.priceKind}`;
   if (uniquePriceKeys.has(key)) throw new Error(`Duplicate price row in import: ${price.sourceAssetId} ${price.referenceDate} ${price.priceKind}.`);
+  if (cryptoAssets.size) {
+    const asset = cryptoAssets.get(price.sourceAssetId);
+    if (!asset || input.assets.some((item) => item.assetType !== "crypto") || price.priceKind !== "close" || price.referenceTimezone !== asset.timezone) {
+      throw new Error("Crypto imports accept only exchange-specific daily close rows matching the asset timezone.");
+    }
+    cryptoReferenceDates.add(price.referenceDate);
+  }
   uniquePriceKeys.add(key);
 }
+if (cryptoAssets.size && cryptoReferenceDates.size !== 1) throw new Error("Crypto daily imports must contain one finalized reference date per run.");
 
 const pool = new pg.Pool({ connectionString: target.url, max: 1, connectionTimeoutMillis: 4000, idleTimeoutMillis: 10000, allowExitOnIdle: true });
 const runId = randomUUID();
 try {
   const { rows: [source] } = await pool.query(`select id,financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled,attribution,source_url from data_sources where id=$1`, [input.sourceId]);
   if (!source || !source.attribution || !source.source_url) throw new Error("Import is blocked: the source must exist with attribution and a source URL.");
-  if (!canCollectFinancialPrices(source)) {
+  const hasCryptoAssets = input.assets.some((asset) => asset.assetType === "crypto");
+  if (hasCryptoAssets ? !canCollectCryptoDailySnapshots(source) : !canCollectFinancialPrices(source)) {
     throw new Error("Import is blocked: database storage and long-term retention must be confirmed, current, and individually enabled.");
   }
   const { rows: [dataset] } = await pool.query("select id,source_id from datasets where id=$1", [input.datasetId]);

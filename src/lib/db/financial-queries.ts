@@ -1,6 +1,7 @@
 import "server-only";
 import { getFinancialReadOnlyPool } from "./financial-readonly";
 import { SEC_TARGETS } from "../data-platform/providers/sec-targets.mjs";
+import { calculateMarketChange } from "../data-platform/financial-market.mjs";
 
 const sortColumns: Record<string, string> = {
   symbol: "a.symbol", name: "a.name", close: "latest.close", changePercent: '"changePercent"', quoteChangePercent: "quote.quote_change_percent",
@@ -95,6 +96,44 @@ export async function getFinancialDataStatus() {
   const status = result.rows[0];
   const state = status.approvedProviderCount === 0 ? "no-approved-provider" : status.approvedAssetCount === 0 ? "no-approved-assets" : status.priceObservationCount === 0 ? "no-observations" : "available";
   return { state, ...status };
+}
+
+const cryptoDailyPublishRights = `s.license_status='verified'
+  and s.financial_rights->>'apiAccess'='confirmed'
+  and s.financial_rights->>'publicDisplay'='confirmed'
+  and s.financial_rights->>'userApi'='confirmed'
+  and s.financial_rights->>'dbStorage'='confirmed'
+  and s.financial_rights->>'longTermRetention'='confirmed'
+  and s.financial_rights->>'derivedVisualization'='confirmed'
+  and s.financial_rights->>'dailySnapshot'='confirmed'
+  and s.financial_rights->>'adSupportedDisplay'='confirmed'
+  and s.reviewed_at is not null and s.terms_version is not null and s.review_due_at > now()`;
+
+export async function getCryptoDailySnapshot(market: "krw" | "usdt", referenceDate: string) {
+  const fromDate = new Date(Date.parse(`${referenceDate}T00:00:00.000Z`) - 30 * 86_400_000).toISOString().slice(0, 10);
+  const result = await getFinancialReadOnlyPool().query(`with daily as (
+      select a.id as "assetId",a.symbol,a.name,a.venue,a.currency,a.timezone as "referenceTimezone",
+        p.reference_date as "referenceDate",p.close::text as close,p.volume::text as volume,p.fetched_at as "fetchedAt",
+        lag(p.reference_date) over (partition by a.id,s.id order by p.reference_date) as "previousReferenceDate",
+        lag(p.close) over (partition by a.id,s.id order by p.reference_date)::text as "previousClose",
+        s.id as "sourceId",s.name as "sourceName",s.source_url as "sourceUrl",s.attribution
+      from financial_daily_prices p
+      join financial_assets a on a.id=p.asset_id and a.source_id=p.source_id and a.asset_type='crypto' and a.currency=$1 and a.is_active=true
+      join data_sources s on s.id=p.source_id and ${cryptoDailyPublishRights}
+      join datasets d on d.id=p.dataset_id and d.source_id=s.id and d.category='crypto'
+      where p.price_kind='close' and p.reference_date >= $2 and p.reference_date <= $3
+        and a.symbol=any($4::text[])
+    )
+    select * from daily order by symbol asc,venue asc,"referenceDate" asc`, [market.toUpperCase(), fromDate, referenceDate,
+    ["BTC", "ETH", "XRP", "SOL", "DOGE", "ADA", "BNB", "TRX", "DOT", "LINK", "LTC", "AVAX"]]);
+  const previousDate = new Date(Date.parse(`${referenceDate}T00:00:00.000Z`) - 86_400_000).toISOString().slice(0, 10);
+  const historyStart = new Date(Date.parse(`${referenceDate}T00:00:00.000Z`) - 29 * 86_400_000).toISOString().slice(0, 10);
+  const history = result.rows.filter((row) => row.referenceDate >= historyStart);
+  const data = history.filter((row) => row.referenceDate === referenceDate).map((row) => ({
+    ...row,
+    changePercent: row.previousReferenceDate === previousDate ? calculateMarketChange(row.close, row.previousClose)?.changePercent ?? null : null,
+  }));
+  return { referenceDate, history, data };
 }
 
 export async function getFinancialProviderRuntimeStatus(providerIds: string[]) {

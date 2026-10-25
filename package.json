@@ -31,6 +31,7 @@
     "data:financial:collect": "node scripts/data/financial-market-command.mjs collect",
     "data:financial:dry-run": "node scripts/data/financial-market-command.mjs dry-run",
     "data:financial:probe": "node scripts/data/financial-market-probe.mjs",
+    "data:financial:crypto:daily": "node scripts/data/financial-market-command.mjs collect --provider=upbit-quotation --market=krw --limit=12 --verbose",
     "data:financial:sec:collect": "node scripts/data/import-sec-company-facts.mjs",
     "data:financial:sec:dry-run": "node scripts/data/import-sec-company-facts.mjs --dry-run",
     "data:financial:sec:status:production": "node scripts/data/financial-sec-production.mjs status",

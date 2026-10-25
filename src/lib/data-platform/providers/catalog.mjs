@@ -15,7 +15,7 @@ export const financialProviderCatalog = [
     access: "free-public-api",
     apiKeyRequired: false,
     rightsStatus: "pending",
-    rights: { apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending" },
+    rights: { apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending", dailySnapshot: "pending", adSupportedDisplay: "pending" },
     collectionEnabled: false,
     sourceUrl: "https://docs.upbit.com/kr/reference",
     termsUrl: "https://docs.upbit.com/kr/v1.6.4",
@@ -24,7 +24,7 @@ export const financialProviderCatalog = [
   },
   {
     id: "bithumb-public", name: "Bithumb Public API", markets: ["crypto:KRW"], access: "free-public-api", apiKeyRequired: false,
-    rightsStatus: "pending", rights: { apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending" },
+    rightsStatus: "pending", rights: { apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending", dailySnapshot: "pending", adSupportedDisplay: "pending" },
     collectionEnabled: false, sourceUrl: "https://apidocs.bithumb.com/", termsUrl: "https://apidocs.bithumb.com/", datasetId: "bithumb-krw-daily-candles", createAdapter: createBithumbKrwProvider,
   },
   {
@@ -65,12 +65,12 @@ export const financialProviderCatalog = [
     databaseRetention: "not-confirmed",
     sourceUrl: "https://developers.binance.com/en/docs/products/spot/rest-api",
     termsUrl: "https://developers.binance.com/en/docs/products/spot/PROD-TERMS-OF-USE",
-    rights: { apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending" },
+    rights: { apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending", dailySnapshot: "pending", adSupportedDisplay: "pending" },
     collectionEnabled: false, datasetId: "binance-usdt-daily-candles", createAdapter: createBinanceSpotProvider,
   },
   {
     id: "coingecko-markets", name: "CoinGecko API (global aggregate)", markets: ["crypto:USD aggregate"], access: "free-demo-key / paid commercial plan",
-    apiKeyRequired: true, rightsStatus: "restricted-free-tier", rights: { apiAccess: "pending", publicDisplay: "restricted", dbStorage: "restricted", longTermRetention: "restricted", userApi: "restricted", csvRedistribution: "denied", derivedVisualization: "restricted" },
+    apiKeyRequired: true, rightsStatus: "restricted-free-tier", rights: { apiAccess: "pending", publicDisplay: "restricted", dbStorage: "restricted", longTermRetention: "restricted", userApi: "restricted", csvRedistribution: "denied", derivedVisualization: "restricted", dailySnapshot: "pending", adSupportedDisplay: "restricted" },
     collectionEnabled: false, sourceUrl: "https://www.coingecko.com/en/api", termsUrl: "https://www.coingecko.com/en/api_terms", datasetId: "coingecko-usd-daily-prices", createAdapter: createCoinGeckoProvider,
   },
   {

@@ -143,5 +143,6 @@ export async function collectFinancialProviderSnapshot(provider, request, option
     snapshotVersion: typeof response.snapshotVersion === "string" ? response.snapshotVersion : null,
     assets: response.assets,
     prices,
+    failures: Array.isArray(response.failures) ? response.failures.filter((item) => item && typeof item.symbol === "string" && /^[A-Z0-9]{2,12}$/.test(item.symbol) && typeof item.reason === "string").slice(0, 100) : [],
   };
 }

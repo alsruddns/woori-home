@@ -3,7 +3,8 @@ import { isValidMarketDate } from "../financial-market.mjs";
 const BASE_URL = "https://api.upbit.com/v1";
 const ASSETS = [
   ["BTC", "Bitcoin"], ["ETH", "Ethereum"], ["XRP", "XRP"], ["SOL", "Solana"],
-  ["BNB", "BNB"], ["DOGE", "Dogecoin"], ["ADA", "Cardano"], ["TRX", "TRON"],
+  ["DOGE", "Dogecoin"], ["ADA", "Cardano"], ["BNB", "BNB"], ["TRX", "TRON"],
+  ["DOT", "Polkadot"], ["LINK", "Chainlink"], ["LTC", "Litecoin"], ["AVAX", "Avalanche"],
 ];
 
 function utcBoundaryForKoreanDate(date, nextDay = false) {
@@ -77,16 +78,24 @@ export function createUpbitKrwDailyProvider({ fetchImpl = fetch, now = () => new
       if (!isValidMarketDate(startDate) || !isValidMarketDate(endDate) || startDate > endDate) throw new Error("Invalid Upbit date range");
       const assets = [];
       const prices = [];
+      const failures = [];
       const fetchedAt = now().toISOString();
 
       const boundedLimit = Math.max(1, Math.min(ASSETS.length, Math.trunc(Number(limit) || ASSETS.length)));
+      const marketRows = await requestJson("/market/all", { isDetails: "true" }, signal);
+      if (!Array.isArray(marketRows)) throw new Error("Invalid Upbit market payload");
+      const availableMarkets = new Set(marketRows.filter((row) => typeof row.market === "string").map((row) => row.market));
       for (const [symbol, name] of ASSETS.slice(0, boundedLimit)) {
         const market = `KRW-${symbol}`;
-        assets.push({ sourceAssetId: market, assetType: "crypto", symbol, name, venue: "upbit-krw", countryCode: "KR", currency: "KRW", unit: "coin", timezone: "Asia/Seoul", metadata: { market } });
+        if (!availableMarkets.has(market)) {
+          failures.push({ symbol, reason: "market-not-listed" });
+          continue;
+        }
 
         let cursor = utcBoundaryForKoreanDate(endDate, true);
         let finished = false;
         let pageCount = 0;
+        const startingPriceCount = prices.length;
         while (!finished && pageCount < 19) {
           await wait(110);
           const body = await requestJson("/candles/days", { market, to: cursor, count: 200 }, signal);
@@ -116,9 +125,14 @@ export function createUpbitKrwDailyProvider({ fetchImpl = fetch, now = () => new
           cursor = nextCursor;
           if (referenceFloor(body.at(-1)?.candle_date_time_kst) <= startDate || body.length < 200) finished = true;
         }
+        if (prices.length === startingPriceCount) {
+          failures.push({ symbol, reason: "daily-candle-unavailable" });
+          continue;
+        }
+        assets.push({ sourceAssetId: market, assetType: "crypto", symbol, name, venue: "upbit-krw", countryCode: "KR", currency: "KRW", unit: "coin", timezone: "Asia/Seoul", metadata: { market } });
       }
 
-      return { assets, prices, snapshotVersion: fetchedAt };
+      return { assets, prices, failures, snapshotVersion: fetchedAt };
     },
   };
 }

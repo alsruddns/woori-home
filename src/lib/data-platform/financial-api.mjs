@@ -99,3 +99,9 @@ export function parseFinancialHeatmapQuery(searchParams, type) {
   if (type === "crypto" && market && !["krw", "usd", "usdt"].includes(market)) return { ok: false, status: 400, error: "invalid_market_for_asset_type" };
   return { ok: true, market, referenceDate };
 }
+
+export function parseFinancialCryptoDailyQuery(searchParams) {
+  const market = searchParams.get("market") ?? "krw";
+  if (!["krw", "usdt"].includes(market)) return { ok: false, status: 400, error: "invalid_crypto_daily_market" };
+  return { ok: true, market };
+}

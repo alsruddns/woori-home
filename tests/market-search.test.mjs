@@ -11,14 +11,15 @@ test("company search aliases include Korean names, English names, and symbols", 
   assert.deepEqual(companySearchAliases("005930"), []);
 });
 
-test("crypto name search is local, case-insensitive, whitespace-normalized, and not price data", async () => {
+test("crypto name search is local and normalized while dated prices use one dedicated daily API request", async () => {
   const dashboard = await readFile(new URL("../src/app/(locale)/[locale]/crypto-dashboard.tsx", import.meta.url), "utf8");
   const lower = dashboard.toLowerCase();
   assert.match(dashboard, /비트코인/);
   assert.match(dashboard, /이더리움/);
   assert.match(dashboard, /normalize\(value\)/);
   assert.match(dashboard, /asset\.symbol, asset\.name, \.\.\.asset\.aliases/);
-  assert.doesNotMatch(lower, /fetch\(/);
+  assert.match(dashboard, /fetch\(`\/portal-api\/finance\/crypto\/daily\?market=\$\{market\}`/);
+  assert.doesNotMatch(lower, /fetch\([^)]*[?&]q=/);
   assert.doesNotMatch(lower, /currentquote|change24hpercent|marketcap/);
 });
 

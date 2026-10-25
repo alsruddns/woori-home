@@ -41,6 +41,7 @@ export type FinancialProvider = {
     snapshotVersion?: string;
     assets: FinancialProviderAsset[];
     prices: FinancialProviderPrice[];
+    failures?: { symbol: string; reason: string }[];
   }>;
 };
 
@@ -51,6 +52,7 @@ export type FinancialProviderSnapshot = {
   snapshotVersion: string | null;
   assets: FinancialProviderAsset[];
   prices: FinancialProviderPrice[];
+  failures: { symbol: string; reason: string }[];
 };
 
 export class FinancialProviderError extends Error {
