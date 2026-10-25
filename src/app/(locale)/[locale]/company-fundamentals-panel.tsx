@@ -33,7 +33,7 @@ function calculateYearOverYearGrowth(rows: CompanyFactRow[], metric: "revenue" |
   return (currentValue / previousValue - 1) * 100;
 }
 
-export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
+export function CompanyFundamentalsPanel({ locale, compactHeader = false }: { locale: Locale; compactHeader?: boolean }) {
   const copy = companyFactsCopy[locale];
   const periodCopy = companyFactsPeriodCopy[locale];
   const extra = companyFactsExtraCopy[locale];
@@ -120,21 +120,24 @@ export function CompanyFundamentalsPanel({ locale }: { locale: Locale }) {
     return values.map((value, index) => `${20 + index * 560 / (values.length - 1)},${150 - (value - min) / span * 125}`).join(" ");
   }, [trend]);
 
-  return <section className="company-fundamentals" aria-labelledby="company-fundamentals-title">
-    <header className="company-fundamentals-heading">
-      <div><span className="platform-eyebrow">SEC EDGAR</span><h2 id="company-fundamentals-title">{copy.title}</h2><p>{copy.description}</p></div>
-      <div className="company-facts-period-switch" role="group" aria-label={copy.period}>
-        <button type="button" aria-pressed={period === "annual"} onClick={() => setPeriod("annual")}>{periodCopy.annual} <small>10-K</small></button>
-        <button type="button" aria-pressed={period === "quarterly"} onClick={() => setPeriod("quarterly")}>{periodCopy.quarterly} <small>10-Q</small></button>
-      </div>
-    </header>
-    <p className="company-fundamentals-source">{period === "annual" ? periodCopy.annualBasis : periodCopy.quarterlyBasis} {copy.source}{summaryResult?.period === period ? <> {copy.filed}: {date(summaryResult.asOf)} · {statusCopy.factsLoaded}: {dateTime(summaryResult.dataObservedAt)} UTC</> : null}</p>
+  return <section className={`company-fundamentals${compactHeader ? " is-compact" : ""}`} aria-labelledby={compactHeader ? "company-financial-treemap-title" : "company-fundamentals-title"}>
+    {!compactHeader ? <>
+      <header className="company-fundamentals-heading">
+        <div><span className="platform-eyebrow">SEC EDGAR</span><h2 id="company-fundamentals-title">{copy.title}</h2><p>{copy.description}</p></div>
+        <div className="company-facts-period-switch" role="group" aria-label={copy.period}>
+          <button type="button" aria-pressed={period === "annual"} onClick={() => setPeriod("annual")}>{periodCopy.annual} <small>10-K</small></button>
+          <button type="button" aria-pressed={period === "quarterly"} onClick={() => setPeriod("quarterly")}>{periodCopy.quarterly} <small>10-Q</small></button>
+        </div>
+      </header>
+      <p className="company-fundamentals-source">{period === "annual" ? periodCopy.annualBasis : periodCopy.quarterlyBasis} {copy.source}{summaryResult?.period === period ? <> {copy.filed}: {date(summaryResult.asOf)} · {statusCopy.factsLoaded}: {dateTime(summaryResult.dataObservedAt)} UTC</> : null}</p>
+    </> : null}
     <CompanyFinancialTreemap locale={locale} period={period} onPeriodChange={setPeriod} onSelectCompany={(ticker) => {
       setSelectedTicker(ticker);
       document.getElementById("company-fundamentals-detail-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }} />
 
     {summaryState === "loading" ? <p role="status">{copy.loading}</p> : summaryState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : summary.length === 0 ? <p role="status">{copy.empty}</p> : <>
+      {compactHeader ? <h2 className="company-facts-summary-heading">{copy.title}</h2> : null}
       <div className="company-facts-controls">
         <label><span>{copy.company}</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={copy.company} /></label>
         <label><span>{stock.sectorLabel}</span><select value={sectorFilter} onChange={(event) => setSectorFilter(event.target.value)}>

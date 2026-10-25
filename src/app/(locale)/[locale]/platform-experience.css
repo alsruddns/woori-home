@@ -77,6 +77,11 @@ html[data-theme="light"] .platform-shell option {
 .financial-overview-heading h1 { margin-block: 5px; }
 .financial-dashboard .company-financial-treemap { margin-top: 10px; }
 .financial-dashboard .company-financial-treemap > header p { margin-bottom: 7px; }
+.stock-page-heading { padding-top: 16px; padding-bottom: 4px; }
+.company-fundamentals.is-compact { margin-top: 8px; padding: 8px; border: 0; background: transparent; }
+.company-fundamentals.is-compact .company-financial-treemap { margin: 8px 0; padding: 10px; }
+.company-fundamentals.is-compact .company-financial-treemap > header p { margin-bottom: 6px; }
+.company-facts-summary-heading { margin: 22px 0 10px; font-size: 18px; }
 
 .stock-price-availability {
   display: grid; gap: 6px; margin: 18px 0; padding: 14px 16px;
@@ -93,6 +98,8 @@ html[data-theme="light"] .platform-shell option {
   .financial-dashboard-markets a { flex: 1 1 140px; justify-content: center; }
   .financial-overview-heading { padding-top: 10px; padding-bottom: 4px; }
   .financial-overview-heading p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .stock-page-heading { padding-top: 10px; padding-bottom: 2px; }
+  .company-fundamentals.is-compact { margin-top: 4px; padding: 4px; }
   .financial-dashboard .company-financial-treemap-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
   .financial-dashboard .company-financial-treemap-controls > .company-facts-period-switch { grid-column: 1; grid-row: 1; width: auto; }
   .financial-dashboard .company-financial-treemap-controls > label:nth-of-type(1) { grid-column: 1; grid-row: 2; }
@@ -101,6 +108,14 @@ html[data-theme="light"] .platform-shell option {
   .financial-dashboard .company-financial-treemap-controls .company-financial-treemap-search { grid-column: 2; grid-row: 3; }
   .financial-dashboard .company-financial-treemap-controls > .company-financial-treemap-expand { grid-column: 2; grid-row: 1; margin-left: 0; padding-inline: 6px; }
   .financial-dashboard .company-financial-treemap > p.company-financial-treemap-meta:nth-of-type(3) { display: none; }
+  .company-fundamentals.is-compact .company-financial-treemap-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .company-fundamentals.is-compact .company-financial-treemap-controls > .company-facts-period-switch { grid-column: 1; grid-row: 1; width: auto; }
+  .company-fundamentals.is-compact .company-financial-treemap-controls > label:nth-of-type(1) { grid-column: 1; grid-row: 2; }
+  .company-fundamentals.is-compact .company-financial-treemap-controls > label:nth-of-type(2) { grid-column: 2; grid-row: 2; }
+  .company-fundamentals.is-compact .company-financial-treemap-controls > label:nth-of-type(3) { grid-column: 1; grid-row: 3; }
+  .company-fundamentals.is-compact .company-financial-treemap-controls .company-financial-treemap-search { grid-column: 2; grid-row: 3; min-width: 0; }
+  .company-fundamentals.is-compact .company-financial-treemap-controls > .company-financial-treemap-expand { grid-column: 2; grid-row: 1; margin-left: 0; padding-inline: 5px; }
+  .company-fundamentals.is-compact .company-financial-treemap > p.company-financial-treemap-meta:nth-of-type(3) { display: none; }
 }
 @media(max-width:380px) {
   .crypto-directory-heading { align-items: flex-start; flex-direction: column; }
