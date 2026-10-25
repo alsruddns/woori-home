@@ -141,6 +141,9 @@ test("crypto search labels cover all locales and the market overview leads with 
   assert.match(categoryPage, /FinancialOverviewDashboard locale=\{locale\}/);
   assert.match(categoryPage, /cryptoDirectoryCopy\[locale\]\.directoryTitle/);
   assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
+  assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\} compactHeader/);
+  assert.match(companyFactsPanel, /compactHeader \? "company-financial-treemap-title"/);
+  assert.match(platformExperienceStyles, /\.company-fundamentals\.is-compact \.company-financial-treemap-controls/);
   assert.match(companyFactsPanel, /companySearchAliases\(row\.ticker\)/);
   assert.match(companyFactsPanel, /locale === "ko"/);
 });
