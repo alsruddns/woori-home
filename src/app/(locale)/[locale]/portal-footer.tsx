@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { localeNames, locales, messages, type Locale } from "@/lib/site";
 import { familyContactCopy } from "@/lib/family-contact";
-import { familySiteHref, familySiteKeys, familySitesCopy, moneyBookFallbackCopy } from "@/lib/family-sites";
+import { enabledFamilySiteKeys, familySiteHref, familySitesCopy } from "@/lib/family-sites";
 import { privacyContent } from "@/lib/privacy";
 import { termsContent } from "@/lib/terms";
 import ContactDialog from "./contact-dialog";
@@ -15,7 +15,7 @@ export default function PortalFooter({ locale }: { locale: Locale }) {
       <div><a className="brand footer-brand" href={`/${locale}`} aria-label={familyContactCopy[locale].logoLabel}><Image className="brand-logo" src="/_assets/portal/woori-logo.png" alt="" width={419} height={99} /></a><p>{copy.footer}</p></div>
       <div className="footer-services">
         <span>{copy.featured}</span>
-        {familySiteKeys.filter((key) => key !== "portal").map((key) => { const fallback = key === "moneyBook" ? moneyBookFallbackCopy[locale] : undefined; return <a key={key} href={familySiteHref(locale, key)} title={fallback} aria-label={fallback ? `${familyCopy.sites[key]}. ${fallback}` : undefined}>{familyCopy.sites[key]}</a>; })}
+        {enabledFamilySiteKeys.filter((key) => key !== "portal").map((key) => <a key={key} href={familySiteHref(locale, key)}>{familyCopy.sites[key]}</a>)}
         <a href={`/${locale}/privacy`}>{privacyContent[locale]!.title}</a>
         <a href={`/${locale}/terms`}>{termsContent[locale]!.terms}</a>
         <ContactDialog locale={locale} />

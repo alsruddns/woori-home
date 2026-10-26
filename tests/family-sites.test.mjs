@@ -25,10 +25,12 @@ test("six family sites and Docs/Quiz copy are complete in all supported locales"
 });
 
 test("header links preserve locale, indicate active service, and expose a mobile menu", async () => {
-  const [source, header, footer, styles] = await Promise.all([
+  const [source, header, footer, platformLayout, introduction, styles] = await Promise.all([
     readFile(new URL("../src/app/(locale)/[locale]/family-site-select.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/(locale)/[locale]/portal-header.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/platform-layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/portal-introduction.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/globals.css", import.meta.url), "utf8"),
   ]);
   assert.match(source, /enabledFamilySiteKeys\.map/);
@@ -46,7 +48,10 @@ test("header links preserve locale, indicate active service, and expose a mobile
   assert.match(source, /aria-expanded=\{menuOpen\}/);
   assert.match(source, /setMenuOpen/);
   assert.match(header, /<FamilySiteNav locale=\{locale\} \/>/);
-  assert.match(footer, /familySiteKeys\.filter/);
+  assert.match(footer, /enabledFamilySiteKeys\.filter/);
+  assert.match(platformLayout, /const siteKeys = enabledFamilySiteKeys/);
+  assert.doesNotMatch(introduction, /familySiteHref\(locale, "moneyBook"\)/);
+  assert.doesNotMatch(introduction, /className="money-section"/);
   assert.match(footer, /<ContactDialog locale=\{locale\} \/>/);
   assert.match(styles, /\.family-site-nav\{display:flex/);
   assert.match(styles, /\.mobile-menu-toggle\{display:none/);
