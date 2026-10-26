@@ -35,6 +35,11 @@ on:
         type: boolean
         required: true
         default: false
+      import_open_prices:
+        description: Import reviewed World Bank monthly gold and Alternative.me crypto observations
+        type: boolean
+        required: true
+        default: false
       import_coinranking:
         description: Collect the approved Coinranking daily snapshot into PostgreSQL
         type: boolean
@@ -72,7 +77,7 @@ jobs:
 
   image:
     needs: release-guard
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking)))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices)))
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -115,7 +120,7 @@ jobs:
 
   deploy:
     needs: image
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking)))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices)))
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
@@ -148,13 +153,14 @@ jobs:
           APPLY_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_migrations || 'false' }}
           IMPORT_WORLD_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.import_world_bank || 'false' }}
           IMPORT_SEC: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || 'false' }}
+          IMPORT_OPEN_PRICES: ${{ github.event_name == 'workflow_dispatch' && inputs.import_open_prices || 'false' }}
           IMPORT_COINRANKING: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_coinranking) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || 'false' }}
           SCHEDULED_SEC_REFRESH: ${{ github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' || 'false' }}
           SCHEDULED_COINRANKING_REFRESH: ${{ github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' || 'false' }}
           CONFIRM_PRODUCTION_DB_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write) || (github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || 'false' }}
           RESTORE_VALIDATION_REFERENCE: ${{ inputs.restore_validation_reference || vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE || '' }}
           EXPECTED_RESTORE_VALIDATION_REFERENCE: ${{ vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE }}
-          PRODUCTION_OPERATION_APPROVAL: ${{ (github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.automatic_release || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking) && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'push' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' && secrets.PRODUCTION_OPERATION_APPROVAL) || '' }}
+          PRODUCTION_OPERATION_APPROVAL: ${{ (github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.automatic_release || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices) && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'push' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' && secrets.PRODUCTION_OPERATION_APPROVAL) || '' }}
           PRODUCTION_DB_ALLOWED_HOSTS: ${{ secrets.PRODUCTION_DB_ALLOWED_HOSTS }}
           PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
           SEC_EDGAR_USER_AGENT: ${{ ((github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true')) && secrets.SEC_EDGAR_USER_AGENT || '' }}
@@ -163,7 +169,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,AUTO_RELEASE_PREFLIGHT,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,IMPORT_COINRANKING,SCHEDULED_SEC_REFRESH,SCHEDULED_COINRANKING_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY
+          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,AUTO_RELEASE_PREFLIGHT,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,IMPORT_COINRANKING,IMPORT_OPEN_PRICES,SCHEDULED_SEC_REFRESH,SCHEDULED_COINRANKING_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY
           script: |
             set -Eeuo pipefail
             umask 077
@@ -187,11 +193,11 @@ jobs:
             database_write_requested=false
             database_operation_requested=false
             operation_count=0
-            for selected in "$DEPLOY_PORTAL" "$PREFLIGHT_DATABASE" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC" "$IMPORT_COINRANKING"; do
+            for selected in "$DEPLOY_PORTAL" "$PREFLIGHT_DATABASE" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC" "$IMPORT_COINRANKING" "$IMPORT_OPEN_PRICES"; do
               case "$selected" in true) operation_count=$((operation_count + 1));; false) :;; *) echo "Invalid operation selector." >&2; exit 2;; esac
             done
             if [ "$AUTO_RELEASE_PREFLIGHT" = "true" ]; then
-              if [ "$DEPLOY_PORTAL" != "true" ] || [ "$PREFLIGHT_DATABASE" != "false" ] || [ "$APPLY_MIGRATIONS" != "false" ] || [ "$IMPORT_WORLD_BANK" != "false" ] || [ "$IMPORT_SEC" != "false" ] || [ "$IMPORT_COINRANKING" != "false" ]; then
+              if [ "$DEPLOY_PORTAL" != "true" ] || [ "$PREFLIGHT_DATABASE" != "false" ] || [ "$APPLY_MIGRATIONS" != "false" ] || [ "$IMPORT_WORLD_BANK" != "false" ] || [ "$IMPORT_SEC" != "false" ] || [ "$IMPORT_COINRANKING" != "false" ] || [ "$IMPORT_OPEN_PRICES" != "false" ]; then
                 echo "Automatic release may only select a Portal deploy; database work remains separately gated." >&2
                 exit 2
               fi
@@ -209,6 +215,7 @@ jobs:
             [ "$APPLY_MIGRATIONS" = "true" ] && database_write_requested=true && database_operation_requested=true
             [ "$IMPORT_WORLD_BANK" = "true" ] && database_write_requested=true && database_operation_requested=true
             [ "$IMPORT_SEC" = "true" ] && database_write_requested=true && database_operation_requested=true
+            [ "$IMPORT_OPEN_PRICES" = "true" ] && database_write_requested=true && database_operation_requested=true
             [ "$IMPORT_COINRANKING" = "true" ] && database_write_requested=true && database_operation_requested=true
             if [ "$database_write_requested" = "true" ] && [ "$CONFIRM_PRODUCTION_DB_WRITE" != "true" ]; then
               echo "Production database writes require the explicit confirm_production_db_write input." >&2
@@ -406,6 +413,23 @@ jobs:
                 docker rm "$container_name" >/dev/null
                 return "$run_status"
               }
+              open_prices_tools_run() {
+                local external_network container_name run_status
+                external_network="$(docker inspect --format='{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}' portal | grep -vx compose_database | sed -n '1p')"
+                test -n "$external_network"
+                container_name="woori-open-price-tools-$(date +%s%N)"
+                docker create --name "$container_name" --network compose_database \
+                  --mount type=bind,src=/opt/services/compose/.env.portal,dst=/app/.portal.env,readonly \
+                  --mount "type=bind,src=$approval_file,dst=/app/.production-approval,readonly" \
+                  -e GITHUB_ACTIONS=true -e GITHUB_REF=refs/heads/main -e DB_TARGET=production \
+                  -e PRODUCTION_OPERATION_APPROVAL_FILE=/app/.production-approval -e PRODUCTION_DB_ALLOWED_HOSTS \
+                  -e PRODUCTION_BACKUP_CONFIRMED="${backup_reference:+true}" -e "PRODUCTION_BACKUP_REFERENCE=$backup_reference" \
+                  "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" scripts/deploy/run-production-db-tool.mjs /app/.portal.env scripts/data/open-prices-production.mjs "$@" >/dev/null
+                docker network connect "$external_network" "$container_name"
+                if docker start --attach "$container_name"; then run_status=0; else run_status=$?; fi
+                docker rm "$container_name" >/dev/null
+                return "$run_status"
+              }
               validate_backup_archive() {
                 docker run --rm \
                   --mount "type=bind,src=$1,dst=/tmp/production.dump,readonly" \
@@ -583,6 +607,12 @@ jobs:
                     exit 2
                   }
                 fi
+              fi
+              if [ "$IMPORT_OPEN_PRICES" = "true" ]; then
+                stage="Validate reviewed open price sources without writes"
+                open_prices_tools_run --dry-run
+                stage="Persist reviewed monthly Gold and crypto observations"
+                open_prices_tools_run --apply --backup-reference="$backup_reference"
               fi
               if [ "$IMPORT_WORLD_BANK" = "true" ]; then
                 stage="Dry-run World Bank import"

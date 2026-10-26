@@ -17,7 +17,7 @@ type DailyRow = {
 };
 type DailySnapshot = { market: "krw" | "usdt"; referenceTimezone: string; referenceDate: string; dataStatus: string; data: DailyRow[]; history: DailyRow[] };
 type CoinrankingQuote = { uuid: string; symbol: string; name: string; aliases: string[]; price: string; change24hPercent: string | null; marketCap: string | null; volume24h: string | null; observedAt: string };
-type CoinrankingPayload = { stale?: boolean; currency: "USD"; observedAt: string; data: CoinrankingQuote[]; attribution: string; sourceUrl: string };
+type CoinrankingPayload = { provider?: string; stale?: boolean; currency: "USD"; observedAt: string; data: CoinrankingQuote[]; attribution: string; sourceUrl: string };
 type CoinrankingHistoryPoint = { timestamp: string; price: string };
 
 const coinrankingLabels: Record<Locale, { current: string; change24h: string; observed: string; chart: string; loadChart: string }> = {
@@ -108,6 +108,7 @@ function DailyCloseChart({ rows, title }: { rows: DailyRow[]; title: string }) {
 }
 
 export function CryptoDashboard({ locale }: { locale: Locale }) {
+  const [aggregateAvailable, setAggregateAvailable] = useState(false);
   const copy = getCryptoPageCopy(locale);
   const ui = cryptoDirectoryCopy[locale];
   const [search, setSearch] = useState("");
@@ -140,11 +141,11 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
 
   return <>
     <nav className="platform-breadcrumb" aria-label={ui.directoryTitle}><Link href={`/${locale}`}>{copy.nav}</Link><span>/</span><span>{copy.title}</span></nav>
-    <header className="platform-page-heading crypto-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1><p>{copy.description}</p></header>
+    <header className="platform-page-heading crypto-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1><p>{aggregateAvailable ? aggregatePriceLabel[locale] : copy.description}</p></header>
 
-    <CoinrankingMarket locale={locale} copy={copy} searchLabel={ui.search} searchPlaceholder={ui.searchPlaceholder} />
+    <CoinrankingMarket locale={locale} copy={copy} searchLabel={ui.search} searchPlaceholder={ui.searchPlaceholder} onAvailable={setAggregateAvailable} />
 
-    <section className="crypto-daily-dashboard" aria-labelledby="crypto-daily-heading" aria-busy={pending}>
+    {!aggregateAvailable && <section className="crypto-daily-dashboard" aria-labelledby="crypto-daily-heading" aria-busy={pending}>
       <header className="crypto-daily-heading">
         <div><span className="platform-eyebrow">{copy.market}</span><h2 id="crypto-daily-heading">{copy.price}</h2></div>
         <div className="crypto-daily-controls">
@@ -214,29 +215,30 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
           </div>
         </aside>}
       </>}
-    </section>
+    </section>}
 
     <section className="crypto-issue-link"><h2>{copy.issues}</h2><p>{copy.issueDescription}</p><Link href={`/${locale}/crypto/issues`}>{copy.issueTitle}</Link></section>
   </>;
 }
 
-function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { locale: Locale; copy: ReturnType<typeof getCryptoPageCopy>; searchLabel: string; searchPlaceholder: string }) {
-  const labels = coinrankingLabels[locale];
+function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder, onAvailable }: { locale: Locale; copy: ReturnType<typeof getCryptoPageCopy>; searchLabel: string; searchPlaceholder: string; onAvailable: (available:boolean)=>void }) {
   const [payload, setPayload] = useState<CoinrankingPayload | null>(null);
   const [query, setQuery] = useState("");
   const [selectedUuid, setSelectedUuid] = useState("");
   const [period, setPeriod] = useState("7d");
   const [history, setHistory] = useState<CoinrankingHistoryPoint[]>([]);
   const [loadingChart, setLoadingChart] = useState(false);
+  const labels = { ...coinrankingLabels[locale], chart:coinrankingLabels[locale].chart.replace('Coinranking',payload?.provider ?? 'Coinranking') };
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch("/portal-api/finance/crypto/coinranking", { signal: controller.signal, cache: "no-store" })
+    fetch("/portal-api/finance/crypto/alternative", { signal: controller.signal, cache: "no-store" })
+      .then(response => response.ok ? response : fetch("/portal-api/finance/crypto/coinranking", {signal:controller.signal,cache:'no-store'}))
       .then(async (response) => response.ok ? await response.json() as CoinrankingPayload : null)
-      .then((result) => { if (!controller.signal.aborted && result?.data?.length) { setPayload(result); setSelectedUuid(result.data[0].uuid); } })
+      .then((result) => { if (!controller.signal.aborted && result?.data?.length) { result.data=result.data.map(c=>({...c,aliases:cryptoAssets.find(a=>a.symbol===c.symbol)?.aliases??c.aliases??[]}));setPayload(result); setSelectedUuid(result.data[0].uuid);onAvailable(true); } })
       .catch(() => {});
     return () => controller.abort();
-  }, []);
+  }, [onAvailable]);
 
   const normalizedQuery = normalize(query.trim());
   const visible = (payload?.data ?? []).filter((coin) => !normalizedQuery || [coin.symbol, coin.name, ...coin.aliases].some((value) => normalize(value).includes(normalizedQuery)));
@@ -248,7 +250,8 @@ function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { l
     if (!selected) return;
     setLoadingChart(true);
     try {
-      const response = await fetch(`/portal-api/finance/crypto/coinranking/${encodeURIComponent(selected.uuid)}/history?period=${period}`, { cache: "no-store" });
+      const historyUrl=payload?.provider==='Alternative.me'?`/portal-api/finance/crypto/alternative?asset=${encodeURIComponent(selected.uuid)}&period=${period}`:`/portal-api/finance/crypto/coinranking/${encodeURIComponent(selected.uuid)}/history?period=${period}`;
+      const response = await fetch(historyUrl, { cache: "no-store" });
       const result = response.ok ? await response.json() as { data?: CoinrankingHistoryPoint[] } : null;
       setHistory(result?.data ?? []);
     } catch {
