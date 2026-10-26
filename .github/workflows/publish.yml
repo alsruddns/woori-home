@@ -280,6 +280,38 @@ jobs:
             compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
             override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
 
+            stage="Collect read-only production host resource diagnostics"
+            printf '[DEPLOY HOST] %s\n' "$stage"
+            awk '/^(MemTotal|MemAvailable|SwapTotal|SwapFree):/ {print "[DEPLOY HOST] " $0}' /proc/meminfo
+            if [ -r /proc/pressure/memory ]; then
+              printf '[DEPLOY HOST] Memory pressure (PSI):\n'
+              cat /proc/pressure/memory
+            else
+              echo '[DEPLOY HOST] Memory pressure (PSI): unavailable'
+            fi
+            printf '[DEPLOY HOST] Disk space for Portal backups:\n'
+            df -Pk /opt/backups/woori-portal
+            printf '[DEPLOY HOST] Docker container memory usage:\n'
+            docker stats --no-stream --format 'name={{.Name}} memory={{.MemUsage}} memory_percent={{.MemPerc}}' || {
+              echo '[DEPLOY HOST] Docker stats could not be read.' >&2
+              exit 1
+            }
+            printf '[DEPLOY HOST] Docker container OOM/restart state:\n'
+            docker ps -aq | xargs -r docker inspect --format '{{.Name}} oom_killed={{.State.OOMKilled}} restart_count={{.RestartCount}}' || {
+              echo '[DEPLOY HOST] Docker OOM state could not be read.' >&2
+              exit 1
+            }
+            if command -v journalctl >/dev/null 2>&1; then
+              recent_oom_events="$(journalctl -k --since '24 hours ago' --no-pager 2>/dev/null | grep -Ei 'out of memory|oom-kill|killed process' | tail -n 20 || true)"
+              if [ -n "$recent_oom_events" ]; then
+                printf '[DEPLOY HOST] Kernel OOM messages in the last 24 hours:\n%s\n' "$recent_oom_events"
+              else
+                echo '[DEPLOY HOST] No readable kernel OOM messages in the last 24 hours.'
+              fi
+            else
+              echo '[DEPLOY HOST] Kernel OOM journal is unavailable.'
+            fi
+
             stage="Validate Compose configuration"
             printf '[DEPLOY 2] %s\n' "$stage"
             printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' > "$override"
@@ -476,21 +508,35 @@ jobs:
                 backup_sha256="$(sha256sum "$after" | awk '{print $1}')"
                 stage="Restore the production backup in an isolated PostgreSQL 16 container"
                 available_mb="$(awk '/MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)"
-                test -n "$available_mb" && test "$available_mb" -ge 1536
-                test "$backup_size" -le 536870912
+                printf '[DEPLOY DB CHECK] Isolated restore capacity: available memory MiB=%s; backup bytes=%s; limits memory>=1536 MiB, backup<=536870912 bytes.\n' "${available_mb:-unknown}" "$backup_size"
+                stage="Check available memory for isolated PostgreSQL restore"
+                test -n "$available_mb" && test "$available_mb" -ge 1536 || {
+                  echo "Isolated restore blocked: host must have at least 1536 MiB available memory; no database writes or Portal changes were made." >&2
+                  exit 2
+                }
+                stage="Check backup size for isolated PostgreSQL restore"
+                test "$backup_size" -le 536870912 || {
+                  echo "Isolated restore blocked: the verified backup exceeds the 512 MiB validation limit; no database writes or Portal changes were made." >&2
+                  exit 2
+                }
+                stage="Download PostgreSQL 16 image for isolated restore"
                 docker pull postgres:16 >/dev/null
                 restore_container="woori-restore-verify-${GITHUB_RUN_ID:-run}-${GITHUB_RUN_ATTEMPT:-1}-$(date +%s%N)"
+                stage="Start isolated PostgreSQL 16 restore container"
                 docker run --detach --name "$restore_container" --network none --memory=1g --cpus=1 \
                   --tmpfs /var/lib/postgresql/data:rw,noexec,nosuid,size=768m \
                   --mount "type=bind,src=$after,dst=/tmp/production.dump,readonly" \
                   -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=woori_today_portal postgres:16 >/dev/null
+                stage="Wait for isolated PostgreSQL restore container readiness"
                 restore_ready=false
                 for n in $(seq 1 60); do
                   if docker exec "$restore_container" pg_isready -U postgres -d woori_today_portal >/dev/null 2>&1; then restore_ready=true; break; fi
                   sleep 2
                 done
                 test "$restore_ready" = true
+                stage="Restore backup in isolated PostgreSQL 16 container"
                 docker exec "$restore_container" pg_restore --exit-on-error --no-owner --no-acl --dbname=woori_today_portal /tmp/production.dump >/dev/null
+                stage="Compare protected row counts from isolated restore"
                 restore_expected="$(printf '%s' "$preflight_report" | jq -er '[.protectedCounts.world_bank_observations,.protectedCounts.sec_companies,.protectedCounts.sec_facts,.protectedCounts.financial_assets,.protectedCounts.financial_daily_prices] | map(if . == null then "-" else tostring end) | @tsv')"
                 restore_actual="$(docker exec "$restore_container" psql -U postgres -d woori_today_portal -At -F $'\t' -c "select (select count(*) from indicator_observations), case when to_regclass('public.financial_companies') is null then '-' else (select count(*)::text from financial_companies) end, case when to_regclass('public.financial_company_facts') is null then '-' else (select count(*)::text from financial_company_facts) end, (select count(*) from financial_assets), (select count(*) from financial_daily_prices)" | tr -d '\r')"
                 test "$restore_actual" = "$restore_expected" || {
@@ -517,6 +563,18 @@ jobs:
                 stage="Recheck production schema and SEC grants"
                 verified_preflight="$(db_tools_run scripts/db/preflight-financial-production.mjs)"
                 printf '%s\n' "$verified_preflight" | jq -e '(.blockers | length) == 0 and (.permissionFindings | length) == 0' >/dev/null
+                protected_before="$(printf '%s' "$preflight_report" | jq -ce '.protectedCounts | {world_bank_observations,sec_companies,sec_facts,financial_assets,financial_daily_prices}')"
+                protected_after="$(printf '%s' "$verified_preflight" | jq -ce '.protectedCounts | {world_bank_observations,sec_companies,sec_facts,financial_assets,financial_daily_prices}')"
+                test "$protected_after" = "$protected_before" || {
+                  echo 'Automatic release blocked: protected World Bank, SEC, or financial row counts changed during the migration.' >&2
+                  exit 2
+                }
+                xom_before="$(printf '%s' "$preflight_report" | jq -ce '[.secIdentityDiagnostic.rows[] | {cik,ticker,facts}] | sort_by(.cik)')"
+                xom_after="$(printf '%s' "$verified_preflight" | jq -ce '[.secIdentityDiagnostic.rows[] | {cik,ticker,facts}] | sort_by(.cik)')"
+                test "$xom_after" = "$xom_before" || {
+                  echo 'Automatic release blocked: the read-only SEC issuer identity diagnostic changed during the migration.' >&2
+                  exit 2
+                }
                 migration_after="$(printf '%s' "$verified_preflight" | jq -er '"\(.migrations.applied)/\(.migrations.expected)"')"
                 if [ "$AUTO_RELEASE_PREFLIGHT" = "true" ] && [ "$coinranking_rights_migration" = "true" ]; then
                   printf '%s\n' "$verified_preflight" | jq -e '.coinranking.datasetPresent == true and .coinranking.counts.assets == 0 and .coinranking.counts.daily_snapshots == 0 and .coinranking.source.license_status == "unknown" and .coinranking.source.collection_enabled == false and (.coinranking.source.financial_rights | [.apiAccess,.publicDisplay,.dbStorage,.longTermRetention,.userApi,.derivedVisualization,.dailySnapshot,.adSupportedDisplay,.competitorPermission] | all(. == "pending")) and .coinranking.source.financial_rights.csvRedistribution == "denied"' >/dev/null || {
