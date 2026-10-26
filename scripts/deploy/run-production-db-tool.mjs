@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { parseDatabaseRoleEnv } from "./database-env.mjs";
 
 const ALLOWED_TOOLS = new Set([
+  "scripts/data/open-prices-production.mjs",
   "scripts/db/preflight-production.mjs",
   "scripts/db/preflight-financial-production.mjs",
   "scripts/db/status-production.mjs",
