@@ -1,0 +1,207 @@
+name: Promote validated develop changes
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Full develop commit SHA that already passed PR CI
+        type: string
+        required: true
+  workflow_run:
+    workflows: [PR CI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: woori-home-develop-promotion
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: >-
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'develop' &&
+      github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      CANDIDATE_SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || inputs.candidate_sha }}
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - name: Check out trusted main policy
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Verify the exact successful candidate and its file scope
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            successful_ci="$(gh run list --workflow pr-ci.yml --branch develop --limit 50 --json headSha,status,conclusion --jq "[.[] | select(.headSha == \"$CANDIDATE_SHA\" and .status == \"completed\" and .conclusion == \"success\")] | length")"
+            test "$successful_ci" -gt 0 || { echo "The manually dispatched candidate has no successful exact-SHA PR CI run." >&2; exit 1; }
+          fi
+          git fetch --no-tags origin main develop
+          test "$(git rev-parse origin/develop)" = "$CANDIDATE_SHA" || {
+            echo "Develop advanced after CI; this run will not promote an older commit." >&2
+            exit 1
+          }
+          git merge-base --is-ancestor origin/main "$CANDIDATE_SHA" || {
+            echo "Develop and main are not synchronized; automatic promotion is blocked." >&2
+            exit 1
+          }
+          node scripts/deploy/auto-promotion-policy.mjs "$CANDIDATE_SHA"
+
+      - name: Create or refresh the develop-to-main pull request
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          number="$(gh pr list --state open --base main --head develop --json number --jq '.[0].number // empty')"
+          if [ -z "$number" ]; then
+            body_file="$(mktemp)"
+            trap 'rm -f "$body_file"' EXIT
+            cat > "$body_file" <<EOF
+          Automatically promoted after the full PostgreSQL 16 CI workflow passed for \`$CANDIDATE_SHA\`.
+
+          The candidate passed the trusted file-scope policy. Migrations, data imports, provider rights, runtime secrets, deployment configuration, and other operational changes are excluded from automatic promotion.
+          EOF
+            gh pr create --base main --head develop --title "Release: develop $CANDIDATE_SHA" --body-file "$body_file"
+            number="$(gh pr list --state open --base main --head develop --json number --jq '.[0].number // empty')"
+          fi
+          test "$(gh pr view "$number" --json headRefOid --jq .headRefOid)" = "$CANDIDATE_SHA"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Merge only after GitHub confirms required checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR_NUMBER" --auto --squash
+          for attempt in $(seq 1 120); do
+            state="$(gh pr view "$PR_NUMBER" --json state --jq .state)"
+            merged_at="$(gh pr view "$PR_NUMBER" --json mergedAt --jq .mergedAt)"
+            if [ "$state" = "MERGED" ] && [ "$merged_at" != "null" ]; then
+              echo "GitHub merged PR #$PR_NUMBER after enforcing the main ruleset."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "GitHub has not completed the protected auto-merge; no deployment was requested." >&2
+          exit 1
+
+      - name: Synchronize merged main back into develop
+        id: sync
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main develop
+          git merge-base --is-ancestor "$CANDIDATE_SHA" origin/develop || {
+            echo "The promoted candidate is no longer an ancestor of develop; refusing synchronization." >&2
+            exit 1
+          }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C promotion-sync origin/develop
+          git merge --no-ff origin/main -m "Merge : [develop] Sync main after automatic promotion"
+          sync_sha="$(git rev-parse HEAD)"
+          git push origin HEAD:develop
+          echo "sync_sha=$sync_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Validate synchronized develop commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SYNC_SHA: ${{ steps.sync.outputs.sync_sha }}
+          ORIGINAL_CANDIDATE_SHA: ${{ env.CANDIDATE_SHA }}
+        run: |
+          set -euo pipefail
+          started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run pr-ci.yml --ref develop --field ref="$SYNC_SHA"
+          run_id=""
+          for attempt in $(seq 1 60); do
+            run_id="$(gh run list --workflow pr-ci.yml --branch develop --event workflow_dispatch --limit 10 --json databaseId,headSha,createdAt --jq "[.[] | select(.headSha == \"$SYNC_SHA\" and .createdAt >= \"$started_at\")] | .[0].databaseId // empty")"
+            if [ -n "$run_id" ]; then break; fi
+            sleep 5
+          done
+          test -n "$run_id" || { echo "The synchronized develop CI run could not be located." >&2; exit 1; }
+          for attempt in $(seq 1 360); do
+            result="$(gh run view "$run_id" --json status,conclusion --jq '[.status,.conclusion] | @tsv')"
+            status="${result%%$'\t'*}"
+            conclusion="${result#*$'\t'}"
+            if [ "$status" = "completed" ]; then
+              test "$conclusion" = "success" || { echo "Synchronized develop CI run $run_id concluded $conclusion." >&2; exit 1; }
+              echo "Synchronized develop CI run $run_id passed."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Synchronized develop CI run $run_id exceeded the wait window; no deployment was requested." >&2
+          exit 1
+
+      - name: Dispatch the Portal release with read-only database preflight
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          main_sha="$(gh api repos/${GITHUB_REPOSITORY}/git/ref/heads/main --jq .object.sha)"
+          started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run publish.yml --ref main --field deploy_portal=true --field automatic_release=true
+          run_id=""
+          for attempt in $(seq 1 60); do
+            run_id="$(gh run list --workflow publish.yml --branch main --event workflow_dispatch --limit 10 --json databaseId,headSha,createdAt --jq "[.[] | select(.headSha == \"$main_sha\" and .createdAt >= \"$started_at\")] | .[0].databaseId // empty")"
+            if [ -n "$run_id" ]; then break; fi
+            sleep 5
+          done
+          test -n "$run_id" || { echo "The Portal release run could not be located." >&2; exit 1; }
+          for attempt in $(seq 1 900); do
+            result="$(gh run view "$run_id" --json status,conclusion --jq '[.status,.conclusion] | @tsv')"
+            status="${result%%$'\t'*}"
+            conclusion="${result#*$'\t'}"
+            if [ "$status" = "completed" ]; then
+              test "$conclusion" = "success" || { echo "Portal release run $run_id concluded $conclusion." >&2; exit 1; }
+              echo "Portal release run $run_id completed successfully."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Portal release run $run_id exceeded the wait window; inspect its Actions log." >&2
+          exit 1
+
+      - name: Queue the next validated develop candidate if develop advanced
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SYNC_SHA: ${{ steps.sync.outputs.sync_sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main develop
+          main_tree="$(git rev-parse 'origin/main^{tree}')"
+          develop_tree="$(git rev-parse 'origin/develop^{tree}')"
+          if [ "$main_tree" = "$develop_tree" ]; then
+            echo "Develop and main have identical content; no follow-up promotion is needed."
+            exit 0
+          fi
+          latest_develop="$(git rev-parse origin/develop)"
+          successful_ci="$(gh run list --workflow pr-ci.yml --branch develop --limit 50 --json headSha,status,conclusion --jq "[.[] | select(.headSha == \"$latest_develop\" and .status == \"completed\" and .conclusion == \"success\")] | length")"
+          if [ "$successful_ci" -gt 0 ]; then
+            gh workflow run auto-promote.yml --ref main --field candidate_sha="$latest_develop"
+          else
+            echo "Develop contains additional changes without an exact-SHA successful CI run; promotion remains queued by its normal push CI." >&2
+          fi

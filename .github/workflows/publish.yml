@@ -10,6 +10,11 @@ on:
         type: boolean
         required: true
         default: false
+      automatic_release:
+        description: Run the protected read-only production preflight before a Portal-only release
+        type: boolean
+        required: true
+        default: false
       preflight_database:
         description: Run read-only production DB and SEC schema preflight
         type: boolean
@@ -69,6 +74,7 @@ jobs:
     needs: release-guard
     if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking)))
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     permissions:
       contents: read
       packages: write
@@ -111,6 +117,7 @@ jobs:
     needs: image
     if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking)))
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     environment: production
     concurrency:
       group: woori-home-production
@@ -135,6 +142,7 @@ jobs:
           PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
           DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal || 'false' }}
+          AUTO_RELEASE_PREFLIGHT: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.automatic_release)) && 'true' || 'false' }}
           PREFLIGHT_DATABASE: ${{ github.event_name == 'workflow_dispatch' && inputs.preflight_database || 'false' }}
           APPLY_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_migrations || 'false' }}
           IMPORT_WORLD_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.import_world_bank || 'false' }}
@@ -145,7 +153,7 @@ jobs:
           CONFIRM_PRODUCTION_DB_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write) || (github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || 'false' }}
           RESTORE_VALIDATION_REFERENCE: ${{ inputs.restore_validation_reference || vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE || '' }}
           EXPECTED_RESTORE_VALIDATION_REFERENCE: ${{ vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE }}
-          PRODUCTION_OPERATION_APPROVAL: ${{ (github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking) && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' && secrets.PRODUCTION_OPERATION_APPROVAL) || '' }}
+          PRODUCTION_OPERATION_APPROVAL: ${{ (github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.automatic_release || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking) && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'push' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' && secrets.PRODUCTION_OPERATION_APPROVAL) || '' }}
           PRODUCTION_DB_ALLOWED_HOSTS: ${{ secrets.PRODUCTION_DB_ALLOWED_HOSTS }}
           PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
           SEC_EDGAR_USER_AGENT: ${{ ((github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true')) && secrets.SEC_EDGAR_USER_AGENT || '' }}
@@ -154,7 +162,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,IMPORT_COINRANKING,SCHEDULED_SEC_REFRESH,SCHEDULED_COINRANKING_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY
+          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,AUTO_RELEASE_PREFLIGHT,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,IMPORT_COINRANKING,SCHEDULED_SEC_REFRESH,SCHEDULED_COINRANKING_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY
           script: |
             set -Eeuo pipefail
             umask 077
@@ -166,12 +174,28 @@ jobs:
             smoke_body=""
             smoke_headers=""
             backup_reference=""
+            restore_container=""
+            migration_report_file=""
+            backup_sha256="not-created"
+            restore_validation="not-required"
+            migration_before="not-checked"
+            migration_after="not-checked"
+            rollback_result="not-needed"
+            coinranking_rights_migration="false"
+            case "$AUTO_RELEASE_PREFLIGHT" in true|false) :;; *) echo "Invalid automatic release selector." >&2; exit 2;; esac
             database_write_requested=false
             database_operation_requested=false
             operation_count=0
             for selected in "$DEPLOY_PORTAL" "$PREFLIGHT_DATABASE" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC" "$IMPORT_COINRANKING"; do
               case "$selected" in true) operation_count=$((operation_count + 1));; false) :;; *) echo "Invalid operation selector." >&2; exit 2;; esac
             done
+            if [ "$AUTO_RELEASE_PREFLIGHT" = "true" ]; then
+              if [ "$DEPLOY_PORTAL" != "true" ] || [ "$PREFLIGHT_DATABASE" != "false" ] || [ "$APPLY_MIGRATIONS" != "false" ] || [ "$IMPORT_WORLD_BANK" != "false" ] || [ "$IMPORT_SEC" != "false" ] || [ "$IMPORT_COINRANKING" != "false" ]; then
+                echo "Automatic release may only select a Portal deploy; database work remains separately gated." >&2
+                exit 2
+              fi
+              database_operation_requested=true
+            fi
             case "$SCHEDULED_SEC_REFRESH" in true|false) :;; *) echo "Invalid SEC schedule selector." >&2; exit 2;; esac
             case "$SCHEDULED_COINRANKING_REFRESH" in true|false) :;; *) echo "Invalid Coinranking schedule selector." >&2; exit 2;; esac
             if [ "$SCHEDULED_SEC_REFRESH" = "true" ] && [ "$IMPORT_SEC" != "true" ]; then echo "Scheduled SEC refresh must select SEC import." >&2; exit 2; fi
@@ -199,6 +223,7 @@ jobs:
               trap - EXIT
               if [ "$status" -ne 0 ]; then
                 printf '[DEPLOY ERROR] Stage: %s, Exit code: %s\n' "$stage" "$status" >&2
+                rollback_result="not-attempted"
                 if [ "$deploy_started" = "1" ]; then
                   printf '[DEPLOY ROLLBACK] Restoring the previous Portal image.\n' >&2
                   printf 'services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n      COINRANKING_API_KEY: "${COINRANKING_API_KEY:?}"\n' "$rollback_tag" > "$override"
@@ -212,9 +237,14 @@ jobs:
                     done
                     if [ "$rollback_healthy" != true ]; then
                       printf '[DEPLOY ROLLBACK ERROR] Previous Portal image did not become healthy.\n' >&2
+                      rollback_result="failed-healthcheck"
+                    else
+                      rollback_result="restored"
                     fi
                   fi
                 fi
+                printf '[DEPLOY AUDIT FAILURE] run=%s release_sha=%s portal_digest=%s stage=%s exit=%s migration_before=%s migration_after=%s backup_ref=%s backup_sha256=%s restore_validation=%s portal_rollback=%s\n' \
+                  "${GITHUB_RUN_ID:-unknown}" "$RELEASE_SHA" "${PORTAL_DIGEST:-not-built}" "$stage" "$status" "$migration_before" "$migration_after" "${backup_reference:-none}" "$backup_sha256" "$restore_validation" "$rollback_result" >&2
               fi
               if [ -n "$override" ] && ! rm -f "$override"; then
                 printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary Compose override.\n' >&2
@@ -222,6 +252,8 @@ jobs:
               if [ -n "$approval_file" ] && ! rm -f "$approval_file"; then
                 printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary approval file.\n' >&2
               fi
+              if [ -n "$restore_container" ]; then docker rm -f "$restore_container" >/dev/null 2>&1 || true; fi
+              if [ -n "$migration_report_file" ]; then rm -f "$migration_report_file" >/dev/null 2>&1 || true; fi
               if [ -n "$smoke_body" ] && ! rm -f "$smoke_body"; then
                 printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary smoke-test body.\n' >&2
               fi
@@ -360,6 +392,33 @@ jobs:
               fi
               printf '[DEPLOY DB] Read-only production diagnostics:\n'
               printf '%s\n' "$preflight_report" | jq '{migrations, coinranking, worldBank, databaseSizeBytes}'
+              migration_before="$(printf '%s' "$preflight_report" | jq -er '"\(.migrations.applied)/\(.migrations.expected)"')"
+              migration_after="$migration_before"
+              if [ "$AUTO_RELEASE_PREFLIGHT" = "true" ]; then
+                printf '%s\n' "$preflight_report" | jq -e '(.blockers | length) == 0 and (.permissionFindings | length) == 0 and .migrations.prefixIsValid == true' >/dev/null || {
+                  echo "Automatic release is blocked: read-only production preflight or migration history is not clean." >&2
+                  exit 2
+                }
+                migration_report_file="$(mktemp /tmp/woori-auto-migration-plan.XXXXXX.json)"
+                chmod 600 "$migration_report_file"
+                printf '%s\n' "$preflight_report" > "$migration_report_file"
+                automatic_migration_plan="$(docker run --rm --network none \
+                  --mount "type=bind,src=$migration_report_file,dst=/app/production-preflight.json,readonly" \
+                  --entrypoint node "ghcr.io/alsruddns/woori-home@${TOOLS_DIGEST}" \
+                  scripts/deploy/automatic-migration-policy.mjs /app/production-preflight.json)"
+                rm -f "$migration_report_file"
+                migration_report_file=""
+                printf '[DEPLOY DB] Automatic migration policy: %s\n' "$automatic_migration_plan"
+                printf '%s' "$automatic_migration_plan" | jq -e '.allowed == true' >/dev/null || {
+                  echo "Automatic release is blocked: a pending migration is not explicitly allowlisted and restore-validated." >&2
+                  exit 2
+                }
+                if printf '%s' "$automatic_migration_plan" | jq -e '.apply == true' >/dev/null; then
+                  APPLY_MIGRATIONS=true
+                  database_write_requested=true
+                  if printf '%s' "$automatic_migration_plan" | jq -e '.pending | any(. == "0012_coinranking_asset_identity" or . == "0013_coinranking_snapshot_rights")' >/dev/null; then coinranking_rights_migration=true; fi
+                fi
+              fi
               if [ "$SCHEDULED_SEC_REFRESH" = "true" ]; then
                 printf '%s\n' "$preflight_report" | jq -e '.permissionFindings | length == 0' >/dev/null
               fi
@@ -414,6 +473,34 @@ jobs:
                 sha256sum "$after" > "$after.sha256"
                 chmod 600 "$after.sha256"
                 sha256sum --check "$after.sha256" >/dev/null
+                backup_sha256="$(sha256sum "$after" | awk '{print $1}')"
+                stage="Restore the production backup in an isolated PostgreSQL 16 container"
+                available_mb="$(awk '/MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)"
+                test -n "$available_mb" && test "$available_mb" -ge 1536
+                test "$backup_size" -le 536870912
+                docker pull postgres:16 >/dev/null
+                restore_container="woori-restore-verify-${GITHUB_RUN_ID:-run}-${GITHUB_RUN_ATTEMPT:-1}-$(date +%s%N)"
+                docker run --detach --name "$restore_container" --network none --memory=1g --cpus=1 \
+                  --tmpfs /var/lib/postgresql/data:rw,noexec,nosuid,size=768m \
+                  --mount "type=bind,src=$after,dst=/tmp/production.dump,readonly" \
+                  -e POSTGRES_HOST_AUTH_METHOD=trust -e POSTGRES_DB=woori_today_portal postgres:16 >/dev/null
+                restore_ready=false
+                for n in $(seq 1 60); do
+                  if docker exec "$restore_container" pg_isready -U postgres -d woori_today_portal >/dev/null 2>&1; then restore_ready=true; break; fi
+                  sleep 2
+                done
+                test "$restore_ready" = true
+                docker exec "$restore_container" pg_restore --exit-on-error --no-owner --no-acl --dbname=woori_today_portal /tmp/production.dump >/dev/null
+                restore_expected="$(printf '%s' "$preflight_report" | jq -er '[.protectedCounts.world_bank_observations,.protectedCounts.sec_companies,.protectedCounts.sec_facts,.protectedCounts.financial_assets,.protectedCounts.financial_daily_prices] | map(if . == null then "-" else tostring end) | @tsv')"
+                restore_actual="$(docker exec "$restore_container" psql -U postgres -d woori_today_portal -At -F $'\t' -c "select (select count(*) from indicator_observations), case when to_regclass('public.financial_companies') is null then '-' else (select count(*)::text from financial_companies) end, case when to_regclass('public.financial_company_facts') is null then '-' else (select count(*)::text from financial_company_facts) end, (select count(*) from financial_assets), (select count(*) from financial_daily_prices)" | tr -d '\r')"
+                test "$restore_actual" = "$restore_expected" || {
+                  echo "Isolated restore validation did not reproduce the protected SEC, World Bank and financial table row counts." >&2
+                  exit 2
+                }
+                docker rm -f "$restore_container" >/dev/null
+                restore_container=""
+                restore_validation="passed"
+                printf '[DEPLOY DB] Isolated PostgreSQL 16 restore and protected row-count validation passed.\n'
                 backup_reference="$(basename "$after")"
               fi
               if [ "$APPLY_MIGRATIONS" = "true" ]; then
@@ -422,7 +509,7 @@ jobs:
                 stage="Verify migration status after migration"
                 migration_status="$(db_tools_run scripts/db/status-production.mjs)"
                 printf '%s\n' "$migration_status"
-                printf '%s\n' "$migration_status" | grep -Eq '14 applied, 0 pending'
+                printf '%s\n' "$migration_status" | grep -Eq '[0-9]+ applied, 0 pending'
                 stage="Grant and verify Runtime SELECT-only access to SEC tables"
                 db_tools_run scripts/db/grant-financial-runtime-read-production.mjs --apply --backup-reference="$backup_reference"
                 stage="Grant and verify restricted SEC Import access"
@@ -430,6 +517,13 @@ jobs:
                 stage="Recheck production schema and SEC grants"
                 verified_preflight="$(db_tools_run scripts/db/preflight-financial-production.mjs)"
                 printf '%s\n' "$verified_preflight" | jq -e '(.blockers | length) == 0 and (.permissionFindings | length) == 0' >/dev/null
+                migration_after="$(printf '%s' "$verified_preflight" | jq -er '"\(.migrations.applied)/\(.migrations.expected)"')"
+                if [ "$AUTO_RELEASE_PREFLIGHT" = "true" ] && [ "$coinranking_rights_migration" = "true" ]; then
+                  printf '%s\n' "$verified_preflight" | jq -e '.coinranking.datasetPresent == true and .coinranking.counts.assets == 0 and .coinranking.counts.daily_snapshots == 0 and .coinranking.source.license_status == "unknown" and .coinranking.source.collection_enabled == false and (.coinranking.source.financial_rights | [.apiAccess,.publicDisplay,.dbStorage,.longTermRetention,.userApi,.derivedVisualization,.dailySnapshot,.adSupportedDisplay,.competitorPermission] | all(. == "pending")) and .coinranking.source.financial_rights.csvRedistribution == "denied"' >/dev/null || {
+                    echo "Automatic release migration did not preserve the disabled Coinranking provider and pending rights gate." >&2
+                    exit 2
+                  }
+                fi
               fi
               if [ "$IMPORT_WORLD_BANK" = "true" ]; then
                 stage="Dry-run World Bank import"
@@ -495,6 +589,7 @@ jobs:
               sha256sum "$after" > "$after.sha256"
               chmod 600 "$after.sha256"
               sha256sum --check "$after.sha256" >/dev/null
+              backup_sha256="$(sha256sum "$after" | awk '{print $1}')"
               backup_reference="$(basename "$after")"
             fi
             stage="Validate GHCR image access"
@@ -505,6 +600,7 @@ jobs:
             printf '[DEPLOY 6] %s\n' "$stage"
             old_image_id="$(docker inspect --format='{{.Image}}' portal)"
             rollback_tag="ghcr.io/alsruddns/woori-home:rollback-${old_image_id#sha256:}"
+            rollback_result="available:${rollback_tag##*:}"
             docker tag "$old_image_id" "$rollback_tag"
             printf 'services:\n  portal:\n    image: ghcr.io/alsruddns/woori-home@%s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n      COINRANKING_API_KEY: "${COINRANKING_API_KEY:?}"\n' "$PORTAL_DIGEST" > "$override"
             compose -f "$override" config --quiet
@@ -551,4 +647,31 @@ jobs:
             deploy_started=0
             echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained; World Bank DB/JSON source smoke tests passed."
             fi
-            echo "Database operations: preflight=${PREFLIGHT_DATABASE}, migrations=${APPLY_MIGRATIONS}, world_bank=${IMPORT_WORLD_BANK}, sec=${IMPORT_SEC}, coinranking=${IMPORT_COINRANKING}; Portal deploy=${DEPLOY_PORTAL}."
+            printf '[DEPLOY AUDIT] run=%s release_sha=%s portal_digest=%s automatic_preflight=%s migration_before=%s migration_after=%s backup_ref=%s backup_sha256=%s restore_validation=%s rollback_image=%s database_operations=migrations:%s,world_bank:%s,sec:%s,coinranking:%s portal_deploy=%s\n' \
+              "${GITHUB_RUN_ID:-unknown}" "$RELEASE_SHA" "${PORTAL_DIGEST:-not-built}" "$AUTO_RELEASE_PREFLIGHT" "$migration_before" "$migration_after" "${backup_reference:-none}" "$backup_sha256" "$restore_validation" "${rollback_result}" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC" "$IMPORT_COINRANKING" "$DEPLOY_PORTAL"
+      - name: Record Portal release audit summary
+        if: always()
+        env:
+          RELEASE_STATUS: ${{ job.status }}
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+          RELEASE_TRIGGER: ${{ github.event_name }}
+          PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
+          AUTOMATIC_PREFLIGHT: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.automatic_release) }}
+          DEPLOY_PORTAL: ${{ github.event_name == 'push' || inputs.deploy_portal }}
+          APPLY_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_migrations }}
+          IMPORT_WORLD_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.import_world_bank }}
+          IMPORT_SEC: ${{ github.event_name == 'workflow_dispatch' && inputs.import_sec }}
+          IMPORT_COINRANKING: ${{ github.event_name == 'workflow_dispatch' && inputs.import_coinranking }}
+        run: |
+          {
+            echo '## Portal release audit'
+            echo
+            echo "- Status: \`$RELEASE_STATUS\`"
+            echo "- Run: [$RELEASE_RUN_ID](https://github.com/$GITHUB_REPOSITORY/actions/runs/$RELEASE_RUN_ID)"
+            echo "- Trigger: \`$RELEASE_TRIGGER\`; commit: \`$RELEASE_SHA\`"
+            echo "- Portal digest: \`${PORTAL_DIGEST:-not-built}\`"
+            echo "- Read-only automatic preflight: \`$AUTOMATIC_PREFLIGHT\`; Portal-only deployment: \`$DEPLOY_PORTAL\`"
+            echo "- Database operations selected: migrations=\`$APPLY_MIGRATIONS\`, World Bank=\`$IMPORT_WORLD_BANK\`, SEC=\`$IMPORT_SEC\`, Coinranking=\`$IMPORT_COINRANKING\`"
+            echo '- Backup restore, migration details, and rollback outcome are recorded in the protected deploy step log.'
+          } >> "$GITHUB_STEP_SUMMARY"
