@@ -1,5 +1,6 @@
 import { financialRateLimit } from "@/lib/data-platform/financial-route";
 import { readGoldMarket } from "@/lib/data-platform/gold-db-market.mjs";
+import { readOpenPriceMarket } from "@/lib/data-platform/open-price-market.mjs";
 import { getFinancialReadOnlyPool } from "@/lib/db/financial-readonly";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,8 @@ export async function GET(request: Request) {
   const limited = financialRateLimit(request);
   if (limited) return limited;
   try {
-    const market = await readGoldMarket(getFinancialReadOnlyPool());
+    const monthly = await readOpenPriceMarket(getFinancialReadOnlyPool(), "gold");
+    const market = monthly.status === "success" ? monthly : await readGoldMarket(getFinancialReadOnlyPool());
     if (market.status !== "success") return Response.json({ error: market.status, data: [] }, { status: 503, headers });
     return Response.json(market, { status: 200, headers });
   } catch {

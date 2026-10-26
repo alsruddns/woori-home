@@ -7,6 +7,8 @@ import { upsertFinancialPrice } from "../src/lib/data-platform/financial-price-u
 import { normalizeGoldObservation, GOLD_DATASET_ID } from "../src/lib/data-platform/gold-price-pipeline.mjs";
 import { readGoldMarket } from "../src/lib/data-platform/gold-db-market.mjs";
 import { approvedGoldTestSource } from "./fixtures/gold-source.mjs";
+import { registerOpenPriceCatalog, persistOpenPrices } from "../src/lib/data-platform/open-price-persistence.mjs";
+import { readOpenPriceMarket } from "../src/lib/data-platform/open-price-market.mjs";
 
 const enabled = process.env.DB_TARGET === "test" && Boolean(process.env.TEST_DATABASE_URL);
 
@@ -66,6 +68,21 @@ test("financial PostgreSQL UPSERT preserves UUIDs, quote-only revisions and Gold
     assert.equal(market.data[0].unit,"troy-ounce");
     await client.query(`update data_sources set financial_rights=jsonb_set(financial_rights,'{publicDisplay}','"denied"') where id=$1`,[source.id]);
     assert.equal((await readGoldMarket(client,{now:goldNow})).status,"provider-rights-pending");
+    await registerOpenPriceCatalog(client);
+    const openNow=new Date('2026-10-27T00:00:00Z');
+    const monthly={url:'https://www.worldbank.org/en/research/commodity-markets',checksum:'fixture-only',prices:[{referenceDate:'2026-09-30',price:'4319',observedAt:'2026-10-02T00:00:00Z'}]};
+    const openOptions={now:openNow,manageTransaction:false};
+    assert.equal((await persistOpenPrices(client,'gold',monthly,openOptions)).inserted,1);
+    const replay=await persistOpenPrices(client,'gold',monthly,openOptions);
+    assert.equal(replay.inserted,0);assert.equal(replay.updated,0);assert.equal(replay.unchanged,1);
+    const monthlyRead=await readOpenPriceMarket(client,'gold',{now:openNow});
+    assert.equal(monthlyRead.status,'success');assert.equal(monthlyRead.data[0].price,'4319.0000000000');assert.equal(monthlyRead.priceType,'monthly-average');
+    const cryptoOpen={url:'https://alternative.me/crypto/api/',checksum:'fixture-only',data:[{id:'1',symbol:'BTC',name:'Bitcoin',rank:1,price:'80000',volume:'12',marketCap:'13',change:'-1',observedAt:'2026-10-26T22:00:00Z'}]};
+    assert.equal((await persistOpenPrices(client,'crypto',cryptoOpen,openOptions)).inserted,1);
+    assert.equal((await persistOpenPrices(client,'crypto',cryptoOpen,openOptions)).unchanged,1);
+    assert.equal((await readOpenPriceMarket(client,'crypto',{now:openNow})).data[0].symbol,'BTC');
+    await client.query(`update data_sources set financial_rights=jsonb_set(financial_rights,'{publicDisplay}','"denied"') where id='alternative-aggregate'`);
+    assert.equal((await readOpenPriceMarket(client,'crypto',{now:openNow})).status,'provider-rights-pending');
     await client.query("rollback");
   } catch (error) {
     await client.query("rollback").catch(() => {});
