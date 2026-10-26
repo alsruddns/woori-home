@@ -105,7 +105,7 @@ test("automatic Portal release requires a clean read-only production preflight a
   assert.match(source, /automatic-migration-policy\.mjs/);
   assert.match(source, /database work remains separately gated/);
   assert.match(source, /--network none --memory=1g --cpus=1/);
-  assert.match(source, /pg_restore --exit-on-error --no-owner --no-acl/);
+  assert.match(source, /pg_restore --username=postgres --exit-on-error --no-owner --no-acl/);
   assert.match(source, /Isolated PostgreSQL 16 restore and protected row-count validation passed/);
   const deployScript = extractPublishScript(source);
   assert.match(deployScript, /^set -Eeuo pipefail/);
