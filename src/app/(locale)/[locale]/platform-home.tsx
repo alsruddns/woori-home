@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { GlobalDataBriefing } from "./global-data-briefing";
 import { hreflangFor, type Locale } from "@/lib/site";
-import { familySiteHref, familySitesCopy } from "@/lib/family-sites";
+import { enabledFamilySiteKeys, familySiteHref, familySitesCopy } from "@/lib/family-sites";
 import { platformCopy } from "@/lib/data-platform/locales";
 import { indicators } from "@/lib/data-platform/registry";
 import { latestForCountry } from "@/lib/data-platform/snapshot";
@@ -76,7 +76,7 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   ];
   const scienceDate = neoSnapshot.dates[0];
   const scienceCount = neoSnapshot.objects.filter((item) => item.closeApproachDate === scienceDate).length;
-  const familyKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
+  const familyKeys = enabledFamilySiteKeys;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
