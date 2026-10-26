@@ -86,6 +86,10 @@ test("production preflight inspects migration hashes, catalog seeds, World Bank 
   assert.match(source, /secIdentityDiagnostic/);
   assert.match(source, /c\.ticker='XOM'/);
   assert.match(source, /createHash\("sha256"\)/);
+  assert.match(source, /as daily_snapshots/);
+  assert.match(source, /as duplicate_keys/);
+  assert.match(source, /financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled/);
+  assert.match(source, /report\.coinranking =/);
   assert.match(source, /applied\.length >= 13[\s\S]*financial_assets_natural_key_idx[\s\S]*financial_assets_natural_key_unique_idx/);
   assert.match(source, /PRODUCTION_ROLE_NAMES|validateFinancialProductionContext/);
   assert.match(source, /has_table_privilege/);
