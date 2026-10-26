@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
+import { extractPublishScript } from "../scripts/deploy/validate-publish-script.mjs";
 import {
   PRODUCTION_ROLE_NAMES,
   quotePgIdentifier,
@@ -90,15 +91,31 @@ test("production preflight inspects migration hashes, catalog seeds, World Bank 
   assert.match(source, /as duplicate_keys/);
   assert.match(source, /financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled/);
   assert.match(source, /report\.coinranking =/);
+  assert.match(source, /report\.protectedCounts =/);
+  assert.match(source, /sec_facts/);
   assert.match(source, /applied\.length >= 13[\s\S]*financial_assets_natural_key_idx[\s\S]*financial_assets_natural_key_unique_idx/);
   assert.match(source, /PRODUCTION_ROLE_NAMES|validateFinancialProductionContext/);
   assert.match(source, /has_table_privilege/);
 });
 
+test("automatic Portal release requires a clean read-only production preflight and blocks pending migrations", async () => {
+  const source = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+  assert.match(source, /automatic_release:/);
+  assert.match(source, /AUTO_RELEASE_PREFLIGHT/);
+  assert.match(source, /automatic-migration-policy\.mjs/);
+  assert.match(source, /database work remains separately gated/);
+  assert.match(source, /--network none --memory=1g --cpus=1/);
+  assert.match(source, /pg_restore --exit-on-error --no-owner --no-acl/);
+  assert.match(source, /Isolated PostgreSQL 16 restore and protected row-count validation passed/);
+  const deployScript = extractPublishScript(source);
+  assert.match(deployScript, /^set -Eeuo pipefail/);
+  assert.match(deployScript, /automatic-migration-policy\.mjs/);
+});
+
 test("production migration workflow verifies the current Coinranking migration journal count", async () => {
   const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
   assert.match(workflow, /\.migrations\.applied == 14/);
-  assert.match(workflow, /14 applied, 0 pending/);
+  assert.match(workflow, /grep -Eq '\[0-9\]\+ applied, 0 pending'/);
   assert.doesNotMatch(workflow, /12 applied, 0 pending|\.migrations\.applied == 13/);
 });
 

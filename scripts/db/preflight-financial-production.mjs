@@ -271,6 +271,14 @@ try {
   }
 
   const worldBank = await pool.query(`select count(*)::int as observations from indicator_observations`);
+  const protectedCounts = await pool.query(`select
+      (select count(*)::bigint from indicator_observations) as world_bank_observations,
+      (select count(*)::bigint from financial_assets) as financial_assets,
+      (select count(*)::bigint from financial_daily_prices) as financial_daily_prices`);
+  const secCounts = secTables.every((table) => tableNames.has(table))
+    ? (await pool.query(`select (select count(*)::bigint from financial_companies) as sec_companies,
+        (select count(*)::bigint from financial_company_facts) as sec_facts`)).rows[0]
+    : { sec_companies: null, sec_facts: null };
   const coinrankingCounts = await pool.query(`select
       (select count(*)::int from financial_assets where source_id=$1 and asset_type='crypto') as assets,
       (select count(*)::int from financial_assets where source_id=$1 and asset_type='crypto' and is_active) as active_assets,
@@ -287,6 +295,7 @@ try {
   const coinrankingDataset = await pool.query("select id,source_id from datasets where id=$1", ["coinranking-usd-daily-snapshots"]);
   const databaseSize = await pool.query("select pg_database_size(current_database())::text as size_bytes");
   report.worldBank = { tablePresent: true, observations: worldBank.rows[0].observations };
+  report.protectedCounts = { ...protectedCounts.rows[0], ...secCounts };
   report.coinranking = {
     schemaPresent: Boolean(tableNames.has("financial_assets") && tableNames.has("financial_daily_prices")),
     datasetPresent: coinrankingDataset.rows[0]?.source_id === "coinranking-aggregate",

@@ -1,6 +1,14 @@
 name: PR CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Full commit SHA to validate for a trusted release synchronization
+        type: string
+        required: true
+  push:
+    branches: [develop]
   pull_request:
     branches: [develop, main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -9,10 +17,32 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-ci-home-${{ github.event.pull_request.number }}
+  group: pr-ci-home-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  release-scope:
+    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main' && vars.AUTOMATIC_RELEASE_SCOPE_GATE == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Check out trusted main release policy
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Validate the pull request's file scope using the trusted main policy
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "refs/pull/${PR_NUMBER}/head:refs/remotes/origin/pr-${PR_NUMBER}"
+          test "$(git rev-parse "origin/pr-${PR_NUMBER}")" = "$PR_HEAD_SHA"
+          node scripts/deploy/auto-promotion-policy.mjs "$PR_HEAD_SHA"
+
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -40,6 +70,8 @@ jobs:
     steps:
       - name: Checkout pull request
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
@@ -67,5 +99,7 @@ jobs:
         run: pnpm exec tsc --noEmit
       - name: "Check Drizzle migrations"
         run: pnpm exec drizzle-kit check
+      - name: Validate Portal deployment shell syntax
+        run: node scripts/deploy/validate-publish-script.mjs
       - name: "Run pnpm build"
         run: pnpm build
