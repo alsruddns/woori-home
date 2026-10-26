@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "migrations": [
+    {
+      "tag": "0012_coinranking_asset_identity",
+      "sha256": "591fcc31c3923a2d6f71a24edb17f4401865e2b1f3bc4ed66e592bb82b61cc00",
+      "schemaOnly": false,
+      "dataLossRisk": "none",
+      "restoreTestRequired": true,
+      "specialCase": "replace-natural-key-index-and-seed-disabled-pending-provider"
+    },
+    {
+      "tag": "0013_coinranking_snapshot_rights",
+      "sha256": "f3f1d4c00c0298be3bb48cd94d72a2b9d303aed6094834af0058deeb19ec9ce1",
+      "schemaOnly": false,
+      "dataLossRisk": "none",
+      "restoreTestRequired": true,
+      "specialCase": "add-pending-rights-metadata-only"
+    }
+  ]
+}

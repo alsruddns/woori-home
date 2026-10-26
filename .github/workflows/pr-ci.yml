@@ -1,6 +1,14 @@
 name: PR CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Full commit SHA to validate for a trusted release synchronization
+        type: string
+        required: true
+  push:
+    branches: [develop]
   pull_request:
     branches: [develop, main]
     types: [opened, synchronize, reopened, ready_for_review]
@@ -9,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-ci-home-${{ github.event.pull_request.number }}
+  group: pr-ci-home-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -40,6 +48,8 @@ jobs:
     steps:
       - name: Checkout pull request
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.sha }}
       - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
@@ -67,5 +77,7 @@ jobs:
         run: pnpm exec tsc --noEmit
       - name: "Check Drizzle migrations"
         run: pnpm exec drizzle-kit check
+      - name: Validate Portal deployment shell syntax
+        run: node scripts/deploy/validate-publish-script.mjs
       - name: "Run pnpm build"
         run: pnpm build
