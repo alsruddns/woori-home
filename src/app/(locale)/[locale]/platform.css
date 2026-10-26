@@ -317,3 +317,5 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
 .company-financial-treemap-dialog .company-financial-treemap-controls .company-financial-treemap-search{flex:1 1 160px}
 .company-financial-treemap-tile.is-tiny{padding:0;border:0;border-radius:0;font-size:0;line-height:0}
 @media(max-width:760px){.company-financial-treemap-controls .company-financial-treemap-search{grid-column:1/-1}.company-financial-treemap-dialog .company-financial-treemap-controls .company-financial-treemap-search{grid-column:1/-1}}
+
+.gold-chart-wrap select{max-width:100%;min-height:38px;margin:6px 0 10px;padding:6px 10px;border:1px solid var(--platform-border);border-radius:6px;background:var(--platform-surface);color:var(--platform-text);font:inherit}.gold-chart-wrap label{display:grid;gap:4px;max-width:320px}.gold-current-quote a{color:var(--platform-accent)}

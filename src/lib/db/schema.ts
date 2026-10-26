@@ -16,6 +16,13 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
+export type FinancialRightStatus = "confirmed" | "pending" | "restricted" | "denied";
+export type FinancialRightsDocument = Record<"apiAccess" | "publicDisplay" | "dbStorage" | "longTermRetention" | "userApi" |
+  "csvRedistribution" | "derivedVisualization" | "dailySnapshot" | "adSupportedDisplay" | "competitorPermission", FinancialRightStatus> & {
+    commercialUse?: FinancialRightStatus;
+    evidence?: Record<string, { url: string; reviewedAt: string; scope: string }>;
+  };
+
 export const dataSources = pgTable("data_sources", {
   id: varchar("id", { length: 80 }).primaryKey(),
   name: text("name").notNull(),
@@ -24,7 +31,7 @@ export const dataSources = pgTable("data_sources", {
   licenseStatus: varchar("license_status", { length: 24 }).notNull().default("unknown"),
   licenseName: text("license_name"),
   licenseUrl: text("license_url"),
-  financialRights: jsonb("financial_rights").$type<Record<string, "confirmed" | "pending" | "restricted" | "denied">>().notNull().default({
+  financialRights: jsonb("financial_rights").$type<FinancialRightsDocument>().notNull().default({
     apiAccess: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending",
     userApi: "pending", csvRedistribution: "pending", derivedVisualization: "pending", dailySnapshot: "pending",
     adSupportedDisplay: "pending", competitorPermission: "pending",

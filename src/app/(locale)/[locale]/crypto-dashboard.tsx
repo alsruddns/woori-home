@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { Locale } from "@/lib/site";
 import { getCryptoPageCopy } from "@/lib/data-platform/crypto-page-copy";
 import { cryptoDirectoryCopy } from "@/lib/data-platform/crypto-directory-copy";
+import { stalePriceLabel, aggregatePriceLabel } from "@/lib/data-platform/financial-price-status-copy";
+import { dailyPriceChartSegments } from "@/lib/data-platform/financial-chart-series.mjs";
 
 type CryptoAsset = { symbol: string; name: string; aliases: string[] };
 type DailyRow = {
@@ -15,7 +17,7 @@ type DailyRow = {
 };
 type DailySnapshot = { market: "krw" | "usdt"; referenceTimezone: string; referenceDate: string; dataStatus: string; data: DailyRow[]; history: DailyRow[] };
 type CoinrankingQuote = { uuid: string; symbol: string; name: string; aliases: string[]; price: string; change24hPercent: string | null; marketCap: string | null; volume24h: string | null; observedAt: string };
-type CoinrankingPayload = { currency: "USD"; observedAt: string; data: CoinrankingQuote[]; attribution: string; sourceUrl: string };
+type CoinrankingPayload = { stale?: boolean; currency: "USD"; observedAt: string; data: CoinrankingQuote[]; attribution: string; sourceUrl: string };
 type CoinrankingHistoryPoint = { timestamp: string; price: string };
 
 const coinrankingLabels: Record<Locale, { current: string; change24h: string; observed: string; chart: string; loadChart: string }> = {
@@ -259,18 +261,19 @@ function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { l
   if (!payload?.data?.length) return null;
   return <section className="crypto-daily-dashboard coinranking-market" aria-labelledby="coinranking-market-heading">
     <header className="crypto-daily-heading">
-      <div><span className="platform-eyebrow">{copy.market} · USD</span><h2 id="coinranking-market-heading">{labels.current}</h2></div>
+      <div><span className="platform-eyebrow">{copy.market} · USD</span><h2 id="coinranking-market-heading">{aggregatePriceLabel[locale]}</h2></div>
       <label className="crypto-directory-search"><span>{searchLabel}</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={searchPlaceholder} autoComplete="off" /></label>
     </header>
-    <p className="crypto-daily-asof"><span>{labels.observed}</span><strong>{payload.observedAt}</strong><span>·</span><a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution}</a></p>
-    <div className="crypto-daily-featured" aria-label={`${labels.current}: 20`}>
+    <p className="crypto-daily-asof"><span>{labels.observed}</span><strong>{formatObservationTime(payload.observedAt,locale)} UTC</strong><span>·</span><a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution}</a></p>
+    <div className="crypto-daily-featured" aria-label={`${aggregatePriceLabel[locale]}: ${featured.length}`}>
       {featured.map((coin) => <button key={`featured-${coin.uuid}`} type="button" className={`crypto-daily-tile ${changeState(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
         <span>{locale === "ko" && coin.aliases.at(-1) ? coin.aliases.at(-1) : coin.name} <b>{coin.symbol}</b></span>
         <strong>{formatClose(coin.price, "USD", locale)}</strong>
         <small>{labels.change24h}: {formatChange(coin.change24hPercent, locale)}</small>
       </button>)}
     </div>
-    <div className="crypto-daily-heatmap" aria-label={`${labels.change24h}: 100`}>
+    {payload.stale ? <p role="status" className="platform-data-note">{stalePriceLabel[locale]}</p> : null}
+    <div className="crypto-daily-heatmap" aria-label={`${labels.change24h}: ${heatmap.length}`}>
       {heatmap.map((coin) => <button key={`heatmap-${coin.uuid}`} type="button" className={`crypto-daily-tile ${changeState(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setHistory([]); }} aria-pressed={selected?.uuid === coin.uuid}>
         <span>{coin.symbol}</span><strong>{formatChange(coin.change24hPercent, locale)}</strong>
       </button>)}
@@ -284,7 +287,7 @@ function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { l
     </div>
     {selected && <div className="crypto-daily-detail">
       <dl className="crypto-daily-metrics">
-        <div><dt>{labels.current}</dt><dd>{formatClose(selected.price, "USD", locale)}</dd></div>
+        <div><dt>{aggregatePriceLabel[locale]}</dt><dd>{formatClose(selected.price, "USD", locale)}</dd></div>
         <div><dt>{labels.change24h}</dt><dd className={changeState(selected.change24hPercent)}>{formatChange(selected.change24hPercent, locale)}</dd></div>
         {selected.marketCap && <div><dt>{copy.marketCap}</dt><dd>{formatClose(selected.marketCap, "USD", locale)}</dd></div>}
         {selected.volume24h && <div><dt>{copy.volume} (24h)</dt><dd>{formatClose(selected.volume24h, "USD", locale)}</dd></div>}
@@ -294,20 +297,23 @@ function CoinrankingMarket({ locale, copy, searchLabel, searchPlaceholder }: { l
         <button type="button" onClick={loadChart} disabled={loadingChart}>{loadingChart ? copy.sourcePending : labels.loadChart}</button>
       </div>
       {history.length > 1 && <div className="crypto-daily-chart-panel"><h3>{selected.name} · {labels.chart}</h3><CoinrankingPriceChart points={history} title={`${selected.symbol} ${labels.chart}`} /></div>}
-      <p className="crypto-daily-attribution">{labels.observed}: {selected.observedAt} UTC · <a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution}</a></p>
+      <p className="crypto-daily-attribution">{labels.observed}: {formatObservationTime(selected.observedAt,locale)} UTC · <a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution}</a></p>
     </div>}
   </section>;
 }
 
 function CoinrankingPriceChart({ points, title }: { points: CoinrankingHistoryPoint[]; title: string }) {
-  const values = points.map(({ price }) => Number(price)).filter(Number.isFinite);
-  if (values.length < 2) return null;
-  const low = Math.min(...values); const high = Math.max(...values); const range = high - low || 1;
-  const coordinates = points.map((point, index) => `${(index / (points.length - 1)) * 100},${92 - ((Number(point.price) - low) / range) * 80}`).join(" ");
-  return <svg className="crypto-daily-chart" viewBox="0 0 100 100" role="img" aria-label={title} preserveAspectRatio="none"><line x1="0" y1="92" x2="100" y2="92" /><polyline points={coordinates} /></svg>;
+  const segments = dailyPriceChartSegments(points);
+  if (!segments.length) return null;
+  return <svg className="crypto-daily-chart" viewBox="0 0 100 100" role="img" aria-label={title} preserveAspectRatio="none"><line x1="0" y1="92" x2="100" y2="92" />{segments.map((segment,index)=>segment.length>1?<polyline key={index} points={segment.join(" ")} />:<circle key={index} cx={segment[0].split(",")[0]} cy={segment[0].split(",")[1]} r="1" fill="currentColor" />)}</svg>;
 }
 
 export function CryptoDashboardLoading({ locale }: { locale: Locale }) {
   const copy = getCryptoPageCopy(locale);
   return <section className="crypto-empty-state"><h1>{copy.title}</h1><p>{copy.unavailableBody}</p></section>;
+}
+
+function formatObservationTime(value: string, locale: Locale) {
+  const timestamp = new Date(value);
+  return Number.isFinite(timestamp.getTime()) ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(timestamp) : "?";
 }

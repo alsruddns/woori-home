@@ -98,7 +98,8 @@ test("gold routes remain noindex without verified price records and all quote lo
     read("src/data/gold-prices.json"),
   ]);
   assert.match(goldPage, /index: false/);
-  assert.match(goldPage, /quoteCount === 0/);
+  assert.match(goldPage, /GoldDbQuotes/);
+  assert.doesNotMatch(goldPage, /import snapshot|quoteCount > 0/);
   const snapshot = JSON.parse(snapshotText);
   assert.equal(snapshot.status, "disabled");
   assert.deepEqual(snapshot.quotes, []);

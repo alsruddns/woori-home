@@ -153,11 +153,12 @@ export async function getCoinrankingDailyMarket() {
       select p.reference_date,p.fetched_at from financial_daily_prices p
       join data_sources s on s.id=p.source_id and ${coinrankingRightsWhere}
       where p.price_kind='quote-24h' and p.source_id='coinranking-aggregate'
+        and p.reference_date <= (now() at time zone 'UTC')::date::text and p.fetched_at <= now()
       order by p.reference_date desc limit 1
     ), snapshot as (
       select a.id as "assetId",a.source_asset_id as uuid,a.symbol,a.name,a.currency,
         p.reference_date as "referenceDate",p.reference_timezone as "referenceTimezone",p.price_kind as "priceKind",
-        p.close::text as price,p.market_cap::text as "marketCap",p.volume::text as volume,
+        p.close::text as price,p.market_cap::text as "marketCap",p.volume::text as "volume24h",
         p.quote_change_percent::text as "change24hPercent",p.quote_window as "quoteWindow",p.fetched_at as "observedAt",
         s.source_url as "sourceUrl",s.attribution
       from financial_daily_prices p
@@ -165,6 +166,7 @@ export async function getCoinrankingDailyMarket() {
       join data_sources s on s.id=p.source_id and ${coinrankingRightsWhere}
       join eligible e on e.reference_date=p.reference_date
       where p.price_kind='quote-24h' and p.source_id='coinranking-aggregate' and a.currency='USD'
+        and a.unit='aggregate-price' and p.fetched_at <= now()
     ) select * from snapshot order by "marketCap"::numeric desc,uuid asc limit 300`);
   const data = result.rows;
   return {
@@ -172,6 +174,7 @@ export async function getCoinrankingDailyMarket() {
     currency: "USD" as const,
     referenceDate: data[0]?.referenceDate ?? null,
     observedAt: data[0]?.observedAt ?? null,
+    stale: data.length > 0 && Date.now() - new Date(data[0].observedAt).getTime() > 36 * 60 * 60 * 1000,
     quoteType: "daily-observed-aggregate-price",
     quoteWindow: "24h",
     sourceUrl: data[0]?.sourceUrl ?? "https://coinranking.com/",

@@ -16,7 +16,7 @@ export function normalizeCoinrankingDailySnapshot(snapshot) {
     || snapshot.quoteType !== "daily-observed-aggregate-price" || snapshot.quoteWindow !== "24h"
     || !Number.isInteger(snapshot.requestCount) || snapshot.requestCount < 1 || snapshot.requestCount > 3
     || !Number.isFinite(Date.parse(snapshot.observedAt)) || !Array.isArray(snapshot.data)
-    || snapshot.data.length !== COINRANKING_DAILY_LIMIT) {
+    || snapshot.data.length < 1 || snapshot.data.length > COINRANKING_DAILY_LIMIT) {
     throw new Error("Coinranking snapshot does not match the reviewed daily collection contract.");
   }
   const fetchedAt = new Date(snapshot.observedAt).toISOString();
@@ -81,6 +81,7 @@ export function normalizeCoinrankingDailySnapshot(snapshot) {
     sourceUrl: snapshot.sourceUrl,
     observedAt: fetchedAt,
     apiRequests: snapshot.requestCount,
+    rejectedAssets: Array.isArray(snapshot.rejectedAssets) ? snapshot.rejectedAssets : [],
     assets,
     prices,
   };

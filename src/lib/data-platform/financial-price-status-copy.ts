@@ -1,0 +1,41 @@
+import type { Locale } from "@/lib/site";
+
+export const aggregatePriceLabel: Record<Locale, string> = {
+  ko:"일별 집계 관측 가격", en:"Daily aggregate price observation", ja:"日次の集計観測価格", zh:"每日聚合观测价格",
+  es:"Precio agregado observado por día", "pt-br":"Preço agregado observado por dia", de:"Täglicher aggregierter Beobachtungspreis",
+  fr:"Prix agrégé observé par jour", vi:"Giá tổng hợp ghi nhận hằng ngày", id:"Pengamatan harga agregat harian",
+  th:"ราคาตลาดรวมที่บันทึกรายวัน", "zh-tw":"每日彙總觀測價格", it:"Prezzo aggregato osservato giornalmente",
+  nl:"Dagelijks waargenomen geaggregeerde prijs", hi:"दैनिक समेकित मूल्य अवलोकन", ru:"Ежедневное наблюдение агрегированной цены",
+  tr:"Günlük toplu fiyat gözlemi", pl:"Dzienna obserwacja ceny zagregowanej", fil:"Araw-araw na obserbasyon ng pinagsamang presyo",
+  bn:"দৈনিক সমন্বিত মূল্য পর্যবেক্ষণ", uk:"Щоденне спостереження агрегованої ціни", ms:"Pemerhatian harga agregat harian",
+  sv:"Daglig observation av aggregerat pris", cs:"Denní pozorování agregované ceny", ro:"Preț agregat observat zilnic", el:"Ημερήσια παρατήρηση συγκεντρωτικής τιμής",
+};
+
+export const stalePriceLabel: Record<Locale, string> = {
+  ko: "과거 관측값입니다. 현재 가격이 아니므로 기준 시각을 확인하세요.",
+  en: "Historical observation. Check its timestamp; this is not a current price.",
+  ja: "過去の観測値です。現在の価格ではないため、観測時刻をご確認ください。",
+  zh: "这是历史观测值，并非当前价格。请核对观测时间。",
+  es: "Observación histórica. Comprueba la fecha; no es un precio actual.",
+  "pt-br": "Observação histórica. Confira a data; este não é um preço atual.",
+  de: "Historischer Beobachtungswert. Zeitstempel prüfen; dies ist kein aktueller Preis.",
+  fr: "Observation historique. Vérifiez la date ; ce n’est pas un cours actuel.",
+  vi: "Đây là giá trị đã ghi nhận trong quá khứ, không phải giá hiện tại. Hãy kiểm tra thời điểm.",
+  id: "Pengamatan historis. Periksa waktunya; ini bukan harga terkini.",
+  th: "เป็นข้อมูลที่บันทึกไว้ในอดีต ไม่ใช่ราคาปัจจุบัน โปรดตรวจสอบเวลา",
+  "zh-tw": "這是歷史觀測值，並非目前價格。請核對觀測時間。",
+  it: "Osservazione storica. Controlla la data: non è un prezzo attuale.",
+  nl: "Historische waarneming. Controleer het tijdstip; dit is geen actuele prijs.",
+  hi: "यह पिछला अवलोकन है, वर्तमान कीमत नहीं। कृपया समय जाँचें।",
+  ru: "Историческое наблюдение. Проверьте время: это не текущая цена.",
+  tr: "Geçmiş gözlem. Zaman damgasını kontrol edin; bu güncel fiyat değildir.",
+  pl: "Obserwacja historyczna. Sprawdź datę; to nie jest bieżąca cena.",
+  fil: "Makasaysayang obserbasyon. Suriin ang oras; hindi ito kasalukuyang presyo.",
+  bn: "এটি অতীতের পর্যবেক্ষণ, বর্তমান মূল্য নয়। অনুগ্রহ করে সময় যাচাই করুন।",
+  uk: "Історичне спостереження. Перевірте час: це не поточна ціна.",
+  ms: "Pemerhatian terdahulu. Semak waktunya; ini bukan harga semasa.",
+  sv: "Historisk observation. Kontrollera tidpunkten; detta är inte ett aktuellt pris.",
+  cs: "Historické pozorování. Zkontrolujte čas; nejde o aktuální cenu.",
+  ro: "Observație istorică. Verificați data; acesta nu este un preț curent.",
+  el: "Ιστορική παρατήρηση. Ελέγξτε την ώρα· δεν είναι τρέχουσα τιμή.",
+};
