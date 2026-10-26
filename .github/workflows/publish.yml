@@ -280,6 +280,38 @@ jobs:
             compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
             override="$(mktemp /tmp/woori-portal.XXXXXX.yml)"
 
+            stage="Collect read-only production host resource diagnostics"
+            printf '[DEPLOY HOST] %s\n' "$stage"
+            awk '/^(MemTotal|MemAvailable|SwapTotal|SwapFree):/ {print "[DEPLOY HOST] " $0}' /proc/meminfo
+            if [ -r /proc/pressure/memory ]; then
+              printf '[DEPLOY HOST] Memory pressure (PSI):\n'
+              cat /proc/pressure/memory
+            else
+              echo '[DEPLOY HOST] Memory pressure (PSI): unavailable'
+            fi
+            printf '[DEPLOY HOST] Disk space for Portal backups:\n'
+            df -Pk /opt/backups/woori-portal
+            printf '[DEPLOY HOST] Docker container memory usage:\n'
+            docker stats --no-stream --format 'name={{.Name}} memory={{.MemUsage}} memory_percent={{.MemPerc}}' || {
+              echo '[DEPLOY HOST] Docker stats could not be read.' >&2
+              exit 1
+            }
+            printf '[DEPLOY HOST] Docker container OOM/restart state:\n'
+            docker ps -aq | xargs -r docker inspect --format '{{.Name}} oom_killed={{.State.OOMKilled}} restart_count={{.RestartCount}}' || {
+              echo '[DEPLOY HOST] Docker OOM state could not be read.' >&2
+              exit 1
+            }
+            if command -v journalctl >/dev/null 2>&1; then
+              recent_oom_events="$(journalctl -k --since '24 hours ago' --no-pager 2>/dev/null | grep -Ei 'out of memory|oom-kill|killed process' | tail -n 20 || true)"
+              if [ -n "$recent_oom_events" ]; then
+                printf '[DEPLOY HOST] Kernel OOM messages in the last 24 hours:\n%s\n' "$recent_oom_events"
+              else
+                echo '[DEPLOY HOST] No readable kernel OOM messages in the last 24 hours.'
+              fi
+            else
+              echo '[DEPLOY HOST] Kernel OOM journal is unavailable.'
+            fi
+
             stage="Validate Compose configuration"
             printf '[DEPLOY 2] %s\n' "$stage"
             printf 'services:\n  portal:\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n' > "$override"
@@ -531,6 +563,18 @@ jobs:
                 stage="Recheck production schema and SEC grants"
                 verified_preflight="$(db_tools_run scripts/db/preflight-financial-production.mjs)"
                 printf '%s\n' "$verified_preflight" | jq -e '(.blockers | length) == 0 and (.permissionFindings | length) == 0' >/dev/null
+                protected_before="$(printf '%s' "$preflight_report" | jq -ce '.protectedCounts | {world_bank_observations,sec_companies,sec_facts,financial_assets,financial_daily_prices}')"
+                protected_after="$(printf '%s' "$verified_preflight" | jq -ce '.protectedCounts | {world_bank_observations,sec_companies,sec_facts,financial_assets,financial_daily_prices}')"
+                test "$protected_after" = "$protected_before" || {
+                  echo 'Automatic release blocked: protected World Bank, SEC, or financial row counts changed during the migration.' >&2
+                  exit 2
+                }
+                xom_before="$(printf '%s' "$preflight_report" | jq -ce '[.secIdentityDiagnostic.rows[] | {cik,ticker,facts}] | sort_by(.cik)')"
+                xom_after="$(printf '%s' "$verified_preflight" | jq -ce '[.secIdentityDiagnostic.rows[] | {cik,ticker,facts}] | sort_by(.cik)')"
+                test "$xom_after" = "$xom_before" || {
+                  echo 'Automatic release blocked: the read-only SEC issuer identity diagnostic changed during the migration.' >&2
+                  exit 2
+                }
                 migration_after="$(printf '%s' "$verified_preflight" | jq -er '"\(.migrations.applied)/\(.migrations.expected)"')"
                 if [ "$AUTO_RELEASE_PREFLIGHT" = "true" ] && [ "$coinranking_rights_migration" = "true" ]; then
                   printf '%s\n' "$verified_preflight" | jq -e '.coinranking.datasetPresent == true and .coinranking.counts.assets == 0 and .coinranking.counts.daily_snapshots == 0 and .coinranking.source.license_status == "unknown" and .coinranking.source.collection_enabled == false and (.coinranking.source.financial_rights | [.apiAccess,.publicDisplay,.dbStorage,.longTermRetention,.userApi,.derivedVisualization,.dailySnapshot,.adSupportedDisplay,.competitorPermission] | all(. == "pending")) and .coinranking.source.financial_rights.csvRedistribution == "denied"' >/dev/null || {
