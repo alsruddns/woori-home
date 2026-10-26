@@ -4,7 +4,7 @@ import { useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { localeConfig, type Locale } from "@/lib/site";
 import { platformCopy } from "@/lib/data-platform/locales";
-import { familySiteHref, familySitesCopy } from "@/lib/family-sites";
+import { enabledFamilySiteKeys, familySiteHref, familySitesCopy } from "@/lib/family-sites";
 import { categoryNavigation } from "@/lib/data-platform/category-navigation";
 
 function getTheme() { return document.documentElement.dataset.theme === "light" ? "light" : "dark"; }
@@ -20,7 +20,7 @@ export function PlatformControls({ locale }: { locale: Locale }) {
   const copy = platformCopy[locale];
   const family = familySitesCopy[locale];
   const pathname = usePathname();
-  const familyKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
+  const familyKeys = enabledFamilySiteKeys;
   const categories = categoryNavigation(locale);
 
   function toggleTheme() {
