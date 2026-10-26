@@ -184,7 +184,7 @@ try {
         await writeClient.query(`update data_collection_runs set finished_at=now(),status=$2,scope=scope || $3::jsonb,record_count=$4,
           inserted_count=$5,updated_count=$6,skipped_count=$7,latest_reference_period=$8
           where id=$1`, [reservation.runId, counts.inserted + counts.updated === 0 ? "unchanged" : "success",
-          JSON.stringify({ apiRequests: normalized.apiRequests, assetCount: normalized.assets.length, observationCount: normalized.prices.length, currency: normalized.currency, observedAt: normalized.observedAt }),
+          JSON.stringify({ apiRequests: normalized.apiRequests, assetCount: normalized.assets.length, observationCount: normalized.prices.length, rejectedAssets: normalized.rejectedAssets, currency: normalized.currency, observedAt: normalized.observedAt }),
           counts.count, counts.inserted, counts.updated, counts.unchanged, normalized.referenceDate]);
         await writeClient.query("commit");
       } catch (error) {

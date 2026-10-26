@@ -1,3 +1,5 @@
+import { priceDecimal } from "../financial-price-policy.mjs";
+
 const ASSETS = Object.freeze([
   ["Qwsogvtv82FCd", "BTC", "Bitcoin", ["bitcoin", "\uBE44\uD2B8\uCF54\uC778"]],
   ["razxDUgYGNAdQ", "ETH", "Ethereum", ["ethereum", "\uC774\uB354\uB9AC\uC6C0"]],
@@ -56,6 +58,10 @@ function providerError(response) {
   });
 }
 
+function exactDecimal(value, options) {
+  try { return priceDecimal(value, options); } catch { return null; }
+}
+
 export function createCoinrankingProvider({ apiKey = process.env.COINRANKING_API_KEY, fetchImpl = fetch, now = () => new Date() } = {}) {
   async function get(path, params, signal) {
     if (!apiKey) throw Object.assign(new Error("Coinranking API key is not configured"), { code: "provider-not-configured" });
@@ -93,13 +99,15 @@ export function createCoinrankingProvider({ apiKey = process.env.COINRANKING_API
     async fetchTopMarketSnapshot({ limit = 300, signal, wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {}) {
       if (!Number.isInteger(limit) || limit < 1 || limit > 300) throw new Error("Coinranking daily snapshots are limited to the top 300 assets.");
       const coins = [];
+      const rejectedAssets = [];
       const seen = new Set();
       let cursor;
       let requests = 0;
-      while (coins.length < limit) {
+      let scanned = 0;
+      while (scanned < limit && requests < Math.ceil(limit / 100)) {
         if (requests > 0) await wait(250);
         const data = await get("/coins", {
-          limit: Math.min(100, limit - coins.length),
+          limit: Math.min(100, limit - scanned),
           orderBy: "marketCap",
           orderDirection: "desc",
           referenceCurrencyUuid: "yhjMzLPhuIDl",
@@ -108,30 +116,35 @@ export function createCoinrankingProvider({ apiKey = process.env.COINRANKING_API
         }, signal);
         requests += 1;
         if (!Array.isArray(data.coins)) throw new Error("Invalid Coinranking market snapshot page.");
+        if (data.coins.length > Math.min(100, limit - scanned)) throw new Error("Coinranking returned an oversized market snapshot page.");
         for (const coin of data.coins) {
           if (typeof coin?.uuid !== "string" || !/^[A-Za-z0-9_-]{1,180}$/.test(coin.uuid) || seen.has(coin.uuid)) throw new Error("Coinranking pagination returned a duplicate or missing UUID.");
-          const price = decimal(coin.price);
-          const marketCap = decimal(coin.marketCap);
-          const volume24h = coin["24hVolume"] == null ? null : decimal(coin["24hVolume"]);
-          const change24hPercent = coin.change == null ? null : decimal(coin.change);
+          seen.add(coin.uuid);
+          scanned += 1;
+          let price;
+          try { price = priceDecimal(coin.price, { positive: true }); }
+          catch { rejectedAssets.push({ uuid: coin.uuid, reason: "invalid-price-or-unsupported-precision" }); continue; }
+          const marketCap = exactDecimal(coin.marketCap, { positive: true, precision: 38 });
+          const volume24h = coin["24hVolume"] == null ? null : exactDecimal(coin["24hVolume"], { precision: 38 });
+          const change24hPercent = coin.change == null ? null : exactDecimal(coin.change, { precision: 20 });
           if (typeof coin.name !== "string" || !coin.name.trim() || typeof coin.symbol !== "string" || !/^[A-Z0-9._-]{1,40}$/.test(coin.symbol)
             || price === null || Number(price) <= 0 || marketCap === null || Number(marketCap) <= 0
             || (coin["24hVolume"] != null && (volume24h === null || Number(volume24h) < 0))
             || (coin.change != null && change24hPercent === null)) {
-            throw new Error(`Invalid Coinranking market fields for asset ${String(coin.uuid).slice(0, 40)}.`);
+            rejectedAssets.push({ uuid: coin.uuid, reason: "invalid-market-fields" });
+            continue;
           }
-          seen.add(coin.uuid);
           coins.push({ uuid: coin.uuid, name: coin.name.trim(), symbol: coin.symbol, price, change24hPercent, marketCap, volume24h });
-          if (coins.length === limit) break;
+          if (scanned === limit) break;
         }
         if (!data.pagination?.hasNextPage || !data.pagination?.nextCursor) break;
         cursor = data.pagination.nextCursor;
       }
-      if (coins.length !== limit) throw new Error(`Coinranking returned ${coins.length} validated assets; ${limit} are required.`);
+      if (coins.length === 0) throw new Error("Coinranking returned no validated market prices.");
       return {
         provider: "Coinranking", sourceUrl: "https://coinranking.com/", attribution: "Data provided by Coinranking",
         currency: "USD", quoteType: "daily-observed-aggregate-price", quoteWindow: "24h",
-        observedAt: now().toISOString(), requestCount: requests, data: coins,
+        observedAt: now().toISOString(), requestCount: requests, requestedAssetCount: limit, rejectedAssets, data: coins,
       };
     },
     async fetchPriceHistory(uuid, timePeriod = "7d", { signal } = {}) {

@@ -69,7 +69,7 @@ test("Coinranking market collection paginates 300 UUIDs in bounded USD pages and
   const calls = [];
   const waits = [];
   const data = Array.from({ length: 300 }, (_, index) => ({
-    uuid: `coin-${index}`, name: `Coin ${index}`, symbol: `C${index}`, price: `${index + 1}.12345678901`,
+    uuid: `coin-${index}`, name: `Coin ${index}`, symbol: `C${index}`, price: `${index + 1}.1234567891`,
     change: index % 2 ? "-1.25" : "2.5", marketCap: `${300 - index}000000`, "24hVolume": `${index}000`,
   }));
   const provider = createCoinrankingProvider({ apiKey: "do-not-print", now: () => new Date("2026-10-25T02:00:00Z"),
@@ -90,10 +90,10 @@ test("Coinranking market collection paginates 300 UUIDs in bounded USD pages and
   assert.equal(calls[0].searchParams.get("referenceCurrencyUuid"), "yhjMzLPhuIDl");
   assert.equal(calls[1].searchParams.get("cursor"), "cursor-1");
   assert.equal(calls[2].searchParams.get("cursor"), "cursor-2");
-  assert.equal(result.data[0].price, "1.123456789");
+  assert.equal(result.data[0].price, "1.1234567891");
 });
 
-test("Coinranking pagination rejects duplicate UUIDs and malformed market fields", async () => {
+test("Coinranking pagination rejects duplicate UUIDs and isolates unsupported prices within the three-call budget", async () => {
   const page = Array.from({ length: 100 }, (_, index) => ({ uuid: `id-${index}`, name: `Coin ${index}`, symbol: `C${index}`, price: "1", change: "0", marketCap: "100", "24hVolume": "2" }));
   let calls = 0;
   const provider = createCoinrankingProvider({ apiKey: "test", fetchImpl: async () => {
@@ -104,9 +104,12 @@ test("Coinranking pagination rejects duplicate UUIDs and malformed market fields
   await assert.rejects(provider.fetchTopMarketSnapshot(), /duplicate or missing UUID/);
   const malformed = createCoinrankingProvider({ apiKey: "test", fetchImpl: async () => response({ status: "success", data: {
     coins: Array.from({ length: 100 }, (_, index) => ({ ...page[index], price: index === 4 ? "NaN" : "1" })),
-    pagination: { hasNextPage: true, nextCursor: "next" },
+    pagination: { hasNextPage: false, nextCursor: null },
   } }) });
-  await assert.rejects(malformed.fetchTopMarketSnapshot(), /Invalid Coinranking market fields/);
+  const partial = await malformed.fetchTopMarketSnapshot();
+  assert.equal(partial.data.length,99);
+  assert.equal(partial.requestCount,1);
+  assert.deepEqual(partial.rejectedAssets,[{uuid:"id-4",reason:"invalid-price-or-unsupported-precision"}]);
 });
 
 test("daily normalization stores observed aggregate prices as quote-24h rows without fabricated OHLC", () => {
@@ -125,7 +128,8 @@ test("daily normalization stores observed aggregate prices as quote-24h rows wit
   assert.equal(normalized.prices[0].close, "1.25");
   assert.equal(normalized.prices[0].quoteChangePercent, "-2.5");
   assert.equal(normalized.snapshotType, "daily-observed-aggregate-price");
-  assert.throws(() => normalizeCoinrankingDailySnapshot({ ...snapshot, data: snapshot.data.slice(1) }), /daily collection contract/);
+  assert.equal(normalizeCoinrankingDailySnapshot({ ...snapshot, data: snapshot.data.slice(1) }).prices.length,299);
+  assert.throws(() => normalizeCoinrankingDailySnapshot({ ...snapshot, data: [] }), /daily collection contract/);
   assert.throws(() => normalizeCoinrankingDailySnapshot({ ...snapshot, data: snapshot.data.map((row, index) => index ? row : { ...row, uuid: "uuid-1" }) }), /malformed asset/);
 });
 
