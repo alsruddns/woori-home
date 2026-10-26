@@ -271,8 +271,28 @@ try {
   }
 
   const worldBank = await pool.query(`select count(*)::int as observations from indicator_observations`);
+  const coinrankingCounts = await pool.query(`select
+      (select count(*)::int from financial_assets where source_id=$1 and asset_type='crypto') as assets,
+      (select count(*)::int from financial_assets where source_id=$1 and asset_type='crypto' and is_active) as active_assets,
+      (select count(*)::int from financial_daily_prices where source_id=$1 and price_kind='quote-24h') as daily_snapshots,
+      (select count(distinct asset_id)::int from financial_daily_prices where source_id=$1 and price_kind='quote-24h') as priced_assets,
+      (select count(distinct reference_date)::int from financial_daily_prices where source_id=$1 and price_kind='quote-24h') as snapshot_dates,
+      (select min(reference_date)::text from financial_daily_prices where source_id=$1 and price_kind='quote-24h') as first_reference_date,
+      (select max(reference_date)::text from financial_daily_prices where source_id=$1 and price_kind='quote-24h') as latest_reference_date,
+      (select count(*)::int from (select asset_id,source_id,reference_date,price_kind from financial_daily_prices
+        where source_id=$1 and price_kind='quote-24h' group by asset_id,source_id,reference_date,price_kind having count(*)>1) duplicate_keys) as duplicate_keys`,
+    ["coinranking-aggregate"]);
+  const coinrankingSource = await pool.query(`select id,license_status,financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled
+    from data_sources where id=$1`, ["coinranking-aggregate"]);
+  const coinrankingDataset = await pool.query("select id,source_id from datasets where id=$1", ["coinranking-usd-daily-snapshots"]);
   const databaseSize = await pool.query("select pg_database_size(current_database())::text as size_bytes");
   report.worldBank = { tablePresent: true, observations: worldBank.rows[0].observations };
+  report.coinranking = {
+    schemaPresent: Boolean(tableNames.has("financial_assets") && tableNames.has("financial_daily_prices")),
+    datasetPresent: coinrankingDataset.rows[0]?.source_id === "coinranking-aggregate",
+    counts: coinrankingCounts.rows[0],
+    source: coinrankingSource.rows[0] ?? null,
+  };
   report.databaseSizeBytes = databaseSize.rows[0].size_bytes;
   report.comparison = { checkedInMigrationCount: journal.entries.length, productionAppliedCount: applied.length, difference: Math.max(0, journal.entries.length - applied.length), method: "production catalog and migration history compared with checked-in migration journal; no development DB connection used" };
 
