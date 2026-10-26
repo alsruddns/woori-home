@@ -358,6 +358,8 @@ jobs:
                 printf '%s\n' "$preflight_report" | jq -r '.blockers[]' >&2
                 exit 2
               fi
+              printf '[DEPLOY DB] Read-only production diagnostics:\n'
+              printf '%s\n' "$preflight_report" | jq '{migrations, coinranking, worldBank, databaseSizeBytes}'
               if [ "$SCHEDULED_SEC_REFRESH" = "true" ]; then
                 printf '%s\n' "$preflight_report" | jq -e '.permissionFindings | length == 0' >/dev/null
               fi
