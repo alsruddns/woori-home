@@ -4,8 +4,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import pg from "pg";
 import { resolveDatabaseTarget } from "../db/connection-safety.mjs";
+import { upsertFinancialPrice } from "../../src/lib/data-platform/financial-price-upsert.mjs";
 import { validateMarketPriceRecord } from "../../src/lib/data-platform/financial-market.mjs";
 import { canCollectCryptoDailySnapshots, canCollectFinancialPrices } from "../../src/lib/data-platform/financial-rights.mjs";
+import { evaluatePriceOperation } from "../../src/lib/data-platform/financial-price-policy.mjs";
 
 const options = { dryRun: false, file: null };
 for (const arg of process.argv.slice(2)) {
@@ -54,11 +56,14 @@ if (cryptoAssets.size && cryptoReferenceDates.size !== 1) throw new Error("Crypt
 const pool = new pg.Pool({ connectionString: target.url, max: 1, connectionTimeoutMillis: 4000, idleTimeoutMillis: 10000, allowExitOnIdle: true });
 const runId = randomUUID();
 try {
-  const { rows: [source] } = await pool.query(`select id,financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled,attribution,source_url from data_sources where id=$1`, [input.sourceId]);
+  const { rows: [source] } = await pool.query(`select id,license_status,financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled,attribution,source_url from data_sources where id=$1`, [input.sourceId]);
   if (!source || !source.attribution || !source.source_url) throw new Error("Import is blocked: the source must exist with attribution and a source URL.");
   const hasCryptoAssets = input.assets.some((asset) => asset.assetType === "crypto");
   if (hasCryptoAssets ? !canCollectCryptoDailySnapshots(source) : !canCollectFinancialPrices(source)) {
     throw new Error("Import is blocked: database storage and long-term retention must be confirmed, current, and individually enabled.");
+  }
+  if (input.assets.some((asset) => asset.assetType === "metal") && !evaluatePriceOperation(source,"collect").allowed) {
+    throw new Error("Metal import requires current commercial, storage and daily-observation permission evidence.");
   }
   const { rows: [dataset] } = await pool.query("select id,source_id from datasets where id=$1", [input.datasetId]);
   if (!dataset || dataset.source_id !== input.sourceId) throw new Error("Import is blocked: dataset/source relationship does not match.");
@@ -73,6 +78,9 @@ try {
   const client = await pool.connect();
   try {
     await client.query("begin");
+    const { rows: [currentSource] } = await client.query(`select id,license_status,financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled,attribution,source_url from data_sources where id=$1 for share`,[input.sourceId]);
+    if (hasCryptoAssets ? !canCollectCryptoDailySnapshots(currentSource) : !canCollectFinancialPrices(currentSource)) throw new Error("Financial source rights changed before persistence.");
+    if (input.assets.some((asset)=>asset.assetType==="metal") && !evaluatePriceOperation(currentSource,"collect").allowed) throw new Error("Metal source permission evidence changed before persistence.");
     for (const asset of input.assets) {
       const { rows: [saved] } = await client.query(`insert into financial_assets
         (source_id,source_asset_id,asset_type,symbol,name,venue,country_code,currency,unit,timezone,sector,is_active,metadata,last_updated_at)
@@ -84,15 +92,7 @@ try {
     for (let offset = 0; offset < input.prices.length; offset += 250) {
       const batch = input.prices.slice(offset, offset + 250);
       for (const price of batch) {
-        const { rows } = await client.query(`insert into financial_daily_prices
-            (asset_id,source_id,dataset_id,reference_date,reference_timezone,price_kind,open,high,low,close,volume,market_cap,quote_change_percent,quote_window,is_adjusted,fetched_at,source_updated_at,updated_at)
-            values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,now())
-            on conflict (asset_id,source_id,reference_date,price_kind) do update set
-              dataset_id=excluded.dataset_id,reference_timezone=excluded.reference_timezone,open=excluded.open,high=excluded.high,low=excluded.low,close=excluded.close,volume=excluded.volume,market_cap=excluded.market_cap,quote_change_percent=excluded.quote_change_percent,quote_window=excluded.quote_window,is_adjusted=excluded.is_adjusted,fetched_at=excluded.fetched_at,source_updated_at=excluded.source_updated_at,updated_at=now()
-            where coalesce(excluded.source_updated_at, excluded.fetched_at) >= coalesce(financial_daily_prices.source_updated_at, financial_daily_prices.fetched_at)
-              and (financial_daily_prices.dataset_id,financial_daily_prices.reference_timezone,financial_daily_prices.open,financial_daily_prices.high,financial_daily_prices.low,financial_daily_prices.close,financial_daily_prices.volume,financial_daily_prices.market_cap,financial_daily_prices.is_adjusted,financial_daily_prices.fetched_at,financial_daily_prices.source_updated_at)
-              is distinct from (excluded.dataset_id,excluded.reference_timezone,excluded.open,excluded.high,excluded.low,excluded.close,excluded.volume,excluded.market_cap,excluded.quote_change_percent,excluded.quote_window,excluded.is_adjusted,excluded.fetched_at,excluded.source_updated_at)
-            returning (xmax=0) as was_inserted`, [assetIds.get(price.sourceAssetId), input.sourceId, input.datasetId, price.referenceDate, price.referenceTimezone, price.priceKind, price.open ?? null, price.high ?? null, price.low ?? null, price.close, price.volume ?? null, price.marketCap ?? null, price.quoteChangePercent ?? null, price.quoteWindow ?? null, price.isAdjusted ?? false, price.fetchedAt, price.sourceUpdatedAt ?? null]);
+        const { rows } = await upsertFinancialPrice(client, { ...price, assetId: assetIds.get(price.sourceAssetId), sourceId: input.sourceId, datasetId: input.datasetId });
         if (!rows.length) skipped += 1;
         else if (rows[0].was_inserted) inserted += 1;
         else updated += 1;

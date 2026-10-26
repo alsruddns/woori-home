@@ -3,10 +3,14 @@ import assert from "node:assert/strict";
 import pg from "pg";
 import { parseIntegrationTestTarget } from "../scripts/db/integration-test-safety.mjs";
 import { upsertCoinrankingDailySnapshot } from "../src/lib/data-platform/coinranking-daily-persistence.mjs";
+import { upsertFinancialPrice } from "../src/lib/data-platform/financial-price-upsert.mjs";
+import { normalizeGoldObservation, GOLD_DATASET_ID } from "../src/lib/data-platform/gold-price-pipeline.mjs";
+import { readGoldMarket } from "../src/lib/data-platform/gold-db-market.mjs";
+import { approvedGoldTestSource } from "./fixtures/gold-source.mjs";
 
 const enabled = process.env.DB_TARGET === "test" && Boolean(process.env.TEST_DATABASE_URL);
 
-test("Coinranking PostgreSQL UPSERT is repeatable and preserves distinct UUID assets with colliding symbols", { skip: !enabled && "requires isolated PostgreSQL 16 integration DB" }, async () => {
+test("financial PostgreSQL UPSERT preserves UUIDs, quote-only revisions and Gold native units with rights-gated reads", { skip: !enabled && "requires isolated PostgreSQL 16 integration DB" }, async () => {
   const target = parseIntegrationTestTarget(process.env.TEST_DATABASE_URL);
   const pool = new pg.Pool({ connectionString: target.url, max: 1, options: "-c statement_timeout=10000 -c application_name=woori_coinranking_upsert_test" });
   const client = await pool.connect();
@@ -36,6 +40,32 @@ test("Coinranking PostgreSQL UPSERT is repeatable and preserves distinct UUID as
       from financial_assets a join financial_daily_prices p on p.asset_id=a.id and p.source_id=a.source_id
       where a.source_id='coinranking-aggregate' and a.source_asset_id=any($1::text[]) and p.reference_date='2026-10-25' and p.price_kind='quote-24h'`, [assets.map((asset) => asset.sourceAssetId)]);
     assert.deepEqual(counts.rows[0], { assets: 2, observations: 2, symbols: 1, minimum_price: "12.7500000000", maximum_price: "12.7500000000" });
+    const { rows: [asset] } = await client.query("select id from financial_assets where source_id=$1 and source_asset_id=$2", [normalized.sourceId,assets[0].sourceAssetId]);
+    const changedQuote={...revised.prices[0],assetId:asset.id,sourceId:normalized.sourceId,datasetId:normalized.datasetId,quoteChangePercent:"3.5"};
+    assert.equal((await upsertFinancialPrice(client,changedQuote)).rows.length,1,"a quote-only revision must update without mismatched SQL row lengths");
+    assert.equal((await upsertFinancialPrice(client,changedQuote)).rows.length,0,"exact repeat must not create or update a row");
+    assert.equal((await upsertFinancialPrice(client,{...changedQuote,fetchedAt:"2026-10-25T01:00:00Z",close:"1"})).rows.length,0,"older data must not overwrite a valid observation");
+    const quote=await client.query("select quote_change_percent::text as change from financial_daily_prices where asset_id=$1 and reference_date='2026-10-25' and price_kind='quote-24h'",[asset.id]);
+    assert.equal(quote.rows[0].change,"3.5000000000");
+    const source=approvedGoldTestSource();
+    await client.query(`insert into data_sources (id,name,provider,source_url,license_status,financial_rights,terms_version,reviewed_at,review_due_at,collection_enabled,attribution)
+      values ($1,$2,'test',$3,'verified',$4::jsonb,$5,$6,$7,true,$8)`,[source.id,source.name,source.source_url,JSON.stringify(source.financial_rights),source.terms_version,source.reviewed_at,source.review_due_at,source.attribution]);
+    await client.query(`insert into datasets (id,source_id,name,category,reference_period_kind,source_url)
+      values ($1,$2,'Test gold observations','finance','daily',$3)`,[GOLD_DATASET_ID,source.id,source.source_url]);
+    const goldNow=new Date("2026-10-27T02:00:00Z");
+    const gold=normalizeGoldObservation({metal:"XAU",currency:"USD",unit:"troy_ounce",exchange:"TEST",price:"3110.34768",timestamp:goldNow.getTime()/1000-60},{now:goldNow});
+    const {rows:[goldAsset]}=await client.query(`insert into financial_assets (source_id,source_asset_id,asset_type,symbol,name,venue,currency,unit,timezone)
+      values ($1,$2,'metal','XAU','Test Gold','TEST','USD','troy-ounce','UTC') returning id`,[source.id,gold.assets[0].sourceAssetId]);
+    const goldRecord={...gold.prices[0],sourceId:source.id,datasetId:GOLD_DATASET_ID,assetId:goldAsset.id};
+    assert.equal((await upsertFinancialPrice(client,goldRecord)).rows.length,1);
+    assert.equal((await upsertFinancialPrice(client,goldRecord)).rows.length,0);
+    const market=await readGoldMarket(client,{now:goldNow});
+    assert.equal(market.status,"success");
+    assert.equal(market.data[0].price,"3110.3476800000");
+    assert.equal(market.data[0].pricePerGram,"100");
+    assert.equal(market.data[0].unit,"troy-ounce");
+    await client.query(`update data_sources set financial_rights=jsonb_set(financial_rights,'{publicDisplay}','"denied"') where id=$1`,[source.id]);
+    assert.equal((await readGoldMarket(client,{now:goldNow})).status,"provider-rights-pending");
     await client.query("rollback");
   } catch (error) {
     await client.query("rollback").catch(() => {});

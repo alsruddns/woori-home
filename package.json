@@ -33,6 +33,7 @@
     "data:financial:probe": "node scripts/data/financial-market-probe.mjs",
     "data:financial:crypto:daily": "node scripts/data/financial-market-command.mjs collect --provider=upbit-quotation --market=krw --limit=12 --verbose",
     "data:financial:coinranking:daily": "node scripts/data/coinranking-daily-collection.mjs",
+    "data:financial:gold:daily": "node scripts/data/gold-daily-collection.mjs",
     "research:crypto:backfill": "node scripts/data/binance-research-import.mjs backfill",
     "research:crypto:update": "node scripts/data/binance-research-import.mjs daily",
     "research:crypto:status": "node scripts/data/binance-research-import.mjs status",

@@ -11,6 +11,8 @@ export type GoldQuote = {
   licenseReference: string;
   rightsVerified: true;
   observedAt: string;
+  observedTime?: string;
+  stale?: boolean;
   previousTradingDate: string | null;
   fetchedAt: string;
   sourceUrl: string;

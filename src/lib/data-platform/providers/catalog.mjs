@@ -7,8 +7,17 @@ import { createTwelveDataUsProvider } from "./twelvedata-us.mjs";
 import { createFscKrxStockProvider } from "./fsc-krx-stocks.mjs";
 import { createCoinGeckoProvider } from "./coingecko.mjs";
 import { createCoinrankingProvider } from "./coinranking.mjs";
+import { createGoldApiProvider } from "../gold-price-pipeline.mjs";
 
 export const financialProviderCatalog = [
+  {
+    id: "goldapi-spot", name: "GoldAPI indicative gold spot observations", markets: ["metal:XAU/USD"],
+    access: "free-sandbox-key / plan-specific-cache-and-storage-review", apiKeyRequired: true,
+    rightsStatus: "pending-account-and-storage-scope-review", collectionEnabled: false,
+    rights: { apiAccess: "pending", commercialUse: "pending", publicDisplay: "pending", dbStorage: "pending", longTermRetention: "pending", userApi: "pending", derivedVisualization: "pending", dailySnapshot: "pending", adSupportedDisplay: "pending", csvRedistribution: "denied" },
+    sourceUrl: "https://www.goldapi.io/", termsUrl: "https://www.goldapi.io/kb/tos",
+    datasetId: "goldapi-usd-spot-observations", createAdapter: createGoldApiProvider,
+  },
   {
     id: "upbit-quotation",
     name: "Upbit Quotation API",
@@ -99,7 +108,7 @@ export function listFinancialProviders() {
     return {
       ...provider,
       collectionEnabled: provider.collectionEnabled ?? false,
-      configured: provider.id === "opendart-company-financials" ? Boolean(process.env.OPENDART_API_KEY ?? process.env.DART_API_KEY) : provider.id === "twelvedata-us-equities" ? Boolean(process.env.TWELVEDATA_API_KEY) : provider.id === "fsc-krx-stock-prices" ? Boolean(process.env.DATA_GO_KR_STOCK_KEY) : provider.id === "coingecko-markets" ? Boolean(process.env.COINGECKO_API_KEY) : provider.id === "coinranking-aggregate" ? Boolean(process.env.COINRANKING_API_KEY) : true,
+      configured: provider.id === "goldapi-spot" ? Boolean(process.env.GOLDAPI_API_KEY) : provider.id === "opendart-company-financials" ? Boolean(process.env.OPENDART_API_KEY ?? process.env.DART_API_KEY) : provider.id === "twelvedata-us-equities" ? Boolean(process.env.TWELVEDATA_API_KEY) : provider.id === "fsc-krx-stock-prices" ? Boolean(process.env.DATA_GO_KR_STOCK_KEY) : provider.id === "coingecko-markets" ? Boolean(process.env.COINGECKO_API_KEY) : provider.id === "coinranking-aggregate" ? Boolean(process.env.COINRANKING_API_KEY) : true,
       publicDisplay: provider.rights?.publicDisplay ?? provider.publicDisplay,
       databaseRetention: provider.rights?.longTermRetention ?? provider.databaseRetention,
     };
