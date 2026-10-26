@@ -2,6 +2,7 @@ import type { Locale } from "./site";
 
 export const familySiteKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
 export type FamilySiteKey = (typeof familySiteKeys)[number];
+export const enabledFamilySiteKeys = familySiteKeys.filter((key) => key !== "moneyBook");
 
 const familySiteSegments: Record<FamilySiteKey, string> = {
   portal: "", calculator: "calculators", tools: "tools", moneyBook: "money", docs: "docs", quiz: "quiz",
