@@ -128,6 +128,7 @@ jobs:
           ref: ${{ github.sha }}
       - name: Validate immutable release references
         env:
+          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') }}
           RELEASE_SHA: ${{ github.sha }}
           PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}

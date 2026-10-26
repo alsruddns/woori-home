@@ -72,3 +72,7 @@ Coinranking은 지원 개수 1~300개를 수용한다. 최대 3회 요청 예산
 develop에만 있던 NASA/Crossref 파일 4개는 기존 수집 Workflow 결과다. 원본 Git blob SHA-256과 status checksum 및 recordCount가 일치했고 중복 키는 없다. Windows 작업 트리의 CRLF는 원본 blob checksum과 구분했다. NASA는 2026-10-26~11-01 접근 예측 39건, Crossref는 DOI 메타데이터 157건이며 논문 초록/본문은 없다. 기존 변경을 삭제하거나 재수집하지 않고 별도 main PR #64로 분리했다. 출처는 [NASA Open API](https://api.nasa.gov/), [NASA 이용 안내](https://www.nasa.gov/nasa-brand-center/images-and-media/), [Crossref REST metadata](https://www.crossref.org/documentation/retrieve-metadata/rest-api/)를 검토했다.
 
 보호 경로는 `docs/production-deployment.md`의 Sensitive Workflow changes 절차를 따른다. 실제 Ruleset은 `validate` 필수/strict up-to-date/PR 필수/리뷰 수 0/우회 actor 0이다. 비필수 `release-scope`의 실패는 자동 승격 제외로 그대로 보고하며, 성공으로 바꾸거나 검사를 삭제하지 않는다.
+
+## Scheduled release guard follow-up
+
+Financial pipeline release PR #65 merged as d704b591590eda5764a704625460b399f61f0d26 after required CI and 52 locale-page checks. An independent existing scheduled run, #40362689100, failed before SSH/database access: the second release-guard invocation lacked the opt-in schedule authorization passed to the first invocation. The follow-up supplies the identical existing schedule/variable expression at both entry points. Regression coverage executes scheduled main/disabled/non-main guards and verifies both workflow blocks match. It does not enable a schedule, change source rights, relax main-only checks, or replay any production import. Actual collection remains blocked until provider rights and protected credentials are verified.
