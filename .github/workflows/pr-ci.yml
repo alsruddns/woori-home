@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   release-scope:
-    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
+    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main' && vars.AUTOMATIC_RELEASE_SCOPE_GATE == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
