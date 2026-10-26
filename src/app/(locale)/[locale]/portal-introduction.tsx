@@ -1,29 +1,9 @@
 import { calculators, hreflangFor, messages, newTabLabels, sectionLabels, tools, type Locale } from "@/lib/site";
-import { familySiteHref, familySitesCopy, moneyBookFallbackCopy } from "@/lib/family-sites";
+import { familySiteHref, familySitesCopy } from "@/lib/family-sites";
 import { portalContent, portalUpdates } from "@/lib/portal-content";
 
-const serviceHrefs = { money: (locale: Locale) => familySiteHref(locale, "moneyBook"), calculators: (locale: Locale) => familySiteHref(locale, "calculator"), tools: (locale: Locale) => familySiteHref(locale, "tools"), docs: (locale: Locale) => familySiteHref(locale, "docs"), quiz: (locale: Locale) => familySiteHref(locale, "quiz") };
+const serviceHrefs = { calculators: (locale: Locale) => familySiteHref(locale, "calculator"), tools: (locale: Locale) => familySiteHref(locale, "tools"), docs: (locale: Locale) => familySiteHref(locale, "docs"), quiz: (locale: Locale) => familySiteHref(locale, "quiz") };
 const serviceIcons = { money: "↗", calculators: "∑", tools: "⌘", docs: "▤", quiz: "?" };
-const monthlyViews: Record<Locale, string> = { ru:"За месяц", ko: "월별 관리", en: "Monthly view", ja: "月ごとの管理", zh: "按月管理", es: "Vista mensual", "pt-br": "Visão mensal", de: "Monatsübersicht", fr: "Vue mensuelle", vi: "Theo dõi theo tháng", id: "Tampilan bulanan", th: "มุมมองรายเดือน", "zh-tw": "每月檢視", it: "Vista mensile", nl: "Maandoverzicht", hi: "मासिक दृश्य" ,
-  "tr": "Aylık görüntülenme"
-,
-  "pl": "Wyświetlenia miesięczne"
-,
-  "fil": "Mga view bawat buwan"
-,
-  "bn": "মাসিক ভিউ",
-  "uk": "Перегляди за місяць"
-,
-  ms: "Pandangan Bulanan"
-,
-  sv: "Månadsvy"
-,
-  cs: "Měsíční pohled"
-,
-  ro: "Vedere lunară"
-,
-  el: "Μηνιαία προβολή"
-};
 
 export default function PortalIntroduction({ locale }: { locale: Locale }) {
   const copy = messages[locale];
@@ -32,7 +12,6 @@ export default function PortalIntroduction({ locale }: { locale: Locale }) {
   const services = [
     { key: "calculators" as const, title: familyCopy.sites.calculator, description: content.details.calculator, cta: copy.seeCalculators, href: serviceHrefs.calculators(locale), className: "service-card service-card-calculator" },
     { key: "tools" as const, title: familyCopy.sites.tools, description: content.details.tools, cta: copy.seeTools, href: serviceHrefs.tools(locale), className: "service-card service-card-tools" },
-    { key: "money" as const, title: familyCopy.sites.moneyBook, description: content.details.moneyBook, cta: copy.start, href: serviceHrefs.money(locale), className: "service-card service-card-money" },
     { key: "docs" as const, title: familyCopy.sites.docs, description: content.details.docs, cta: familyCopy.docsCta, href: serviceHrefs.docs(locale), className: "service-card service-card-docs" },
     { key: "quiz" as const, title: familyCopy.sites.quiz, description: content.details.quiz, cta: familyCopy.quizCta, href: serviceHrefs.quiz(locale), className: "service-card service-card-quiz" },
   ];
@@ -52,11 +31,10 @@ export default function PortalIntroduction({ locale }: { locale: Locale }) {
         <div className="portal-audience"><h3>{content.audienceTitle}</h3><ul>{content.audiences.map((item) => <li key={item}>{item}</li>)}</ul></div>
       </section>
 
-      <section className="services section-wrap" aria-labelledby="services-heading"><div className="section-heading"><div><h2 id="services-heading">{copy.featured}</h2></div></div><div className="service-grid">{services.map((service, index) => { const fallback = service.key === "money" ? moneyBookFallbackCopy[locale] : undefined; return <a className={`${service.className} service-card-link`} href={service.href} key={service.key} target="_blank" rel="noopener noreferrer" aria-label={`${service.title}: ${service.cta}${fallback ? `. ${fallback}` : ""}, ${newTabLabels[locale]}`}><div className="card-top"><span className="card-index">0{index + 1}</span><span className="card-icon" aria-hidden="true">{serviceIcons[service.key]}</span></div><h3>{service.title}</h3><p>{service.description}</p>{fallback ? <span className="service-locale-note">{fallback}</span> : null}<span className="text-link" aria-hidden="true">{service.cta}<span>↗</span></span></a>; })}</div></section>
+      <section className="services section-wrap" aria-labelledby="services-heading"><div className="section-heading"><div><h2 id="services-heading">{copy.featured}</h2></div></div><div className="service-grid">{services.map((service, index) => <a className={`${service.className} service-card-link`} href={service.href} key={service.key} target="_blank" rel="noopener noreferrer" aria-label={`${service.title}: ${service.cta}, ${newTabLabels[locale]}`}><div className="card-top"><span className="card-index">0{index + 1}</span><span className="card-icon" aria-hidden="true">{serviceIcons[service.key]}</span></div><h3>{service.title}</h3><p>{service.description}</p><span className="text-link" aria-hidden="true">{service.cta}<span>↗</span></span></a>)}</div></section>
 
       <section className="portal-how"><div className="section-wrap"><span className="section-kicker">WOORI.TODAY</span><h2>{content.howTitle}</h2><ol className="portal-steps">{content.how.map((step, index) => <li key={step}><span aria-hidden="true">0{index + 1}</span><p>{step}</p></li>)}</ol></div></section>
 
-      <section className="money-section"><div className="money-layout section-wrap"><div className="money-copy"><span className="section-kicker">MONEYBOOK</span><span className="section-label">{copy.moneyKicker}</span><h2>{copy.moneyHeading}</h2><p>{copy.moneyBody}</p><a className="button button-light" href={serviceHrefs.money(locale)}>{copy.start}<span aria-hidden="true">→</span></a></div><div className="feature-panel"><div className="panel-heading"><span className="panel-dot"/><span>MoneyBook</span><span className="panel-month">{monthlyViews[locale]}</span></div>{copy.features.map((feature, i) => <div className="feature-row" key={feature}><span className="feature-check">✓</span><span>{feature}</span><span className="feature-number">0{i + 1}</span></div>)}</div></div></section>
 
       <section className="catalog-section section-wrap"><div className="section-heading"><div><span className="section-kicker">{sectionLabels[locale].calculator.toUpperCase()}</span><h2>{copy.calculatorsHeading}</h2><p>{copy.calculatorsBody}</p></div><a className="text-link heading-link" href={serviceHrefs.calculators(locale)}>{copy.moreCalculators}<span aria-hidden="true">→</span></a></div><div className="catalog-grid">{calculators.map((item) => <a className="catalog-card" key={item.slug} href={`/${locale}/calculators/${item.slug}`}><span className="catalog-category">{copy.groups[item.category as keyof typeof copy.groups]}</span><span className="catalog-name">{item.names[locale]}</span><span className="catalog-arrow" aria-hidden="true">↗</span></a>)}</div></section>
 

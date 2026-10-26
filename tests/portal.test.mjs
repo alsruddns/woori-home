@@ -196,7 +196,7 @@ test("service links and featured detail links use locale-first URLs", () => {
   assert.equal(familySiteHref("es", "moneyBook"), "/en/money");
   assert.equal(familySiteHref("pt-br", "docs"), "/pt-br/docs");
   assert.equal(familySiteHref("en", "quiz"), "/en/quiz");
-  assert.match(home, /serviceHrefs\.money\(locale\)/);
+  assert.doesNotMatch(home, /serviceHrefs\.money\(locale\)/);
   assert.match(home, /familySiteHref\(locale, "calculator"\)/);
   assert.match(home, /familySiteHref\(locale, "tools"\)/);
   assert.match(home, /`\/\$\{locale\}\/calculators\/\$\{item\.slug\}`/);
@@ -204,12 +204,12 @@ test("service links and featured detail links use locale-first URLs", () => {
   assert.doesNotMatch(home + site, /href=["']\/(?:calculator|tools|money)(?:["'/])/);
 });
 
-test("portal gives context before five useful service cards", () => {
+test("portal gives context before four active service cards and hides MoneyBook promotion", () => {
   const servicesPosition = home.indexOf('<section className="services section-wrap"');
   const heroPosition = home.indexOf('<section className="hero">');
   const aboutPosition = home.indexOf('<section className="portal-about section-wrap"');
-  const moneySectionPosition = home.indexOf('<section className="money-section">');
-  assert.ok(heroPosition >= 0 && heroPosition < aboutPosition && aboutPosition < servicesPosition && servicesPosition < moneySectionPosition);
+  assert.ok(heroPosition >= 0 && heroPosition < aboutPosition && aboutPosition < servicesPosition);
+  assert.doesNotMatch(home, /className="money-section"/);
   assert.match(home, /familySiteHref\(locale, "docs"\)/);
   assert.match(home, /familySiteHref\(locale, "quiz"\)/);
   assert.match(home, /<a className=\{`\$\{service\.className\} service-card-link`\} href=\{service\.href\} key=\{service\.key\} target="_blank" rel="noopener noreferrer" aria-label=\{/);
@@ -225,7 +225,7 @@ test("portal gives context before five useful service cards", () => {
   assert.match(cardMarkup, /<span className="text-link" aria-hidden="true">\{service\.cta\}/);
   assert.doesNotMatch(home, /className="button button-primary" href=\{serviceHrefs\.money\(locale\)\}/);
   assert.match(site, /export const newTabLabels: Record<Locale, string>/);
-  assert.equal((home.match(/key: "(?:calculators|tools|money|docs|quiz)" as const/g) ?? []).length, 5);
+  assert.equal((home.match(/key: "(?:calculators|tools|docs|quiz)" as const/g) ?? []).length, 4);
   assert.doesNotMatch(home, /closing-cta|closing-links/);
 });
 

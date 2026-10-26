@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { familySiteHref, familySitesCopy } from "@/lib/family-sites";
+import { enabledFamilySiteKeys, familySiteHref, familySitesCopy } from "@/lib/family-sites";
 import { platformCopy } from "@/lib/data-platform/locales";
 import type { Locale } from "@/lib/site";
 import { PlatformControls } from "./platform-controls";
@@ -12,7 +12,7 @@ import ContactDialog from "./contact-dialog";
 export function PlatformLayout({ locale, children }: { locale: Locale; children: ReactNode }) {
   const copy = platformCopy[locale];
   const family = familySitesCopy[locale];
-  const siteKeys = ["portal", "calculator", "tools", "moneyBook", "docs", "quiz"] as const;
+  const siteKeys = enabledFamilySiteKeys;
   return <div className="platform-shell">
     <header className="platform-header">
       <Link className="platform-brand" href={`/${locale}`}><span className="platform-brand-mark">W</span><span>woori.today</span></Link>
