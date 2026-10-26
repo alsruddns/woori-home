@@ -47,6 +47,7 @@ jobs:
           node-version: 22
 
       - name: Verify the exact successful candidate and its file scope
+        id: candidate
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -64,9 +65,16 @@ jobs:
             echo "Develop and main are not synchronized; automatic promotion is blocked." >&2
             exit 1
           }
+          if git diff --quiet origin/main "$CANDIDATE_SHA" --; then
+            echo "has_diff=false" >> "$GITHUB_OUTPUT"
+            echo "Develop and main have identical content; there is nothing to promote."
+            exit 0
+          fi
+          echo "has_diff=true" >> "$GITHUB_OUTPUT"
           node scripts/deploy/auto-promotion-policy.mjs "$CANDIDATE_SHA"
 
       - name: Create or refresh the develop-to-main pull request
+        if: steps.candidate.outputs.has_diff == 'true'
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
@@ -88,6 +96,7 @@ jobs:
           echo "number=$number" >> "$GITHUB_OUTPUT"
 
       - name: Merge only after GitHub confirms required checks
+        if: steps.candidate.outputs.has_diff == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
@@ -107,6 +116,7 @@ jobs:
           exit 1
 
       - name: Synchronize merged main back into develop
+        if: steps.candidate.outputs.has_diff == 'true'
         id: sync
         env:
           GH_TOKEN: ${{ github.token }}
@@ -126,6 +136,7 @@ jobs:
           echo "sync_sha=$sync_sha" >> "$GITHUB_OUTPUT"
 
       - name: Validate synchronized develop commit
+        if: steps.candidate.outputs.has_diff == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           SYNC_SHA: ${{ steps.sync.outputs.sync_sha }}
@@ -156,6 +167,7 @@ jobs:
           exit 1
 
       - name: Dispatch the Portal release with read-only database preflight
+        if: steps.candidate.outputs.has_diff == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -185,7 +197,7 @@ jobs:
           exit 1
 
       - name: Queue the next validated develop candidate if develop advanced
-        if: success()
+        if: success() && steps.candidate.outputs.has_diff == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           SYNC_SHA: ${{ steps.sync.outputs.sync_sha }}
