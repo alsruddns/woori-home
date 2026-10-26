@@ -31,7 +31,7 @@ test("header links preserve locale, indicate active service, and expose a mobile
     readFile(new URL("../src/app/(locale)/[locale]/portal-footer.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/globals.css", import.meta.url), "utf8"),
   ]);
-  assert.match(source, /familySiteKeys\.map/);
+  assert.match(source, /enabledFamilySiteKeys\.map/);
   assert.match(source, /href=\{familySiteHref\(locale, key\)\}/);
   for (const key of familySiteKeys) {
     const segment = { portal: "", calculator: "/calculators", tools: "/tools", moneyBook: "/money", docs: "/docs", quiz: "/quiz" }[key];
