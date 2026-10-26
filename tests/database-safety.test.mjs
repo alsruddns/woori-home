@@ -80,6 +80,30 @@ test("production publishing and immutable image references are restricted to mai
   const accepted = spawnSync(process.execPath, [guard], { encoding: "utf8", env: { ...childBaseEnv, GITHUB_REF: "refs/heads/main", GITHUB_EVENT_NAME: "workflow_dispatch" } });
   assert.equal(blocked.status, 1);
   assert.equal(accepted.status, 0);
+  for (const [ref, enabled, expected] of [
+    ["refs/heads/main", "true", 0],
+    ["refs/heads/main", "false", 1],
+    ["refs/heads/develop", "true", 1],
+  ]) {
+    const scheduled = spawnSync(process.execPath, [guard], { encoding: "utf8", env: {
+      ...childBaseEnv, GITHUB_REF: ref, GITHUB_EVENT_NAME: "schedule", SEC_EDGAR_AUTO_REFRESH_ENABLED: enabled,
+    } });
+    assert.equal(scheduled.status, expected);
+  }
+});
+
+test("both release guard entry points receive identical opt-in schedule authorization", async () => {
+  const workflow = (await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8")).replaceAll("\r\n", "\n");
+  const guards = ["Require main release ref", "Validate immutable release references"].map((name) => {
+    const block = workflow.split(`- name: ${name}\n`)[1]?.split(/\n      - /)[0];
+    assert.ok(block, `Missing ${name} step`);
+    const authorization = block.match(/SEC_EDGAR_AUTO_REFRESH_ENABLED: (.+)/)?.[1];
+    assert.ok(authorization, `Missing schedule authorization for ${name}`);
+    return authorization;
+  });
+  assert.equal(guards[0], guards[1]);
+  assert.match(guards[0], /vars\.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true'/);
+  assert.match(guards[0], /vars\.COINRANKING_AUTO_REFRESH_ENABLED == 'true'/);
 });
 
 test("World Bank reads default to JSON and production DB mode requires an approved remote host and flag", () => {
