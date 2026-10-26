@@ -535,7 +535,7 @@ jobs:
                 done
                 test "$restore_ready" = true
                 stage="Restore backup in isolated PostgreSQL 16 container"
-                docker exec "$restore_container" pg_restore --exit-on-error --no-owner --no-acl --dbname=woori_today_portal /tmp/production.dump >/dev/null
+                docker exec "$restore_container" pg_restore --username=postgres --exit-on-error --no-owner --no-acl --dbname=woori_today_portal /tmp/production.dump >/dev/null
                 stage="Compare protected row counts from isolated restore"
                 restore_expected="$(printf '%s' "$preflight_report" | jq -er '[.protectedCounts.world_bank_observations,.protectedCounts.sec_companies,.protectedCounts.sec_facts,.protectedCounts.financial_assets,.protectedCounts.financial_daily_prices] | map(if . == null then "-" else tostring end) | @tsv')"
                 restore_actual="$(docker exec "$restore_container" psql -U postgres -d woori_today_portal -At -F $'\t' -c "select (select count(*) from indicator_observations), case when to_regclass('public.financial_companies') is null then '-' else (select count(*)::text from financial_companies) end, case when to_regclass('public.financial_company_facts') is null then '-' else (select count(*)::text from financial_company_facts) end, (select count(*) from financial_assets), (select count(*) from financial_daily_prices)" | tr -d '\r')"
