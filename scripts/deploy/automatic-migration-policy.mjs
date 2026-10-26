@@ -72,7 +72,7 @@ export function evaluateAutomaticMigrations({ report, journal, manifest, sqlByTa
   for (const tag of expectedPending) {
     const policy = allowlist.find((entry) => entry?.tag === tag);
     const sql = sqlByTag?.[tag];
-    const digest = typeof sql === "string" ? createHash("sha256").update(sql).digest("hex") : "";
+    const digest = typeof sql === "string" ? createHash("sha256").update(sql.replace(/\r\n?/g, "\n")).digest("hex") : "";
     const expectedSpecialCase = reviewedSpecialCases.get(tag);
     const reviewedException = expectedSpecialCase && policy?.specialCase === expectedSpecialCase;
     if (!policy || policy.sha256 !== digest || !shaPattern.test(policy.sha256 ?? "") || policy.dataLossRisk !== "none" || policy.restoreTestRequired !== true || !(policy.schemaOnly === true || reviewedException)) {
