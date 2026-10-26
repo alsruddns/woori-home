@@ -1,0 +1,269 @@
+name: Reclaim unused MoneyBook service memory
+
+on:
+  workflow_dispatch:
+    inputs:
+      stop_moneybook:
+        description: Stop only the MoneyBook frontend and backend after dependency checks
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: woori-home-production
+  cancel-in-progress: false
+
+jobs:
+  reclaim-memory:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - name: Inspect production and optionally stop only independent MoneyBook services
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          STOP_MONEYBOOK: ${{ inputs.stop_moneybook }}
+          PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: STOP_MONEYBOOK,PORTAL_HEALTH_URL
+          script: |
+            set -Eeuo pipefail
+            umask 077
+            cd /opt/services/compose
+            test -r .env.moneybook
+            test -r .env.portal
+            test -r docker-compose.yml
+            test -n "${PORTAL_HEALTH_URL:-}"
+            compose() { docker compose --env-file .env.moneybook --env-file .env.portal -f docker-compose.yml "$@"; }
+
+            printf '[MEMORY CHECK] Current host RAM and swap:\n'
+            free -h
+            awk '/^(MemTotal|MemAvailable|SwapTotal|SwapFree):/ {print}' /proc/meminfo
+            before_mib="$(awk '/MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)"
+            printf '[MEMORY CHECK] MemAvailable before=%s MiB; restore minimum=1536 MiB (swap excluded).\n' "$before_mib"
+            printf '[MEMORY CHECK] Running container usage:\n'
+            docker stats --no-stream --format 'name={{.Name}} memory={{.MemUsage}} memory_percent={{.MemPerc}}'
+            printf '[MEMORY CHECK] Compose service status:\n'
+            compose ps
+
+            config_file="$(mktemp /tmp/woori-compose-check.XXXXXX.json)"
+            compose_backup=""
+            compose_changed=false
+            restart_changed=false
+            stopped_services=()
+            frontend_id=""
+            backend_id=""
+            frontend_restart=""
+            backend_restart=""
+            rollback_on_error() {
+              status=$?
+              trap - EXIT
+              if [ "$status" -ne 0 ]; then
+                printf '[MEMORY CHECK ROLLBACK] Reverting only MoneyBook maintenance changes.\n' >&2
+                if [ "$compose_changed" = true ] && [ -n "$compose_backup" ]; then
+                  cp -p "$compose_backup" docker-compose.yml || printf '[MEMORY CHECK ROLLBACK ERROR] Compose backup restore failed.\n' >&2
+                  compose config --quiet || printf '[MEMORY CHECK ROLLBACK ERROR] Restored Compose file failed validation.\n' >&2
+                fi
+                if [ "$restart_changed" = true ]; then
+                  [ -z "$frontend_id" ] || docker update --restart "$frontend_restart" "$frontend_id" >/dev/null || printf '[MEMORY CHECK ROLLBACK ERROR] Frontend restart policy restore failed.\n' >&2
+                  [ -z "$backend_id" ] || docker update --restart "$backend_restart" "$backend_id" >/dev/null || printf '[MEMORY CHECK ROLLBACK ERROR] Backend restart policy restore failed.\n' >&2
+                fi
+                for service in "${stopped_services[@]}"; do
+                  compose start "$service" || printf '[MEMORY CHECK ROLLBACK ERROR] Could not restart %s.\n' "$service" >&2
+                done
+              fi
+              rm -f "$config_file"
+              exit "$status"
+            }
+            trap rollback_on_error EXIT
+
+            compose config --format json > "$config_file"
+            python3 - "$config_file" <<'PY'
+            import json, sys
+
+            with open(sys.argv[1], encoding="utf-8") as source:
+                config = json.load(source)
+            services = config.get("services", {})
+            targets = {"moneybook-frontend", "moneybook-backend"}
+            missing = sorted(targets - services.keys())
+            if missing:
+                raise SystemExit("MoneyBook isolation check failed: Compose services missing: " + ", ".join(missing))
+            dependents = []
+            for name, service in services.items():
+                if name in targets:
+                    continue
+                dependencies = service.get("depends_on", {})
+                if isinstance(dependencies, dict):
+                    dependencies = dependencies.keys()
+                links = service.get("links", [])
+                linked_names = {str(link).split(":", 1)[0] for link in links}
+                if targets.intersection(dependencies) or targets.intersection(linked_names):
+                    dependents.append(name)
+            if dependents:
+                raise SystemExit("MoneyBook isolation check failed: other Compose services depend on it: " + ", ".join(sorted(dependents)))
+            print("[MEMORY CHECK] Compose dependency isolation passed; no non-MoneyBook service depends on the two targets.")
+            for name in sorted(targets):
+                print(f"[MEMORY CHECK] {name} configured restart policy={services[name].get('restart', 'no')}")
+            PY
+
+            portal_state="$(docker inspect --format '{{.State.Status}}' portal)"
+            portal_health="$(docker inspect --format '{{.State.Health.Status}}' portal 2>/dev/null || true)"
+            nginx_id="$(docker ps -q --filter name='^/nginx$')"
+            test "$portal_state" = running && test "$portal_health" = healthy && test -n "$nginx_id"
+            curl --fail --silent --show-error --max-time 20 "$PORTAL_HEALTH_URL" -o /dev/null
+            docker exec portal node --input-type=module -e '
+              import { Client } from "pg";
+              const client = new Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 5000 });
+              await client.connect();
+              const result = await client.query("select current_database() as database_name, (select count(*)::int from indicator_observations) as world_bank_rows");
+              if (result.rows[0]?.database_name !== "woori_today_portal") throw new Error("Portal DB target did not match production.");
+              console.log(`Portal PostgreSQL connection healthy; World Bank rows=${result.rows[0].world_bank_rows}.`);
+              await client.end();
+            '
+
+            docker exec "$nginx_id" nginx -t
+            moneybook_proxy_count="$(docker exec "$nginx_id" nginx -T 2>/dev/null | grep -Fc 'proxy_pass http://moneybook-backend:8080;' || true)"
+            test "$moneybook_proxy_count" -gt 0
+            printf '[MEMORY CHECK] Nginx has %s route(s) specifically targeting MoneyBook backend; Nginx remains running.\n' "$moneybook_proxy_count"
+
+            for service in moneybook-frontend moneybook-backend; do
+              id="$(compose ps -q "$service")"
+              test -n "$id"
+              label="$(docker inspect --format '{{ index .Config.Labels "com.docker.compose.service" }}' "$id")"
+              test "$label" = "$service"
+              if [ "$service" = moneybook-frontend ]; then
+                frontend_id="$id"
+                frontend_restart="$(docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$id")"
+              else
+                backend_id="$id"
+                backend_restart="$(docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$id")"
+              fi
+              if [ "$(docker inspect --format '{{.State.Running}}' "$id")" = true ]; then
+                stopped_services+=("$service")
+              fi
+            done
+            printf '[MEMORY CHECK] MoneyBook Frontend and Backend are separate Compose services; PostgreSQL, Portal, and Nginx are separate and healthy.\n'
+
+            if [ "${STOP_MONEYBOOK:-false}" != true ]; then
+              printf '[MEMORY CHECK] Read-only inspection complete; no container or configuration changed.\n'
+              exit 0
+            fi
+
+            if [ "${#stopped_services[@]}" -eq 0 ]; then
+              printf '[MEMORY CHECK] Both MoneyBook services are already stopped; no action taken.\n'
+              exit 0
+            fi
+
+            before_stop_mib="$(awk '/MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)"
+            printf '[MEMORY CHECK] MemAvailable immediately before MoneyBook stop=%s MiB.\n' "$before_stop_mib"
+            backup_dir=/opt/backups/woori-portal
+            test -d "$backup_dir" && test -w "$backup_dir"
+            timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+            compose_backup="$backup_dir/docker-compose.yml.moneybook-${timestamp}.bak"
+            test ! -e "$compose_backup"
+            cp -p docker-compose.yml "$compose_backup"
+            chmod 600 "$compose_backup"
+            compose_backup_sha="$(sha256sum "$compose_backup" | awk '{print $1}')"
+
+            compose_changed=true
+            python3 - docker-compose.yml <<'PY'
+            import pathlib, re, sys
+
+            path = pathlib.Path(sys.argv[1])
+            text = path.read_text(encoding="utf-8")
+            lines = text.splitlines(keepends=True)
+            services_line = next((i for i, line in enumerate(lines) if re.match(r"^services:\s*(?:#.*)?$", line.rstrip("\r\n"))), None)
+            if services_line is None:
+                raise SystemExit("Could not locate the top-level Compose services mapping.")
+            end_services = next((i for i in range(services_line + 1, len(lines)) if lines[i].strip() and not lines[i][0].isspace() and not lines[i].lstrip().startswith("#")), len(lines))
+            targets = {"moneybook-frontend", "moneybook-backend"}
+            spans = {}
+            for i in range(services_line + 1, end_services):
+                match = re.match(r"^(\s{2})([A-Za-z0-9_.-]+):\s*(?:#.*)?(?:\r?\n)?$", lines[i])
+                if match and match.group(2) in targets:
+                    j = i + 1
+                    while j < end_services:
+                        if lines[j].strip() and not lines[j][0].isspace() and not lines[j].lstrip().startswith("#"):
+                            break
+                        sibling = re.match(r"^(\s{2})([A-Za-z0-9_.-]+):\s*(?:#.*)?(?:\r?\n)?$", lines[j])
+                        if sibling:
+                            break
+                        j += 1
+                    if match.group(2) in spans:
+                        raise SystemExit("Duplicate MoneyBook service block; refusing to edit Compose configuration.")
+                    spans[match.group(2)] = (i, j)
+            if spans.keys() != targets:
+                raise SystemExit("Could not uniquely locate both MoneyBook service blocks; refusing to edit Compose configuration.")
+            for service in targets:
+                start, end = spans[service]
+                policy_lines = [i for i in range(start + 1, end) if re.match(r"^\s{4}restart\s*:", lines[i])]
+                if len(policy_lines) > 1:
+                    raise SystemExit(f"Duplicate restart policies in {service}; refusing to edit Compose configuration.")
+                if policy_lines:
+                    index = policy_lines[0]
+                    line = lines[index]
+                    lines[index] = re.sub(r"(^\s{4}restart\s*:\s*)[^\r\n]*(\r?\n)?$", r"\1unless-stopped\2", line)
+                else:
+                    header = lines[start]
+                    newline = "\r\n" if header.endswith("\r\n") else "\n"
+                    lines.insert(start + 1, "    restart: unless-stopped" + newline)
+                    for other, (a, b) in list(spans.items()):
+                        if a > start:
+                            spans[other] = (a + 1, b + 1)
+                        elif a == start:
+                            spans[other] = (a, b + 1)
+            path.write_text("".join(lines), encoding="utf-8", newline="")
+            print("[MEMORY CHECK] Updated only the two MoneyBook Compose restart policies to unless-stopped.")
+            PY
+            compose config --quiet
+            test "$(sha256sum "$compose_backup" | awk '{print $1}')" = "$compose_backup_sha"
+
+            restart_changed=true
+            docker update --restart unless-stopped "$frontend_id" "$backend_id" >/dev/null
+            compose stop moneybook-frontend moneybook-backend
+            for service in moneybook-frontend moneybook-backend; do
+              id="$(compose ps -q "$service")"
+              test -n "$id"
+              test "$(docker inspect --format '{{.State.Running}}' "$id")" = false
+            done
+
+            after_mib="$(awk '/MemAvailable:/ {print int($2 / 1024)}' /proc/meminfo)"
+            printf '[MEMORY CHECK] MoneyBook Frontend and Backend stopped; retained DB, volumes, and configuration values.\n'
+            printf '[MEMORY CHECK] MemAvailable before=%s MiB after=%s MiB; restore minimum=1536 MiB (swap excluded).\n' "$before_stop_mib" "$after_mib"
+            printf '[MEMORY CHECK] Docker usage after stop:\n'
+            docker stats --no-stream --format 'name={{.Name}} memory={{.MemUsage}} memory_percent={{.MemPerc}}'
+            portal_state="$(docker inspect --format '{{.State.Status}}' portal)"
+            portal_health="$(docker inspect --format '{{.State.Health.Status}}' portal 2>/dev/null || true)"
+            test "$portal_state" = running && test "$portal_health" = healthy
+            curl --fail --silent --show-error --max-time 20 "$PORTAL_HEALTH_URL" -o /dev/null
+            docker exec portal node --input-type=module -e '
+              import { Client } from "pg";
+              const client = new Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 5000 });
+              await client.connect();
+              const result = await client.query("select current_database() as database_name, (select count(*)::int from indicator_observations) as world_bank_rows");
+              if (result.rows[0]?.database_name !== "woori_today_portal") throw new Error("Portal DB target did not match production.");
+              console.log(`Portal PostgreSQL connection healthy after stop; World Bank rows=${result.rows[0].world_bank_rows}.`);
+              await client.end();
+            '
+            for container in portal calculator tools quiz docs nginx; do
+              test "$(docker inspect --format '{{.State.Running}}' "$container")" = true
+            done
+            docker exec "$nginx_id" nginx -t
+            printf '[MEMORY CHECK] Portal, PostgreSQL connection, Nginx, and health endpoint remain healthy.\n'
+            printf '[MEMORY CHECK] Compose backup retained at %s (sha256=%s).\n' "$compose_backup" "$compose_backup_sha"
+            compose_changed=false
+            restart_changed=false
+            stopped_services=()
+            rm -f "$config_file"
+            if [ "$after_mib" -lt 1536 ]; then
+              printf '[MEMORY CHECK] The restore threshold is still not met; do not run migration or Portal deployment yet.\n'
+            else
+              printf '[MEMORY CHECK] RAM threshold reached; the normal protected deployment workflow may now be retried.\n'
+            fi
