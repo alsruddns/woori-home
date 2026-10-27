@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const componentPath = new URL("../src/app/(locale)/[locale]/portal-education-cards.tsx", import.meta.url);
 const cssPath = new URL("../src/app/(locale)/[locale]/platform.css", import.meta.url);
+const nextConfigPath = new URL("../next.config.ts", import.meta.url);
 const topics = ["markets", "stocks", "crypto", "gold", "commodities", "world", "science", "insights", "population", "comparison", "energy", "papers"];
 
 test("every Portal category has separate Korean and English explainer cards with official references", async () => {
@@ -27,6 +28,11 @@ test("explainers are rendered as ordinary visible HTML, with no collapsed disclo
   assert.match(css, /\.portal-education-card\{[^}]*border:/);
   assert.match(css, /@media\(max-width:680px\)\{\.portal-education-grid\{grid-template-columns:minmax\(0,1fr\)\}/);
   assert.doesNotMatch(css, /\.portal-education[^}]*display:\s*none/);
+});
+
+test("local Playwright loopback access is explicitly allowed by the Next.js development server", async () => {
+  const config = await readFile(nextConfigPath, "utf8");
+  assert.match(config, /allowedDevOrigins:\s*\["127\.0\.0\.1"\]/);
 });
 
 test("new prose is not represented as a reviewed translation in other locales", async () => {
