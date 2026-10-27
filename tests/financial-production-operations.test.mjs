@@ -112,6 +112,32 @@ test("automatic Portal release requires a clean read-only production preflight a
   assert.match(deployScript, /automatic-migration-policy\.mjs/);
 });
 
+test("previous local Portal image is removed only after successful checks and remains available for rollback on failures", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
+  const deployScript = extractPublishScript(workflow);
+  const preserveAt = deployScript.indexOf('stage="Preserve rollback image"');
+  const rolloutAt = deployScript.indexOf('stage="Deploy Portal image"');
+  const healthAt = deployScript.indexOf('stage="Wait for Portal Healthcheck"');
+  const smokeAt = deployScript.indexOf('stage="HTTP smoke test"');
+  const secretCheckAt = deployScript.indexOf('stage="Verify Coinranking runtime secret presence"');
+  const cleanupAt = deployScript.indexOf('stage="Remove previous Portal image after successful verification"');
+  const successAt = deployScript.indexOf("deploy_started=0", cleanupAt);
+
+  assert.ok(preserveAt >= 0 && preserveAt < rolloutAt);
+  assert.ok(rolloutAt < healthAt && healthAt < smokeAt && smokeAt < secretCheckAt);
+  assert.ok(secretCheckAt < cleanupAt && cleanupAt < successAt);
+  assert.match(deployScript, /docker ps --all --quiet --filter "ancestor=\$old_image_id"/);
+  assert.match(deployScript, /docker image rm "\$old_image_id"/);
+  assert.match(deployScript, /retained-same-image/);
+  assert.match(deployScript, /retained-in-use/);
+  assert.match(deployScript, /retained-reference-check-failed/);
+  assert.match(deployScript, /rollback_result="post-success-\$\{previous_image_cleanup\}"/);
+  assert.match(deployScript, /previous_image_cleanup=%s/);
+  assert.match(deployScript, /docker tag "\$old_image_id" "\$rollback_tag"/);
+  assert.match(deployScript, /Restoring the previous Portal image/);
+  assert.doesNotMatch(deployScript, /docker (?:system|image) prune/);
+});
+
 test("production migration workflow verifies the current Coinranking migration journal count", async () => {
   const workflow = await readFile(new URL("../.github/workflows/publish.yml", import.meta.url), "utf8");
   assert.match(workflow, /\.migrations\.applied == 14/);
