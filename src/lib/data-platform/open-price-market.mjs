@@ -17,11 +17,11 @@ export async function readOpenPriceMarket(client, kind, { now = new Date(), asse
   const rights = JSON.stringify(source.financial_rights);
   const rightsClause = `join data_sources s on s.id=p.source_id and s.license_status='verified' and s.financial_rights=$2::jsonb
     and s.terms_version=$3 and s.review_due_at > now()`;
-  const availableResult = await client.query(`select distinct p.reference_date::text as date
+  const availableResult = await client.query(`select p.reference_date::text as date
     from financial_daily_prices p ${rightsClause}
     where p.source_id=$1 and p.dataset_id=$4 and p.reference_timezone='UTC'
       and p.reference_date <= $5 and p.source_updated_at <= $6 and p.fetched_at <= $6
-    order by p.reference_date desc limit 3660`, [sourceConfig.id, rights, source.terms_version, sourceConfig.dataset,
+    group by p.reference_date order by p.reference_date desc limit 3660`, [sourceConfig.id, rights, source.terms_version, sourceConfig.dataset,
     now.toISOString().slice(0, 10), now.toISOString()]);
   const availableDates = availableResult.rows.map((row) => row.date);
   const latestDate = availableDates[0] ?? null;
