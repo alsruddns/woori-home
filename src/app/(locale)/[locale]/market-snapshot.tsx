@@ -4,6 +4,7 @@ import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-co
 import { goldCopy } from "@/lib/data-platform/gold-copy";
 import { getFinancialReadOnlyPool } from "@/lib/db/financial-readonly";
 import { readOpenPriceMarket } from "@/lib/data-platform/open-price-market.mjs";
+import { formatMarketDate } from "@/lib/data-platform/market-date-format.mjs";
 import { categoryNavigation } from "@/lib/data-platform/category-navigation";
 
 export async function MarketSnapshot({ locale }: { locale: Locale }) {
@@ -24,7 +25,7 @@ export async function MarketSnapshot({ locale }: { locale: Locale }) {
   const worldLabel = categoryNavigation(locale).find((item) => item.id === "world")?.label ?? copy.title;
   const number = (value: string | null | undefined, currency = "USD") => value == null ? copy.noData
     : new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: Number(value) >= 100 ? 2 : 8 }).format(Number(value));
-  const date = (value: string | null | undefined) => value ? new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value.slice(0, 10)}T00:00:00Z`)) : copy.noData;
+  const date = (value: string | Date | null | undefined) => formatMarketDate(value, locale, copy.noData);
   return <section className="market-snapshot" aria-labelledby="market-snapshot-title">
     <header><span className="platform-eyebrow">{copy.updated}</span><h2 id="market-snapshot-title">{copy.title}</h2><p>{copy.description}</p></header>
     <div className="market-snapshot-grid">
