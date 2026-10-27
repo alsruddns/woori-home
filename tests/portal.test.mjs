@@ -274,7 +274,7 @@ test("the new localized data home keeps the portal guide at about and preserves 
   assert.doesNotMatch(platformHome, /is-unavailable/);
   assert.doesNotMatch(platformHome, /mockStockSnapshots|mockDisclosure/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
-  assert.match(categoryRoute, /const index = category === "finance" \|\| category === "about" \|\| category === "economy"/);
+  assert.match(categoryRoute, /const index = category === "finance" \|\| category === "about" \|\| category === "economy" \|\| category === "stocks"/);
   assert.match(categoryRoute, /category === "about"\) return <PortalIntroduction locale=\{locale\} \/>/);
   assert.match(site, /publicDataPaths = \["\/world", "\/economy", "\/countries", "\/population", "\/energy", "\/science", "\/papers", "\/about"\]/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
@@ -378,7 +378,7 @@ test("stock markets have translated labels and live data controls in all 26 loca
   assert.doesNotMatch(stockPage, /\/portal-api\/finance\/stocks(?:\/heatmap)?\?/);
   assert.doesNotMatch(stockPage, /search\.get\("market"\)|search\.get\("date"\)/);
   assert.match(categoryRoute, /<Suspense fallback=\{<StockMarketLoading locale=\{locale\} \/>\}>/);
-  assert.match(categoryRoute, /const index = category === "finance" \|\| category === "about" \|\| category === "economy"/);
+  assert.match(categoryRoute, /const index = category === "finance" \|\| category === "about" \|\| category === "economy" \|\| category === "stocks"/);
   assert.doesNotMatch(site, /publicDataPaths = \[[^\]]*"\/stocks"/);
 });
 
@@ -471,8 +471,7 @@ test("portal sitemap contains locale home and privacy pages with matching altern
   assert.match(sitemap, /publicDataPaths/);
   assert.match(sitemap, /locales\.flatMap/);
   assert.match(sitemap, /flatMap/);
-  assert.match(sitemap, /"\/markets", "\/crypto", "\/gold"/);
-  assert.doesNotMatch(sitemap, /"\/commodities"/);
+  assert.match(sitemap, /"\/markets", "\/stocks", "\/crypto", "\/gold", "\/commodities"/);
   assert.doesNotMatch(sitemap, /money|calculators|tools|docs|quiz/);
 });
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { isLocale, origin } from "@/lib/site";
+import { alternates, isLocale, origin } from "@/lib/site";
 import { mineralCopy } from "@/lib/data-platform/mineral-copy";
 import { PortalEducationCards } from "../../portal-education-cards";
 
@@ -16,9 +16,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: copy.title,
     description: copy.description,
-    robots: { index: false, follow: true },
-    alternates: { canonical: url },
+    robots: { index: true, follow: true },
+    alternates: { canonical: url, languages: alternates("/commodities").languages },
     openGraph: { type: "website", siteName: "WOORI.TODAY", title: copy.title, description: copy.description, url },
+    twitter: { card: "summary", title: copy.title, description: copy.description },
   };
 }
 

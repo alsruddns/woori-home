@@ -144,7 +144,7 @@ test("global home briefing and mineral source status are localized across all su
   assert.match(briefing, /latestForCountry\("SP\.POP\.TOTL", "WLD"\)/);
   assert.match(briefing, /paperSnapshot\.records/);
   assert.match(briefing, /nearEarthSnapshot\.objects/);
-  assert.match(mineralPage, /index: false/);
+  assert.match(mineralPage, /index: true/);
   assert.match(mineralPage, /P1WKQ63T/);
   assert.match(mineralSource, /90 nonfuel mineral commodities/);
 });
@@ -168,7 +168,7 @@ test("country comparison uses exact observed endpoints and keeps percentage poin
   assert.match(apiHandler, /codes\.length > 5/);
 });
 
-test("papers are daily Crossref metadata, article detail remains noindex, and commodity prices stay withheld", async () => {
+test("papers stay metadata-only while verified USGS release information is indexable without invented prices", async () => {
   const [snapshotText, papersPage, paperDetail, commodityPage, workflow, publish, sitemap, appPages] = await Promise.all([
     read("src/data/research-papers.json"), read("src/app/(locale)/[locale]/(platform)/papers/page.tsx"),
     read("src/app/(locale)/[locale]/(platform)/papers/[paperId]/page.tsx"), read("src/app/(locale)/[locale]/(platform)/commodities/page.tsx"),
@@ -192,10 +192,10 @@ test("papers are daily Crossref metadata, article detail remains noindex, and co
   assert.match(sitemap, /publicDataPaths/);
   assert.match(sitemap, /indexableIndicatorPages/);
   assert.doesNotMatch(sitemap, /dataCountries|energyDetails/);
-  assert.doesNotMatch(sitemap, /commodities/);
-  assert.match(commodityPage, /index: false/);
+  assert.match(sitemap, /"\/commodities"/);
+  assert.match(commodityPage, /index: true/);
+  assert.match(commodityPage, /alternates\("\/commodities"\)\.languages/);
   assert.match(commodityPage, /mineralCopy/);
-  assert.match(commodityPage, /index: false/);
   assert.doesNotMatch(commodityPage, /records|priceSnapshot|commoditySnapshot|productionValues/i);
   assert.ok(appPages.every((page) => !page.includes(" | WOORI.TODAY")), "page titles have no site-name suffix");
 });

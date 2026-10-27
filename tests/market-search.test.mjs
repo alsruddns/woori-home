@@ -54,10 +54,11 @@ test("Coinranking public routes remain PostgreSQL-only and rights-gated", async 
 });
 
 test("Portal market home uses persisted price data and exposes only supported indexable overview paths", async () => {
-  const [summary, home, markets, sitemap, cryptoCopy] = await Promise.all([
+  const [summary, home, markets, stocksCategory, sitemap, cryptoCopy] = await Promise.all([
     readFile(new URL("../src/app/(locale)/[locale]/market-snapshot.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/(locale)/[locale]/(platform)/markets/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/(platform)/[category]/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/lib/data-platform/crypto-page-copy.ts", import.meta.url), "utf8"),
   ]);
@@ -69,6 +70,7 @@ test("Portal market home uses persisted price data and exposes only supported in
   const platformHome = await readFile(new URL("../src/app/(locale)/[locale]/platform-home.tsx", import.meta.url), "utf8");
   assert.match(platformHome, /MarketSnapshot locale=\{locale\}/);
   assert.match(markets, /robots: \{ index: true, follow: true \}/);
-  assert.match(sitemap, /"\/markets", "\/crypto", "\/gold"/);
+  assert.match(stocksCategory, /category === "stocks"/);
+  assert.match(sitemap, /"\/markets", "\/stocks", "\/crypto", "\/gold"/);
   assert.match(cryptoCopy, /not finalized exchange closes/);
 });

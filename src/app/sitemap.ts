@@ -8,7 +8,7 @@ import { guideLocales, guides } from "@/lib/data-platform/guides";
 export default function sitemap(): MetadataRoute.Sitemap {
   // These market overviews contain reviewed, persisted data and have a localized
   // canonical page. Dated query URLs remain user navigation only and are omitted.
-  const publicPaths = [...new Set([...publicPortalPaths, ...publicDataPaths, "/markets", "/crypto", "/gold"])];
+  const publicPaths = [...new Set([...publicPortalPaths, ...publicDataPaths, "/markets", "/stocks", "/crypto", "/gold", "/commodities"])];
   const portalAndDataPages = locales.flatMap((locale) => publicPaths.map((path) => ({
     url: `${origin}/${locale}${path}`,
     alternates: alternates(path),
