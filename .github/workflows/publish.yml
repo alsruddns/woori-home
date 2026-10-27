@@ -237,6 +237,9 @@ jobs:
                 printf '[DEPLOY ERROR] Stage: %s, Exit code: %s\n' "$stage" "$status" >&2
                 rollback_result="not-attempted"
                 if [ "$deploy_started" = "1" ]; then
+                  printf '[DEPLOY DIAGNOSTIC] Portal state before rollback (no container logs or environment values):\n' >&2
+                  docker inspect --format 'status={{.State.Status}} exit_code={{.State.ExitCode}} oom_killed={{.State.OOMKilled}} restart_count={{.RestartCount}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}unconfigured{{end}}' portal >&2 || true
+                  docker inspect --format '{{if .State.Health}}{{json .State.Health.Log}}{{end}}' portal 2>/dev/null | jq -r 'if . == null then "healthcheck log unavailable" else .[-3:][] | "healthcheck exit=\(.ExitCode) start=\(.Start) end=\(.End) output=\(.Output | gsub("(?i)(password|secret|token|authorization|api[_-]?key)([=: ]+)[^ ,\"\\r\\n]+"; "\\1\\2[redacted]") | .[0:240])" end' >&2 || true
                   printf '[DEPLOY ROLLBACK] Restoring the previous Portal image.\n' >&2
                   printf 'services:\n  portal:\n    image: %s\n    environment:\n      DB_IMPORT_URL: ""\n      DB_MIGRATION_URL: ""\n      DB_MIGRATION_ALLOW_PRODUCTION: ""\n      PRODUCTION_OPERATION_APPROVAL: ""\n      PRODUCTION_BACKUP_REFERENCE: ""\n      PRODUCTION_BACKUP_CONFIRMED: ""\n      COINRANKING_API_KEY: "${COINRANKING_API_KEY:?}"\n' "$rollback_tag" > "$override"
                   if ! compose -f "$override" up -d --no-deps portal; then
