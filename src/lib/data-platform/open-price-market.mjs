@@ -50,7 +50,7 @@ export async function readOpenPriceMarket(client, kind, { now = new Date(), asse
       where p.source_id=$1 and p.dataset_id=$4 and a.is_active=true and a.currency='USD' and a.unit='aggregate-price'
         and a.asset_type='crypto' and p.price_kind='quote-24h' and p.reference_timezone='UTC'
         and p.reference_date <= $5 and p.source_updated_at <= $6 and p.fetched_at <= $6
-        and ($7::date is null or p.reference_date=$7::date) ${assetFilter} ${historyFilter}
+        and ($7::text is null or p.reference_date=$7::text) ${assetFilter} ${historyFilter}
       order by p.reference_date desc, coalesce((a.metadata->>'rank')::int,999999), a.symbol limit 10000`,
     [sourceConfig.id, rights, source.terms_version, sourceConfig.dataset, referenceDate, now.toISOString(), assetId ? null : referenceDate, ...(assetId ? [assetId, historyStart] : [])]);
     rows = result.rows;
