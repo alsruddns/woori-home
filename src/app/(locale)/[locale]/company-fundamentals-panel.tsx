@@ -11,6 +11,9 @@ import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 import { companySearchAliases, normalizeCompanySearch } from "@/lib/data-platform/company-search-aliases.mjs";
 import { CompanyFinancialTreemap } from "./company-financial-treemap";
+import { MarketDetailSheet } from "./market-detail-sheet";
+import { companyFinancialTreemapControlsCopy } from "@/lib/data-platform/company-financial-treemap-controls-copy";
+import { marketDetailCopy } from "@/lib/data-platform/market-detail-copy";
 
 type Period = "annual" | "quarterly";
 type CompanyFactRow = {
@@ -39,12 +42,16 @@ export function CompanyFundamentalsPanel({ locale, compactHeader = false }: { lo
   const extra = companyFactsExtraCopy[locale];
   const statusCopy = companyFactsStatusCopy[locale];
   const stock = stockCopy[locale];
+  const detailCopy = marketDetailCopy[locale];
   const [period, setPeriod] = useState<Period>("annual");
   const [summaryResult, setSummaryResult] = useState<{ period: Period; data: CompanyFactRow[]; asOf: string | null; dataObservedAt: string | null } | null>(null);
   const [summaryErrorPeriod, setSummaryErrorPeriod] = useState<Period | null>(null);
+  const [summaryAttempt, setSummaryAttempt] = useState(0);
   const [historyResult, setHistoryResult] = useState<{ key: string; data: CompanyFactRow[] } | null>(null);
   const [historyErrorKey, setHistoryErrorKey] = useState("");
+  const [historyAttempt, setHistoryAttempt] = useState(0);
   const [selectedTicker, setSelectedTicker] = useState("");
+  const [detailOpen, setDetailOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState("");
   const [sortMetric, setSortMetric] = useState<"revenue" | "operatingIncome" | "netIncome" | "assets">("revenue");
@@ -77,18 +84,18 @@ export function CompanyFundamentalsPanel({ locale, compactHeader = false }: { lo
       })
       .catch(() => { if (!controller.signal.aborted) { setSummaryErrorPeriod(period); setSelectedTicker(""); } });
     return () => controller.abort();
-  }, [period]);
+  }, [period, summaryAttempt]);
 
   useEffect(() => {
     const controller = new AbortController();
-    if (!selectedTicker) return () => controller.abort();
+    if (!detailOpen || !selectedTicker) return () => controller.abort();
     const params = new URLSearchParams({ period, ticker: selectedTicker, pageSize: "200" });
     fetchCompanyFacts(`/portal-api/finance/companies?${params}`, { signal: controller.signal })
       .then(async (response) => { if (!response.ok) throw new Error("Financial history unavailable."); return response.json(); })
       .then((payload) => { setHistoryResult({ key: historyKey, data: Array.isArray(payload.data) ? payload.data as CompanyFactRow[] : [] }); })
       .catch(() => { if (!controller.signal.aborted) setHistoryErrorKey(historyKey); });
     return () => controller.abort();
-  }, [period, selectedTicker, historyKey]);
+  }, [period, selectedTicker, historyKey, detailOpen, historyAttempt]);
 
   const selected = summary.find((row) => row.ticker === selectedTicker) ?? null;
   const trend = useMemo(() => (historyResult?.key === historyKey ? historyResult.data : [])
@@ -133,10 +140,10 @@ export function CompanyFundamentalsPanel({ locale, compactHeader = false }: { lo
     </> : null}
     <CompanyFinancialTreemap locale={locale} period={period} onPeriodChange={setPeriod} onSelectCompany={(ticker) => {
       setSelectedTicker(ticker);
-      document.getElementById("company-fundamentals-detail-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setDetailOpen(true);
     }} />
 
-    {summaryState === "loading" ? <p role="status">{copy.loading}</p> : summaryState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : summary.length === 0 ? <p role="status">{copy.empty}</p> : <>
+    {summaryState === "loading" ? <p role="status">{copy.loading}</p> : summaryState === "unavailable" ? <p role="alert">{companyFactsUnavailableCopy[locale]} <button type="button" onClick={() => { setSummaryErrorPeriod(null); setSummaryAttempt((attempt) => attempt + 1); }}>{detailCopy.retry}</button></p> : summary.length === 0 ? <p role="status">{copy.empty}</p> : <>
       {compactHeader ? <h2 className="company-facts-summary-heading">{copy.title}</h2> : null}
       <div className="company-facts-controls">
         <label><span>{copy.company}</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={copy.company} /></label>
@@ -149,7 +156,7 @@ export function CompanyFundamentalsPanel({ locale, compactHeader = false }: { lo
         </select></label>
       </div>
       <div className="company-facts-summary-grid" aria-label={copy.title}>
-        {visibleSummary.map((row) => <button key={`${row.companyId}-${row.accessionNumber}-${row.startDate ?? "instant"}`} type="button" className={`company-facts-summary-card${row.ticker === selectedTicker ? " is-selected" : ""}`} aria-pressed={row.ticker === selectedTicker} onClick={() => setSelectedTicker(row.ticker)}>
+        {visibleSummary.map((row) => <button key={`${row.companyId}-${row.accessionNumber}-${row.startDate ?? "instant"}`} type="button" className={`company-facts-summary-card${row.ticker === selectedTicker ? " is-selected" : ""}`} aria-pressed={row.ticker === selectedTicker} onClick={() => { setSelectedTicker(row.ticker); setDetailOpen(true); }}>
           <span className="company-facts-company"><strong>{row.ticker}</strong><small>{locale === "ko" ? `${companySearchAliases(row.ticker).find((alias) => /[가-힣]/.test(alias)) ? `${companySearchAliases(row.ticker).find((alias) => /[가-힣]/.test(alias))} · ` : ""}${row.name}` : row.name}</small></span>
           <span className="company-facts-period">{periodLabel(row)} <small>{row.form} · {date(row.startDate)} – {date(row.endDate)}</small></span>
           <span className="company-facts-industry"><small>{companySectorLabel(locale, row.sector, stock.sectors)}</small>{row.industry ? <small>{row.industry}</small> : null}</span>
@@ -164,15 +171,25 @@ export function CompanyFundamentalsPanel({ locale, compactHeader = false }: { lo
       </div>
 
       {visibleSummary.length === 0 ? <p role="status">{copy.empty}</p> : null}
-      {selected ? <section className="company-facts-detail" aria-labelledby="company-facts-detail-title">
+      {selected ? <MarketDetailSheet open={detailOpen} title={`${periodCopy.detail}: ${selected.name} (${selected.ticker})`} closeLabel={companyFinancialTreemapControlsCopy[locale].close} onClose={() => setDetailOpen(false)}><section className="company-facts-detail" aria-labelledby="company-fundamentals-detail-title">
         <header className="company-facts-detail-heading">
-          <div><h3 id="company-facts-detail-title">{periodCopy.detail}: {selected.name} ({selected.ticker})</h3><p>{copy.period}: {periodLabel(selected)} · {copy.filed}: {date(selected.filedDate)}</p></div>
+          <div><h3 id="company-fundamentals-detail-title">{periodCopy.detail}: {selected.name} ({selected.ticker})</h3><p>{selected.industry || selected.sector}{selected.sicCode ? ` · SIC ${selected.sicCode}` : ""} · {copy.period}: {periodLabel(selected)} · {copy.filed}: {date(selected.filedDate)}</p></div>
           <label><span>{periodCopy.chooseCompany}</span><select value={selectedTicker} onChange={(event) => setSelectedTicker(event.target.value)}>
             {summary.map((row) => <option key={row.ticker} value={row.ticker}>{row.ticker} — {row.name}</option>)}
           </select></label>
         </header>
 
-        {historyState === "loading" ? <p role="status">{copy.loading}</p> : historyState === "unavailable" ? <p role="status">{companyFactsUnavailableCopy[locale]}</p> : <>
+        <dl className="company-facts-sheet-metrics">
+          <div><dt>{copy.revenue} (USD)</dt><dd>{amount(selected.revenue)}</dd></div>
+          <div><dt>{copy.operatingIncome} (USD)</dt><dd>{amount(selected.operatingIncome)}</dd></div>
+          <div><dt>{copy.netIncome} (USD)</dt><dd>{amount(selected.netIncome)}</dd></div>
+          <div><dt>{copy.assets} (USD)</dt><dd>{amount(selected.assets)}</dd></div>
+          <div><dt>{copy.liabilities} (USD)</dt><dd>{amount(selected.liabilities)}</dd></div>
+          <div><dt>{copy.cashFlow} (USD)</dt><dd>{amount(selected.operatingCashFlow)}</dd></div>
+        </dl>
+        <p className="company-fundamentals-source">{copy.source} <a href={selected.sourceUrl} target="_blank" rel="noreferrer">{copy.filing}</a></p>
+
+        {historyState === "loading" ? <div className="market-detail-skeleton" role="status" aria-label={copy.loading}><i /><i /><i /></div> : historyState === "unavailable" ? <p role="alert">{companyFactsUnavailableCopy[locale]} <button type="button" onClick={() => { setHistoryErrorKey(""); setHistoryAttempt((attempt) => attempt + 1); }}>{detailCopy.retry}</button></p> : <>
           {revenueGrowth !== null ? <p className="company-facts-growth">{extra.growth}: <strong>{new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(revenueGrowth / 100)}</strong></p> : null}
           {netIncomeGrowth !== null ? <p className="company-facts-growth">{statusCopy.netIncomeGrowth}: <strong>{new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 }).format(netIncomeGrowth / 100)}</strong></p> : null}
           <div className="company-facts-trend" aria-label={periodCopy.revenueTrend}>
@@ -192,7 +209,7 @@ export function CompanyFundamentalsPanel({ locale, compactHeader = false }: { lo
             <td><a href={row.sourceUrl} target="_blank" rel="noreferrer">{copy.filing}</a></td>
           </tr>)}</tbody></table></div>
         </>}
-      </section> : null}
+      </section></MarketDetailSheet> : null}
     </>}
   </section>;
 }

@@ -10,6 +10,11 @@ import { cryptoDirectoryCopy } from "@/lib/data-platform/crypto-directory-copy";
 import { aggregatePriceLabel, stalePriceLabel } from "@/lib/data-platform/financial-price-status-copy";
 import { dailyPriceChartSegments } from "@/lib/data-platform/financial-chart-series.mjs";
 import { cryptoSnapshotCopy } from "@/lib/data-platform/crypto-snapshot-copy";
+import { MarketDetailSheet } from "./market-detail-sheet";
+import { companyFinancialTreemapControlsCopy } from "@/lib/data-platform/company-financial-treemap-controls-copy";
+import { marketDetailCopy } from "@/lib/data-platform/market-detail-copy";
+import { formatCryptoUsdPrice } from "@/lib/data-platform/crypto-price-format.mjs";
+import { fetchRespectingRetryAfter } from "@/lib/data-platform/retry-after-fetch.mjs";
 
 type Quote = {
   uuid: string; symbol: string; name: string; aliases: string[]; metadata?: { rank?: number };
@@ -23,16 +28,22 @@ type Payload = {
   history?: HistoryPoint[]; attribution?: string; sourceUrl?: string; priceType?: string;
 };
 const periods = ["1d", "5d", "1m", "3m", "6m", "1y", "3y", "5y", "10y", "all"] as const;
+const snapshotCache = new Map<string, { expiresAt: number; value: Payload | null; pending?: Promise<Payload | null> }>();
+const historyCache = new Map<string, { expiresAt: number; value: Payload | null; pending?: Promise<Payload | null> }>();
+
+function storeCryptoCache(cache: Map<string, { expiresAt: number; value: Payload | null; pending?: Promise<Payload | null> }>, key: string, entry: { expiresAt: number; value: Payload | null; pending?: Promise<Payload | null> }, capacity = 100) {
+  const now = Date.now();
+  for (const [cachedKey, cached] of cache) if (!cached.pending && cached.expiresAt <= now) cache.delete(cachedKey);
+  cache.delete(key);
+  cache.set(key, entry);
+  while (cache.size > capacity) cache.delete(cache.keys().next().value!);
+}
 
 function normalize(value: string) { return value.normalize("NFKC").toLocaleLowerCase().replace(/[\s._-]+/g, ""); }
 function isDate(value: string | null, today: string) {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value > today) return false;
   const parsed = Date.parse(`${value}T00:00:00.000Z`);
   return Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value;
-}
-function formatPrice(value: string | null | undefined, locale: string) {
-  if (!value || !Number.isFinite(Number(value))) return "—";
-  return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumFractionDigits: Number(value) >= 100 ? 2 : 8 }).format(Number(value));
 }
 function formatPercent(value: string | null | undefined, locale: string) {
   if (value == null || !Number.isFinite(Number(value))) return "—";
@@ -49,15 +60,19 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
   const copy = getCryptoPageCopy(locale);
   const ui = cryptoDirectoryCopy[locale];
   const labels = cryptoSnapshotCopy[locale];
+  const detailCopy = marketDetailCopy[locale];
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryDate = searchParams.get("date");
   const today = new Date().toISOString().slice(0, 10);
   const selectedDate = isDate(queryDate, today) ? queryDate! : today;
   const [payloadState, setPayloadState] = useState<{ requestedDate: string; value: Payload | null } | null>(null);
+  const [snapshotErrorKey, setSnapshotErrorKey] = useState("");
+  const [snapshotAttempt, setSnapshotAttempt] = useState(0);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"rank" | "price" | "change" | "cap">("rank");
   const [selectedUuid, setSelectedUuid] = useState("");
+  const [detailOpen, setDetailOpen] = useState(false);
   const [period, setPeriod] = useState<(typeof periods)[number]>("1m");
   const [historyState, setHistoryState] = useState<{ key: string; points: HistoryPoint[] } | null>(null);
   const payload = payloadState?.requestedDate === selectedDate ? payloadState.value : null;
@@ -68,21 +83,32 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
   }, [locale, queryDate, router, selectedDate]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch(`/portal-api/finance/crypto/alternative?date=${encodeURIComponent(selectedDate)}`, { cache: "no-store", signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("crypto-snapshot-unavailable");
-        return await response.json() as Payload;
-      })
-      .then((result) => {
-        if (controller.signal.aborted) return;
-        result.data = (result.data ?? []).map((coin) => ({ ...coin, aliases: aliasesFor(coin.symbol) }));
-        setPayloadState({ requestedDate: selectedDate, value: result });
-        if (result.data[0]) setSelectedUuid((current) => result.data.some((coin) => coin.uuid === current) ? current : result.data[0].uuid);
-      })
-      .catch(() => { if (!controller.signal.aborted) setPayloadState({ requestedDate: selectedDate, value: null }); });
-    return () => controller.abort();
-  }, [selectedDate]);
+    let active = true;
+    const cached = snapshotCache.get(selectedDate);
+    if (cached && cached.expiresAt > Date.now() && !cached.pending) {
+      Promise.resolve().then(() => {
+        if (!active) return;
+        setPayloadState({ requestedDate: selectedDate, value: cached.value });
+        setSnapshotErrorKey(cached.value === null ? selectedDate : "");
+      });
+      return;
+    }
+    const entry = cached ?? { expiresAt: 0, value: null };
+    const pending = entry.pending ?? fetchRespectingRetryAfter(`/portal-api/finance/crypto/alternative?date=${encodeURIComponent(selectedDate)}`)
+      .then(async (response) => response.ok ? await response.json() as Payload : null)
+      .catch(() => null)
+      .then((result) => { entry.value = result; entry.expiresAt = Date.now() + 90_000; entry.pending = undefined; return result; });
+    entry.pending = pending;
+    storeCryptoCache(snapshotCache, selectedDate, entry);
+    pending.then((result) => {
+      if (!active) return;
+      if (result) result.data = (result.data ?? []).map((coin) => ({ ...coin, aliases: aliasesFor(coin.symbol) }));
+      setPayloadState({ requestedDate: selectedDate, value: result });
+      setSnapshotErrorKey(result === null ? selectedDate : "");
+      if (result?.data[0]) setSelectedUuid((current) => result.data.some((coin) => coin.uuid === current) ? current : result.data[0].uuid);
+    });
+    return () => { active = false; };
+  }, [selectedDate, snapshotAttempt]);
 
   const normalized = normalize(search.trim());
   const matching = useMemo(() => (payload?.data ?? []).filter((coin) => !normalized || [coin.name, coin.symbol, ...coin.aliases].some((value) => normalize(value).includes(normalized))), [payload, normalized]);
@@ -95,15 +121,36 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
   const selectedUuidResolved = selected?.uuid ?? "";
   const historyKey = `${selectedDate}:${selectedUuidResolved}:${period}`;
   const history = historyState?.key === historyKey ? historyState.points : [];
+  const [historyErrorKey, setHistoryErrorKey] = useState("");
+  const historyError = historyErrorKey === historyKey;
+  const historyLoading = detailOpen && historyState?.key !== historyKey && !historyError;
+  const [historyAttempt, setHistoryAttempt] = useState(0);
   useEffect(() => {
-    if (!selectedUuidResolved || !payload?.data.length) return;
-    const controller = new AbortController();
-    fetch(`/portal-api/finance/crypto/alternative?asset=${encodeURIComponent(selectedUuidResolved)}&period=${period}&date=${encodeURIComponent(selectedDate)}`, { cache: "no-store", signal: controller.signal })
+    if (!detailOpen || !selectedUuidResolved || !payload?.data.length) return;
+    let active = true;
+    const cached = historyCache.get(historyKey);
+    if (cached && cached.expiresAt > Date.now() && !cached.pending) {
+      Promise.resolve().then(() => {
+        if (!active) return;
+        setHistoryState({ key: historyKey, points: cached.value?.history ?? [] });
+        setHistoryErrorKey(cached.value === null ? historyKey : "");
+      });
+      return;
+    }
+    const entry = cached ?? { expiresAt: 0, value: null };
+    const pending = entry.pending ?? fetchRespectingRetryAfter(`/portal-api/finance/crypto/alternative?asset=${encodeURIComponent(selectedUuidResolved)}&period=${period}&date=${encodeURIComponent(selectedDate)}`)
       .then(async (response) => response.ok ? await response.json() as Payload : null)
-      .then((result) => { if (!controller.signal.aborted) setHistoryState({ key: historyKey, points: result?.history ?? [] }); })
-      .catch(() => { if (!controller.signal.aborted) setHistoryState({ key: historyKey, points: [] }); });
-    return () => controller.abort();
-  }, [period, payload?.data.length, selectedUuidResolved, selectedDate, historyKey]);
+      .catch(() => null)
+      .then((result) => { entry.value = result; entry.expiresAt = Date.now() + 120_000; entry.pending = undefined; return result; });
+    entry.pending = pending;
+    storeCryptoCache(historyCache, historyKey, entry);
+    pending.then((result) => {
+      if (!active) return;
+      setHistoryState({ key: historyKey, points: result?.history ?? [] });
+      setHistoryErrorKey(result === null ? historyKey : "");
+    });
+    return () => { active = false; };
+  }, [period, payload?.data.length, selectedUuidResolved, selectedDate, historyKey, historyAttempt, detailOpen]);
 
   function chooseDate(value: string) {
     if (!isDate(value, today)) return;
@@ -125,30 +172,31 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
       {payload?.data.length ? <p className="crypto-daily-asof"><span>{copy.date}</span><strong>{payload.referenceDate}</strong><span>· USD · {payload.priceType ?? labels.observationType} · {formatTime(payload.observedAt, locale)} UTC</span>{payload.sourceUrl ? <><span>·</span><a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution ?? "Alternative.me"}</a></> : null}</p> : null}
       {payload?.stale ? <p className="platform-data-note" role="status">{stalePriceLabel[locale]}</p> : null}
 
+      {snapshotErrorKey === selectedDate ? <p className="platform-data-note" role="alert">{detailCopy.snapshotError} <button type="button" onClick={() => { snapshotCache.delete(selectedDate); setSnapshotErrorKey(""); setSnapshotAttempt((attempt) => attempt + 1); }}>{detailCopy.retry}</button></p> : null}
       {heatmap.length ? <div className="crypto-daily-heatmap" aria-label={`${labels.sortChange}: ${heatmap.length}`}>
-        {heatmap.map((coin) => <button key={coin.uuid} type="button" className={`crypto-daily-tile ${direction(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => setSelectedUuid(coin.uuid)} aria-pressed={selected?.uuid === coin.uuid}>
-          <span>{locale === "ko" && coin.aliases.length ? coin.aliases[0] : coin.name} <b>{coin.symbol}</b></span><strong>{formatPrice(coin.price, locale)}</strong><small>{formatPercent(coin.change24hPercent, locale)} · 24h</small>
+        {heatmap.map((coin) => <button key={coin.uuid} type="button" className={`crypto-daily-tile ${direction(coin.change24hPercent)}${selected?.uuid === coin.uuid ? " is-selected" : ""}`} onClick={() => { setSelectedUuid(coin.uuid); setDetailOpen(true); }} aria-pressed={selected?.uuid === coin.uuid}>
+          <span>{locale === "ko" && coin.aliases.length ? coin.aliases[0] : coin.name} <b>{coin.symbol}</b></span><strong>{formatCryptoUsdPrice(coin.price, locale)}</strong><small>{formatPercent(coin.change24hPercent, locale)} · 24h</small>
         </button>)}
       </div> : <div className="platform-empty-state" role="status"><p>{loading ? copy.sourcePending : labels.noSnapshot}</p>{payload?.latestDate && payload.latestDate !== selectedDate ? <button type="button" onClick={() => chooseDate(payload.latestDate!)}>{labels.latestSnapshot}: {payload.latestDate}</button> : null}</div>}
 
-      {selected && payload?.data.length ? <section className="crypto-daily-detail" aria-label={`${selected.name} ${labels.observationType}`}>
+      {selected && payload?.data.length ? <MarketDetailSheet open={detailOpen} title={`${selected.name} (${selected.symbol}) · USD`} closeLabel={companyFinancialTreemapControlsCopy[locale].close} onClose={() => setDetailOpen(false)}><section className="crypto-daily-detail" aria-label={`${selected.name} ${labels.observationType}`}>
         <dl className="crypto-daily-metrics">
-          <div><dt>{selected.name} ({selected.symbol})</dt><dd>{formatPrice(selected.price, locale)}</dd></div>
+          <div><dt>{selected.name} ({selected.symbol})</dt><dd>{formatCryptoUsdPrice(selected.price, locale)}</dd></div>
           <div><dt>{labels.sortChange}</dt><dd className={direction(selected.change24hPercent)}>{formatPercent(selected.change24hPercent, locale)}</dd></div>
-          {selected.marketCap ? <div><dt>{copy.marketCap}</dt><dd>{formatPrice(selected.marketCap, locale)}</dd></div> : null}
-          {selected.volume24h ? <div><dt>{copy.volume} · 24h</dt><dd>{formatPrice(selected.volume24h, locale)}</dd></div> : null}
+          {selected.marketCap ? <div><dt>{copy.marketCap}</dt><dd>{formatCryptoUsdPrice(selected.marketCap, locale)}</dd></div> : null}
+          {selected.volume24h ? <div><dt>{copy.volume} · 24h</dt><dd>{formatCryptoUsdPrice(selected.volume24h, locale)}</dd></div> : null}
         </dl>
         <div className="crypto-daily-controls"><label><span>{labels.chartRange}</span><select value={period} onChange={(event) => setPeriod(event.target.value as (typeof periods)[number])}>{periods.map((value) => <option value={value} key={value}>{value.toUpperCase()}</option>)}</select></label></div>
-        {history.length > 1 ? <div className="crypto-daily-chart-panel"><h3>{selected.name} · {labels.chart} · {payload.referenceDate}</h3><PriceChart points={history} title={`${selected.symbol} ${labels.chart}`} /><VolumeChart points={history} title={`${selected.symbol} ${copy.volume} 24h`} /></div>
+        {historyLoading ? <div className="market-detail-skeleton" role="status" aria-label={labels.chartRange}><i /><i /><i /></div> : historyError ? <p className="platform-data-note" role="alert">{detailCopy.historyError} <button type="button" onClick={() => { historyCache.delete(historyKey); setHistoryState(null); setHistoryErrorKey(""); setHistoryAttempt((attempt) => attempt + 1); }}>{detailCopy.retry}</button></p> : history.length > 1 ? <div className="crypto-daily-chart-panel"><h3>{selected.name} · {labels.chart} · {payload.referenceDate}</h3><PriceChart points={history} title={`${selected.symbol} ${labels.chart}`} /><VolumeChart points={history} title={`${selected.symbol} ${copy.volume} 24h`} /></div>
           : <p className="platform-data-note" role="status">{period === "1d" ? labels.intradayNote : labels.historyPending}</p>}
-        <p className="crypto-daily-attribution">{labels.observationType} · {payload.referenceDate} · {formatTime(selected.observedAt, locale)} UTC · {payload.sourceUrl ? <a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution ?? "Alternative.me"}</a> : "Alternative.me"}</p>
-      </section> : null}
+        <p className="crypto-daily-attribution">{labels.observationType} · {payload.referenceDate} · {detailCopy.observedAt}: {formatTime(selected.observedAt, locale)} UTC · {detailCopy.source}: {payload.sourceUrl ? <a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution ?? "Alternative.me"}</a> : "Alternative.me"}</p>
+      </section></MarketDetailSheet> : null}
 
       {payload?.data.length ? <>
         <p className="crypto-directory-count">{new Intl.NumberFormat(locale).format(payload.data.length)} · {labels.observationType}</p>
         <div className="crypto-daily-list">
-          {coins.length ? coins.map((coin) => <button key={coin.uuid} type="button" className={selected?.uuid === coin.uuid ? "is-selected" : ""} onClick={() => setSelectedUuid(coin.uuid)} aria-pressed={selected?.uuid === coin.uuid}>
-            <span>{locale === "ko" && coin.aliases.length ? coin.aliases[0] : coin.name} <b>{coin.symbol}</b></span><span>{formatPrice(coin.price, locale)}</span><span className={direction(coin.change24hPercent)}>{formatPercent(coin.change24hPercent, locale)}</span>
+          {coins.length ? coins.map((coin) => <button key={coin.uuid} type="button" className={selected?.uuid === coin.uuid ? "is-selected" : ""} onClick={() => { setSelectedUuid(coin.uuid); setDetailOpen(true); }} aria-pressed={selected?.uuid === coin.uuid}>
+            <span>{locale === "ko" && coin.aliases.length ? coin.aliases[0] : coin.name} <b>{coin.symbol}</b></span><span>{formatCryptoUsdPrice(coin.price, locale)}</span><span className={direction(coin.change24hPercent)}>{formatPercent(coin.change24hPercent, locale)}</span>
           </button>) : <p className="platform-empty-state">{labels.emptySearch}</p>}
         </div>
       </> : null}

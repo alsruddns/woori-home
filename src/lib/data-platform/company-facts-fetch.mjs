@@ -1,9 +1,13 @@
 function retryDelay(response) {
   if (response.status !== 429) return null;
   const value = response.headers.get("retry-after");
-  if (!value || !/^\d+$/.test(value.trim())) return null;
-  const seconds = Number(value);
-  return Number.isFinite(seconds) && seconds >= 1 && seconds <= 60 ? seconds * 1000 : null;
+  if (!value) return null;
+  if (/^\d+$/.test(value.trim())) {
+    const seconds = Number(value);
+    return Number.isFinite(seconds) && seconds >= 1 ? seconds * 1000 : null;
+  }
+  const retryAt = Date.parse(value);
+  return Number.isFinite(retryAt) ? Math.max(0, retryAt - Date.now()) : null;
 }
 
 function waitForRetry(milliseconds, signal) {
@@ -27,6 +31,7 @@ const SESSION_CACHE_TTL_MS = 120_000;
 const SESSION_CACHE_MAX_ENTRIES = 8;
 const SESSION_CACHE_MAX_ENTRY_CHARS = 512_000;
 const SESSION_CACHE_MAX_TOTAL_CHARS = 1_500_000;
+const inFlightRequests = new Map();
 
 function getSessionStorage() {
   try {
@@ -99,28 +104,47 @@ function writeSessionCache(storage, key, body, now) {
   }
 }
 
+function waitWithAbort(promise, signal) {
+  if (!signal) return promise;
+  if (signal.aborted) return Promise.reject(signal.reason ?? new DOMException("Aborted", "AbortError"));
+  return new Promise((resolve, reject) => {
+    const onAbort = () => { signal.removeEventListener("abort", onAbort); reject(signal.reason ?? new DOMException("Aborted", "AbortError")); };
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then((value) => { signal.removeEventListener("abort", onAbort); resolve(value); }, (error) => { signal.removeEventListener("abort", onAbort); reject(error); });
+  });
+}
+
+async function readResponse(response) {
+  return { status: response.status, statusText: response.statusText, headers: [...response.headers.entries()], body: await response.text() };
+}
+
+function makeResponse(result) {
+  const body = [204, 205, 304].includes(result.status) ? null : result.body;
+  return new Response(body, { status: result.status, statusText: result.statusText, headers: result.headers });
+}
+
 export async function fetchCompanyFacts(url, { signal, fetchImpl = fetch, wait = waitForRetry, storage = getSessionStorage(), now = Date.now } = {}) {
   const cacheKey = `${SESSION_CACHE_PREFIX}${url}`;
   const timestamp = now();
   const cached = readSessionCache(storage, cacheKey, timestamp);
   if (cached) return cached;
-
-  const response = await fetchImpl(url, { cache: "default", signal });
-  const delay = retryDelay(response);
-  let finalResponse = response;
-  if (delay !== null) {
-    await wait(delay, signal);
-    if (signal?.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError");
-    finalResponse = await fetchImpl(url, { cache: "no-store", signal });
+  let pending = inFlightRequests.get(cacheKey);
+  if (!pending) {
+    pending = (async () => {
+      let response = await fetchImpl(url, { cache: "default" });
+      const delay = retryDelay(response);
+      if (delay !== null) {
+        await wait(delay);
+        response = await fetchImpl(url, { cache: "no-store" });
+      }
+      const result = await readResponse(response);
+      if (response.ok && response.headers.get("content-type")?.includes("application/json")) {
+        try { JSON.parse(result.body); writeSessionCache(storage, cacheKey, result.body, now()); } catch { /* Best-effort session cache. */ }
+      }
+      return result;
+    })();
+    inFlightRequests.set(cacheKey, pending);
+    pending.finally(() => { if (inFlightRequests.get(cacheKey) === pending) inFlightRequests.delete(cacheKey); }).catch(() => {});
   }
-  if (finalResponse.ok && finalResponse.headers.get("content-type")?.includes("application/json")) {
-    try {
-      const body = await finalResponse.clone().text();
-      JSON.parse(body);
-      writeSessionCache(storage, cacheKey, body, now());
-    } catch {
-      // Response caching is best-effort; the caller still receives the original response.
-    }
-  }
-  return finalResponse;
+  return makeResponse(await waitWithAbort(pending, signal));
 }

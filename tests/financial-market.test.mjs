@@ -12,6 +12,7 @@ import { classifyFinancialDatabaseError } from "../src/lib/data-platform/financi
 import { companyFinancialMetrics, sicDivision, sicIndustryGroup } from "../src/lib/data-platform/company-financial-treemap.mjs";
 import { createFinancialResponseCache, secFactsCacheVersion } from "../src/lib/data-platform/financial-response-cache.mjs";
 import { fetchCompanyFacts } from "../src/lib/data-platform/company-facts-fetch.mjs";
+import { fetchRespectingRetryAfter } from "../src/lib/data-platform/retry-after-fetch.mjs";
 import { adjacentCalendarDate, isDailySnapshotReady, previousDailyReferenceDate } from "../src/lib/data-platform/crypto-daily.mjs";
 import { canCollectCryptoDailySnapshots, canCollectCoinrankingDailySnapshots, canPublishCryptoDailySnapshots } from "../src/lib/data-platform/financial-rights.mjs";
 
@@ -340,6 +341,23 @@ test("SEC facts 429 retry honors Retry-After once and does not retry other failu
   assert.equal(callsAfterAbort, 1);
 });
 
+test("rate-limited detail requests honor delta and HTTP-date Retry-After exactly once", async () => {
+  const waits = [];
+  let calls = 0;
+  const response = await fetchRespectingRetryAfter("/detail", {
+    now: () => Date.parse("2026-10-28T00:00:00Z"),
+    waitImpl: async (ms) => waits.push(ms),
+    fetchImpl: async () => { calls += 1; return calls === 1
+      ? new Response(null, { status: 429, headers: { "retry-after": "Wed, 28 Oct 2026 00:00:02 GMT" } })
+      : Response.json({ ok: true }); },
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(waits, [2000]);
+  assert.equal(calls, 2);
+  const noHeader = await fetchRespectingRetryAfter("/no-retry", { fetchImpl: async () => new Response(null, { status: 429 }) });
+  assert.equal(noHeader.status, 429);
+});
+
 test("SEC facts session cache reuses fresh responses, expires them, and keeps URLs separate", async () => {
   const values = new Map();
   const storage = {
@@ -364,6 +382,33 @@ test("SEC facts session cache reuses fresh responses, expires them, and keeps UR
   now += 120_000;
   await fetchCompanyFacts(url, { fetchImpl, storage, now: () => now });
   assert.equal(calls, 3);
+});
+
+test("SEC facts requests with the same query share an in-flight response", async () => {
+  let calls = 0;
+  let finish;
+  const fetchImpl = async () => {
+    calls += 1;
+    await new Promise((resolve) => { finish = resolve; });
+    return Response.json({ rows: ["shared"] });
+  };
+  const url = "/portal-api/finance/companies?period=annual&ticker=SHARED-FLIGHT";
+  const firstPromise = fetchCompanyFacts(url, { fetchImpl, storage: null });
+  const secondPromise = fetchCompanyFacts(url, { fetchImpl, storage: null });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(calls, 1);
+  finish();
+  const [first, second] = await Promise.all([firstPromise, secondPromise]);
+  assert.deepEqual(await first.json(), { rows: ["shared"] });
+  assert.deepEqual(await second.json(), { rows: ["shared"] });
+});
+
+test("market detail sheet labels cover all 26 published locales", async () => {
+  const source = await readFile(new URL("../src/lib/data-platform/market-detail-copy.ts", import.meta.url), "utf8");
+  const keys = [...source.matchAll(/^\s*(?:"([^"]+)"|([a-z-]+)):\s*\{/gm)].map((match) => match[1] ?? match[2]);
+  assert.deepEqual(keys, ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]);
+  assert.equal((source.match(/retry: "/g) ?? []).length, keys.length);
+  assert.equal((source.match(/observedAt: "/g) ?? []).length, keys.length);
 });
 
 test("industry zoom labels cover all 26 Portal locales", async () => {

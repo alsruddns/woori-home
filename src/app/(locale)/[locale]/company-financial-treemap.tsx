@@ -14,6 +14,7 @@ import { fetchCompanyFacts } from "@/lib/data-platform/company-facts-fetch.mjs";
 import { companyFactsCopy } from "@/lib/data-platform/company-facts-copy";
 import { companyFactsPeriodCopy } from "@/lib/data-platform/company-facts-period-copy";
 import { companyFactsStatusCopy } from "@/lib/data-platform/company-facts-status-copy";
+import { marketDetailCopy } from "@/lib/data-platform/market-detail-copy";
 
 type Fact = {
   companyId: string; ticker: string; name: string; sector: string; sicCode: string | null; industry: string | null;
@@ -72,7 +73,7 @@ function tileSizeClass(width: number, height: number) {
   return "is-tiny";
 }
 
-function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabel, areaLabel, maxAbs, copy, onSelect, formatAmount, formatPercent }: {
+function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabel, areaLabel, maxAbs, copy, activeTicker, onSelect, formatAmount, formatPercent }: {
   locale: Locale;
   group: IndustryGroup;
   areaMetric: Metric;
@@ -81,6 +82,7 @@ function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabe
   areaLabel: string;
   maxAbs: number;
   copy: typeof companyFinancialTreemapCopy["en"];
+  activeTicker: string | null;
   onSelect: (ticker: string) => void;
   formatAmount: (value: number | null) => string;
   formatPercent: (value: number | null) => string;
@@ -125,7 +127,7 @@ function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabe
       <div className="company-financial-industry-readable-grid">
         {eligible.map((entry) => {
           const { colorClass, backgroundColor } = colorFor(entry.metrics[colorMetric]);
-          return <button key={entry.row.ticker} type="button" className={`company-financial-industry-readable-tile ${colorClass}`} style={{ backgroundColor }} title={detailFor(entry)} aria-label={detailFor(entry)} onClick={() => onSelect(entry.row.ticker)}>
+          return <button key={entry.row.ticker} type="button" className={`company-financial-industry-readable-tile ${colorClass}${activeTicker === entry.row.ticker ? " is-selected" : ""}`} style={{ backgroundColor }} title={detailFor(entry)} aria-label={detailFor(entry)} aria-pressed={activeTicker === entry.row.ticker} onClick={() => onSelect(entry.row.ticker)}>
             <strong>{entry.row.ticker}</strong><span>{formatAmount(entry.metrics[areaMetric])}</span><small>{formatPercent(entry.metrics[colorMetric])}</small>
           </button>;
         })}
@@ -137,7 +139,7 @@ function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabe
         const { colorClass, backgroundColor } = colorFor(entry.metrics[colorMetric]);
         const sizeClass = tileSizeClass(rect.width, rect.height);
         const style: CSSProperties = { left: `${rect.x / mapWidth * 100}%`, top: `${rect.y / mapHeight * 100}%`, width: `${rect.width / mapWidth * 100}%`, height: `${rect.height / mapHeight * 100}%`, backgroundColor };
-        return <button key={entry.row.ticker} type="button" className={`company-financial-treemap-tile ${sizeClass} ${colorClass}${entry.metrics.netIncome !== null && entry.metrics.netIncome < 0 ? " is-loss" : ""}`} style={style} title={detailFor(entry)} aria-label={detailFor(entry)} onClick={() => onSelect(entry.row.ticker)}>
+        return <button key={entry.row.ticker} type="button" className={`company-financial-treemap-tile ${sizeClass} ${colorClass}${entry.metrics.netIncome !== null && entry.metrics.netIncome < 0 ? " is-loss" : ""}${activeTicker === entry.row.ticker ? " is-selected" : ""}`} style={style} title={detailFor(entry)} aria-label={detailFor(entry)} aria-pressed={activeTicker === entry.row.ticker} onClick={() => onSelect(entry.row.ticker)}>
           <strong>{entry.row.ticker}</strong>
           {sizeClass === "is-large" ? <><span>{formatAmount(entry.metrics[areaMetric])}</span><small>{formatPercent(entry.metrics[colorMetric])}</small></> : null}
           {sizeClass === "is-medium" ? <small>{formatPercent(entry.metrics[colorMetric])}</small> : null}
@@ -146,7 +148,7 @@ function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabe
     </div>}
     {unscaled.length ? <div className="company-financial-industry-unscaled">
       <p>{companyFinancialHeatmapNotes[locale].unscaled}</p>
-      <ul>{unscaled.map((entry) => <li key={entry.row.ticker}><button type="button" title={detailFor(entry)} aria-label={detailFor(entry)} onClick={() => onSelect(entry.row.ticker)}><strong>{entry.row.ticker}</strong><span>{formatAmount(entry.metrics[areaMetric])}</span></button></li>)}</ul>
+      <ul>{unscaled.map((entry) => <li key={entry.row.ticker}><button type="button" className={activeTicker === entry.row.ticker ? "is-selected" : ""} aria-pressed={activeTicker === entry.row.ticker} title={detailFor(entry)} aria-label={detailFor(entry)} onClick={() => onSelect(entry.row.ticker)}><strong>{entry.row.ticker}</strong><span>{formatAmount(entry.metrics[areaMetric])}</span></button></li>)}</ul>
     </div> : null}
     </div>
     </div>
@@ -167,6 +169,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
   const [data, setData] = useState<Fact[]>([]);
   const [previous, setPrevious] = useState<Fact[]>([]);
   const [sourceState, setSourceState] = useState<"loading" | "ready" | "unavailable">("loading");
+  const [fetchAttempt, setFetchAttempt] = useState(0);
   const [sourceAsOf, setSourceAsOf] = useState<string | null>(null);
   const [dataObservedAt, setDataObservedAt] = useState<string | null>(null);
   const [loadedYear, setLoadedYear] = useState<number | null>(null);
@@ -198,7 +201,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
       setFiscalYear((current) => current !== null && yearsFound.includes(current) ? current : defaultYear);
     }).catch(() => { if (!controller.signal.aborted) setSourceState("unavailable"); });
     return () => controller.abort();
-  }, [period]);
+  }, [period, fetchAttempt]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -241,7 +244,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
         setSourceState("ready");
       }).catch(() => { if (!controller.signal.aborted) { setData([]); setPrevious([]); setLoadedYear(fiscalYear); setLoadedPeriod(period); setSourceState("unavailable"); } });
     return () => controller.abort();
-  }, [fiscalYear, period]);
+  }, [fiscalYear, period, fetchAttempt]);
 
   const rows = useMemo(() => {
     const priorByPeriod = new Map(previous.map((row) => [`${row.ticker}:${period === "quarterly" ? row.fiscalPeriod : "FY"}`, row]));
@@ -332,7 +335,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
   const renderIndustryGrid = (dialog = false) => {
     const visibleGroups = dialog && zoomedIndustry ? renderableGroups.filter((group) => group.key === zoomedIndustry.key) : renderableGroups;
     return <div className="company-financial-industry-grid" role="list" aria-label={`${copy.year} ${fiscalYear}, ${areaLabel}, ${colorLabel}`}>
-      {visibleGroups.map((group) => <IndustryHeatmapCard key={group.key} locale={locale} group={group} areaMetric={areaMetric} colorMetric={colorMetric} colorLabel={colorLabel} areaLabel={areaLabel} maxAbs={maxAbs} copy={copy} onSelect={setActiveTicker} formatAmount={formatAmount} formatPercent={formatPercent} />)}
+      {visibleGroups.map((group) => <IndustryHeatmapCard key={group.key} locale={locale} group={group} areaMetric={areaMetric} colorMetric={colorMetric} colorLabel={colorLabel} areaLabel={areaLabel} maxAbs={maxAbs} copy={copy} activeTicker={activeTicker} onSelect={(ticker) => { setActiveTicker(ticker); if (dialogRef.current?.open) setIsExpanded(false); onSelectCompany(ticker); }} formatAmount={formatAmount} formatPercent={formatPercent} />)}
     </div>;
   };
 
@@ -347,13 +350,13 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
     <section className="company-financial-treemap" aria-labelledby="company-financial-treemap-title">
       <header><div><span className="platform-eyebrow">SEC EDGAR · SIC</span><h3 id="company-financial-treemap-title">{copy.title}</h3><p>{copy.description}</p></div></header>
       {renderControls("normal")}
-      {displayState === "loading" ? <p role="status">{copy.year}: {fiscalYear ?? "—"}</p> : displayState === "unavailable" ? <p role="status">{copy.noData}</p> : <>
+      {displayState === "loading" ? <p role="status">{copy.year}: {fiscalYear ?? "—"}</p> : displayState === "unavailable" ? <p role="alert">{copy.noData} <button type="button" onClick={() => setFetchAttempt((attempt) => attempt + 1)}>{marketDetailCopy[locale].retry}</button></p> : <>
         {renderStatus()}
         {renderableGroups.length ? renderIndustryGrid() : <p role="status">{filteredRows.length === 0 && searchQuery.trim() ? ui.noMatches : copy.noData}</p>}
         {renderSelectedDetail()}
         {renderLegend()}
         <div className="company-financial-treemap-table platform-table-scroll"><table className="platform-table"><thead><tr><th>{copy.sector}</th><th>{copy.revenue}</th><th>{factsCopy.netIncome}</th><th>{copy.assets}</th><th>{copy.operatingIncome}</th><th>{copy.operatingMargin}</th><th>{copy.netMargin}</th><th>{copy.revenueGrowth}</th></tr></thead><tbody>
-          {filteredRankedRows.map(({ row, metrics }) => <tr key={row.ticker}><th scope="row"><button type="button" className="company-financial-treemap-link" onClick={() => onSelectCompany(row.ticker)}>{row.ticker}</button><small>{row.industry || (row.sicCode ? `SIC ${row.sicCode}` : copy.sector)}</small></th><td>{amount(metrics.revenue)}</td><td>{amount(metrics.netIncome)}</td><td>{amount(metrics.assets)}</td><td>{amount(metrics.operatingIncome)}</td><td>{percent(metrics.operatingMargin)}</td><td>{percent(metrics.netMargin)}</td><td>{percent(metrics.revenueGrowth)}</td></tr>)}
+          {filteredRankedRows.map(({ row, metrics }) => <tr key={row.ticker}><th scope="row"><button type="button" className="company-financial-treemap-link" onClick={() => { setActiveTicker(row.ticker); onSelectCompany(row.ticker); }}>{row.ticker}</button><small>{row.industry || (row.sicCode ? `SIC ${row.sicCode}` : copy.sector)}</small></th><td>{amount(metrics.revenue)}</td><td>{amount(metrics.netIncome)}</td><td>{amount(metrics.assets)}</td><td>{amount(metrics.operatingIncome)}</td><td>{percent(metrics.operatingMargin)}</td><td>{percent(metrics.netMargin)}</td><td>{percent(metrics.revenueGrowth)}</td></tr>)}
         </tbody></table></div>
         <p className="company-financial-treemap-meta">{copy.year}: {fiscalYear} · {factsCopy.filed}: {sourceAsOf ?? "—"}</p>
       </>}
@@ -385,7 +388,7 @@ export function CompanyFinancialTreemap({ locale, period, onPeriodChange, onSele
             : <p role="status">{zoomedIndustry ? industryCopy.emptyIndustry : filteredRows.length === 0 && searchQuery.trim() ? ui.noMatches : copy.noData}</p>}
           {renderSelectedDetail()}
           {renderLegend()}
-        </> : <p role="status">{displayState === "loading" ? `${copy.year}: ${fiscalYear ?? "—"}` : copy.noData}</p>}
+        </> : displayState === "loading" ? <p role="status">{copy.year}: {fiscalYear ?? "—"}</p> : <p role="alert">{copy.noData} <button type="button" onClick={() => setFetchAttempt((attempt) => attempt + 1)}>{marketDetailCopy[locale].retry}</button></p>}
       </div>
     </dialog>
   </>;

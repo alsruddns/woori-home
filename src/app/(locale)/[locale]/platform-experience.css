@@ -47,7 +47,7 @@ html[data-theme="light"] .platform-shell option {
 .crypto-daily-tile{min-width:0;min-height:86px;display:grid;align-content:center;gap:4px;padding:10px 12px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-raised);color:var(--platform-text);text-align:left;cursor:pointer}
 .crypto-daily-tile>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--platform-muted);font-size:12px}
 .crypto-daily-tile>span b{color:var(--platform-text)}
-.crypto-daily-tile>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:clamp(15px,1.35vw,19px);font-variant-numeric:tabular-nums}
+.crypto-daily-tile>strong{min-width:0;white-space:normal;overflow-wrap:anywhere;font-size:clamp(13px,1.2vw,18px);line-height:1.25;font-variant-numeric:tabular-nums}
 .crypto-daily-tile>small{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
 .crypto-daily-tile.is-positive,.crypto-daily-metrics dd.is-positive,.crypto-daily-legend .is-positive{--crypto-state:#16844a;--crypto-state-bg:rgba(22,132,74,.13)}
 .crypto-daily-tile.is-negative,.crypto-daily-metrics dd.is-negative,.crypto-daily-legend .is-negative{--crypto-state:#cf3d47;--crypto-state-bg:rgba(207,61,71,.13)}
