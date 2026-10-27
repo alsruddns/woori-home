@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { adjacentCryptoDates, cryptoDates, cryptoHeatmapWeights, cryptoTreemapLayout, dailyCloseChange, deduplicateMarketIssues, isPublishableCryptoSnapshot, validUtcDate, validateCryptoSnapshot } from "../src/lib/data-platform/crypto-market.mjs";
+import { formatCryptoUsdPrice } from "../src/lib/data-platform/crypto-price-format.mjs";
 
 const root = new URL("../", import.meta.url);
 const read = (path) => readFile(new URL(path, root), "utf8");
@@ -10,6 +11,18 @@ const fixture = { schemaVersion: 1, sourceId: "test-only", providerName: "Test f
   { referenceDate: "2026-10-20", asOf: "2026-10-20T23:59:59Z", coins: [coin({ close: 100 })] },
   { referenceDate: "2026-10-21", asOf: "2026-10-21T23:59:59Z", coins: [coin({ close: 110, change24hPercent: -2 })] },
 ] };
+
+test("crypto USD display uses a narrow dollar symbol and preserves tiny quote precision", () => {
+  assert.equal(formatCryptoUsdPrice("79690", "en-US"), "$79,690.00");
+  assert.equal(formatCryptoUsdPrice("0.00000001", "en-US"), "$0.00000001");
+  assert.equal(formatCryptoUsdPrice("12345678901234567890.50", "en-US"), "$12,345,678,901,234,567,890.50");
+  assert.equal(formatCryptoUsdPrice("1.999", "en-US"), "$2.00");
+  assert.equal(formatCryptoUsdPrice("0.00000001", "de-DE"), "0,00000001 $");
+  assert.match(formatCryptoUsdPrice("79690", "pt-br"), /\$/);
+  assert.doesNotMatch(formatCryptoUsdPrice("79690", "pt-br"), /US\$/);
+  assert.equal(formatCryptoUsdPrice("0.01", "bn"), "০.০১$");
+  assert.equal(formatCryptoUsdPrice(null, "en-US"), "—");
+});
 
 test("crypto snapshots validate UTC dates, stable IDs, and unique asset/date rows", () => {
   assert.equal(validateCryptoSnapshot(fixture), true);
