@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Locale } from "@/lib/site";
 import { cryptoTreemapLayout } from "@/lib/data-platform/crypto-market.mjs";
@@ -9,6 +9,7 @@ import { companyFinancialTreemapCopy } from "@/lib/data-platform/company-financi
 import { companyFinancialTreemapControlsCopy } from "@/lib/data-platform/company-financial-treemap-controls-copy";
 import { companyFinancialIndustryCopy } from "@/lib/data-platform/company-financial-industry-copy";
 import { companyFinancialHeatmapNotes, companyFinancialIndustryGroups, type CompanyIndustryGroupKey } from "@/lib/data-platform/company-financial-industry-groups";
+import { companyFinancialIndustryScrollHint } from "@/lib/data-platform/company-financial-industry-scroll-hint";
 import { fetchCompanyFacts } from "@/lib/data-platform/company-facts-fetch.mjs";
 import { companyFactsCopy } from "@/lib/data-platform/company-facts-copy";
 import { companyFactsPeriodCopy } from "@/lib/data-platform/company-facts-period-copy";
@@ -22,7 +23,6 @@ type Fact = {
 type Metric = "revenue" | "assets" | "operatingIncome";
 type ColorMetric = "revenueGrowth" | "operatingMargin" | "netMargin";
 type Response = { data?: Fact[]; asOf?: string | null; dataObservedAt?: string | null; collectionStatus?: { lastSuccessAt?: string | Date | null } };
-type Size = { width: number; height: number };
 type PositionedRect = { x: number; y: number; width: number; height: number };
 type Entry = { row: Fact; metrics: ReturnType<typeof companyFinancialMetrics> };
 type IndustryGroup = { key: CompanyIndustryGroupKey; label: string; entries: Entry[] };
@@ -33,22 +33,36 @@ async function getFacts(query: URLSearchParams, signal: AbortSignal) {
   return response.json() as Promise<Response>;
 }
 
-function useObservedSize() {
-  const [element, setElement] = useState<HTMLElement | null>(null);
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 });
-  const ref = useCallback((node: HTMLElement | null) => setElement(node), []);
+function useIndustryScroll(resetKey: string) {
+  const [viewport, setViewport] = useState<HTMLDivElement | null>(null);
+  const [content, setContent] = useState<HTMLDivElement | null>(null);
+  const [layout, setLayout] = useState({ width: 0, hasOverflow: false });
+  const viewportNode = useRef<HTMLDivElement | null>(null);
+  const viewportRef = useCallback((node: HTMLDivElement | null) => {
+    viewportNode.current = node;
+    setViewport(node);
+  }, []);
+  const contentRef = useCallback((node: HTMLDivElement | null) => setContent(node), []);
+
   useEffect(() => {
-    if (!element) return;
+    if (!viewport || !content) return;
     const update = () => {
-      const bounds = element.getBoundingClientRect();
-      setSize({ width: bounds.width, height: bounds.height });
+      const width = content.getBoundingClientRect().width;
+      const hasOverflow = viewport.scrollHeight > viewport.clientHeight + 1;
+      setLayout((current) => current.width === width && current.hasOverflow === hasOverflow ? current : { width, hasOverflow });
     };
     update();
     const observer = new ResizeObserver(update);
-    observer.observe(element);
+    observer.observe(viewport);
+    observer.observe(content);
     return () => observer.disconnect();
-  }, [element]);
-  return { ref, size };
+  }, [viewport, content]);
+
+  useEffect(() => {
+    if (viewportNode.current) viewportNode.current.scrollTop = 0;
+  }, [viewport, resetKey]);
+
+  return { viewportRef, contentRef, ...layout };
 }
 
 function tileSizeClass(width: number, height: number) {
@@ -71,8 +85,10 @@ function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabe
   formatAmount: (value: number | null) => string;
   formatPercent: (value: number | null) => string;
 }) {
-  const { ref, size } = useObservedSize();
-  const mapWidth = Math.max(1, size.width - 26);
+  const scrollResetKey = `${areaMetric}:${colorMetric}:${group.entries.map(({ row }) => `${row.ticker}:${row.endDate}`).join("|")}`;
+  const { viewportRef, contentRef, width: scrollWidth, hasOverflow } = useIndustryScroll(scrollResetKey);
+  const headingId = `company-industry-${group.key}-${useId()}`;
+  const mapWidth = Math.max(1, scrollWidth);
   const eligible = group.entries.filter(({ metrics }) => {
     const value = metrics[areaMetric];
     return value !== null && value > 0;
@@ -94,11 +110,16 @@ function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabe
   };
   const detailFor = ({ row, metrics }: Entry) => `${row.name} (${row.ticker}) · ${row.industry || row.sector || copy.sector} · ${areaLabel}: ${formatAmount(metrics[areaMetric])} · ${colorLabel}: ${formatPercent(metrics[colorMetric])} · ${row.fiscalPeriod} ${row.fiscalYear} · ${row.endDate} · filed ${row.filedDate}`;
 
-  return <article ref={ref} className="company-financial-industry-card" aria-label={`${group.label}, ${group.entries.length} ${copy.companies}`}>
+  return <article className="company-financial-industry-card" aria-label={`${group.label}, ${group.entries.length} ${copy.companies}`}>
     <header className="company-financial-industry-card-header">
-      <div><h4>{group.label}</h4><p>{group.entries.length} {copy.companies}</p></div>
-      <small>{areaLabel}: {formatAmount(areaTotal)}</small>
+      <div><h4 id={headingId}>{group.label}</h4><p>{group.entries.length} {copy.companies}</p></div>
+      <div className="company-financial-industry-card-header-meta">
+        <small>{areaLabel}: {formatAmount(areaTotal)}</small>
+        {hasOverflow ? <span className="company-financial-industry-scroll-hint"><span aria-hidden="true">↕</span> {companyFinancialIndustryScrollHint[locale]}</span> : null}
+      </div>
     </header>
+    <div ref={viewportRef} className="company-financial-industry-scroll" tabIndex={hasOverflow ? 0 : undefined} role={hasOverflow ? "region" : undefined} aria-labelledby={hasOverflow ? headingId : undefined}>
+    <div ref={contentRef} className="company-financial-industry-scroll-content">
     {useReadableGrid ? <>
       <p className="company-financial-industry-layout-note">{companyFinancialHeatmapNotes[locale].equalTiles}</p>
       <div className="company-financial-industry-readable-grid">
@@ -127,6 +148,8 @@ function IndustryHeatmapCard({ locale, group, areaMetric, colorMetric, colorLabe
       <p>{companyFinancialHeatmapNotes[locale].unscaled}</p>
       <ul>{unscaled.map((entry) => <li key={entry.row.ticker}><button type="button" title={detailFor(entry)} aria-label={detailFor(entry)} onClick={() => onSelect(entry.row.ticker)}><strong>{entry.row.ticker}</strong><span>{formatAmount(entry.metrics[areaMetric])}</span></button></li>)}</ul>
     </div> : null}
+    </div>
+    </div>
   </article>;
 }
 
