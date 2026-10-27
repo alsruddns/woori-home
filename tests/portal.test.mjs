@@ -161,7 +161,8 @@ test("crypto search labels cover all locales and the market overview leads with 
   const dailyDescriptionBlock = cryptoPageCopy.match(/const dailyMarketDescription: Record<Locale, string> = \{([\s\S]*?)\n\};/)?.[1] ?? "";
   const dailyDescriptionLocales = [...dailyDescriptionBlock.matchAll(/^\s*(?:"([a-z-]+)"|([a-z]+)):/gm)].map((match) => match[1] ?? match[2]).sort();
   assert.deepEqual(dailyDescriptionLocales, [...siteData.locales].sort());
-  assert.match(cryptoPageCopy, /KST for KRW markets and UTC for USDT markets/);
+  assert.match(cryptoPageCopy, /daily UTC observations of Alternative\.me/);
+  assert.doesNotMatch(cryptoPageCopy, /finalized exchange daily candles/);
   assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\}/);
   assert.match(stockPage, /CompanyFundamentalsPanel locale=\{locale\} compactHeader/);
   assert.match(companyFactsPanel, /compactHeader \? "company-financial-treemap-title"/);
@@ -280,7 +281,8 @@ test("the new localized data home keeps the portal guide at about and preserves 
 test("about remains available by URL and in the footer but is omitted from category menus", () => {
   assert.match(platformControls, /categoryNavigation\(locale\)/);
   assert.match(platformSidebar, /categoryNavigation\(locale\)/);
-  assert.match(categoryNavigation, /"finance", "stocks", "crypto", "gold", "commodities", "economy", "science", "world"/);
+  assert.match(categoryNavigation, /"finance", "stocks", "crypto", "gold", "economy", "science", "world"/);
+  assert.doesNotMatch(categoryNavigation, /"commodities"/);
   assert.doesNotMatch(categoryNavigation, /"about"/);
   assert.match(platformLayout, /href=\{`\/\$\{locale\}\/about`\}>\{copy\.categories\[7\]\}/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
@@ -410,7 +412,7 @@ test("shared calendar opens from both controls, uses localized Intl dates, and a
   assert.match(rootProxy, /accept-language/);
   assert.match(rootProxy, /woori-locale/);
   assert.match(rootProxy, /crawler/);
-  const order = ["finance", "stocks", "crypto", "gold", "commodities", "economy", "science", "world"];
+  const order = ["finance", "stocks", "crypto", "gold", "economy", "science", "world"];
   for (const locale of siteData.locales) {
     const entries = getCategoryNavigation(locale);
     assert.deepEqual(entries.slice(0, order.length).map((entry) => entry.id), order);
@@ -440,6 +442,8 @@ test("portal sitemap contains locale home and privacy pages with matching altern
   assert.match(sitemap, /publicDataPaths/);
   assert.match(sitemap, /locales\.flatMap/);
   assert.match(sitemap, /flatMap/);
+  assert.match(sitemap, /"\/markets", "\/crypto", "\/gold"/);
+  assert.doesNotMatch(sitemap, /"\/commodities"/);
   assert.doesNotMatch(sitemap, /money|calculators|tools|docs|quiz/);
 });
 
@@ -463,10 +467,12 @@ test("shared analytics gates AdSense when disabled and retains GA4 on each root 
   assert.equal((rootLayout.match(/<Analytics\s*\/>/g) ?? []).length, 1);
 });
 
-test("robots lists all six production sitemap endpoints", () => {
-  for (const path of ["sitemap.xml", "calculator-sitemap.xml", "tools-sitemap.xml", "money-sitemap.xml", "docs-sitemap.xml", "quiz-sitemap.xml"]) assert.ok(robots.includes(path));
+test("robots lists live production sitemap endpoints and blocks API crawling", () => {
+  for (const path of ["sitemap.xml", "calculator-sitemap.xml", "tools-sitemap.xml", "docs-sitemap.xml", "quiz-sitemap.xml"]) assert.ok(robots.includes(path));
+  assert.doesNotMatch(robots, /money-sitemap\.xml/);
+  assert.match(robots, /portal-api/);
   assert.match(robots, /allow: "\/"/);
-  assert.match(robots, /disallow: \["\/api\/"\]/);
+  assert.match(robots, /disallow: \["\/api\/", "\/portal-api\/"\]/);
 });
 
 test("privacy and terms routes plus the localized contact dialog are connected", () => {

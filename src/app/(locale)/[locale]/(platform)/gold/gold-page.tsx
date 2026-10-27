@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { goldCopy, goldSectionTitle, goldSourceTermsLabel, type GoldPageSection } from "@/lib/data-platform/gold-copy";
-import { isLocale, origin } from "@/lib/site";
+import { alternates, isLocale, origin } from "@/lib/site";
 import { GoldUnavailableDate } from "./gold-unavailable-date";
 import { GoldDbQuotes } from "./gold-db-quotes";
+import { RelatedGuides } from "../../related-guides";
 
 const routeFor = (section: GoldPageSection) => section === "overview" ? "/gold" : `/gold/${section}`;
 
@@ -20,8 +21,8 @@ export function goldMetadata(localeValue: string, section: GoldPageSection): Met
   return {
     title,
     description,
-    robots: { index: false, follow: true },
-    alternates: { canonical: url },
+    robots: { index: section === "overview", follow: true },
+    alternates: { canonical: url, languages: section === "overview" ? alternates("/gold").languages : undefined },
     openGraph: { type: "website", siteName: "WOORI.TODAY", title, description, url },
     twitter: { card: "summary", title, description },
   };
@@ -46,5 +47,6 @@ export function GoldPage({ localeValue, section }: { localeValue: string; sectio
       <article><h2>{copy.calculationTitle}</h2><p>{copy.calculationNote}</p><p>{copy.unitGram} ↔ {copy.unitDon}.</p></article>
       <article><h2>{copy.sourceTitle}</h2><ul><li><a href="https://global.krx.co.kr/contents/GLB/02/0201/0201050202/GLB0201050202.jsp" target="_blank" rel="noreferrer">{copy.sourceKrx}</a></li><li><a href="https://data.krx.co.kr/inc/datasale/Market%20Data%20Usage%20Polices_ko.pdf?v=20230121_1" target="_blank" rel="noreferrer">{goldSourceTermsLabel[locale]}</a></li><li><a href="https://www.goldapi.io/kb/tos" target="_blank" rel="noreferrer">{copy.sourceApi}</a></li></ul><p>{copy.sourceNote}</p></article>
     </section>
+    <RelatedGuides locale={locale} slugs={["gold-monthly-average-and-units"]} />
   </>;
 }

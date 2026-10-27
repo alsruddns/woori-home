@@ -142,7 +142,9 @@ test("publish workflow is digest-pinned, main guarded, and limited to portal wit
   assert.match(workflow, /github\.event\.schedule == '17 2 \* \* \*'/);
   assert.match(workflow, /vars\.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 2 \* \* \*'/);
   assert.match(workflow, /vars\.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 10 \* \* 1-5'/);
-  assert.match(workflow, /SEC_EDGAR_AUTO_REFRESH_ENABLED: \$\{\{ \(vars\.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 10 \* \* 1-5'\) \|\| \(vars\.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 2 \* \* \*'\) \}\}/);
+  assert.match(workflow, /vars\.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 3 \* \* \*'/);
+  assert.match(workflow, /SCHEDULED_OPEN_PRICES_REFRESH/);
+  assert.match(workflow, /SEC_EDGAR_AUTO_REFRESH_ENABLED: \$\{\{ \(vars\.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 10 \* \* 1-5'\) \|\| \(vars\.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 2 \* \* \*'\) \|\| \(vars\.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github\.event\.schedule == '17 3 \* \* \*'\) \}\}/);
   assert.match(workflow, /SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY/);
   assert.match(workflow, /COINRANKING_API_KEY: "\$\{COINRANKING_API_KEY:\?\}"/);
   assert.match(workflow, /Verify Coinranking runtime secret presence/);

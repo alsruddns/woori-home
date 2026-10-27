@@ -25,7 +25,15 @@ test('Alternative adapter checks IDs, USD metrics, freshness, positive prices an
  let p=crypto();p.data[0].symbol='BAD';assert.throws(()=>normalizeAlternative(p,{now}),/identity/);
  p=crypto();p.data[0].quotes.USD.price=-1;assert.throws(()=>normalizeAlternative(p,{now}),/positive/);
  p=crypto();p.data.pop();assert.throws(()=>normalizeAlternative(p,{now}),/missing/);
- assert.throws(()=>normalizeAlternative(crypto(),{now:new Date('2026-10-29')}),/stale/);
+ assert.throws(()=>normalizeAlternative(crypto(),{now:new Date('2026-10-29')}),/BTC or ETH missing/);
+ const expanded=crypto();
+ expanded.metadata.num_cryptocurrencies=25;
+ expanded.data.push(...Array.from({length:23},(_,i)=>({id:String(i+2000),symbol:`C${i}`,website_slug:`coin-${i}`,name:`Coin ${i}`,rank:i+3,last_updated:1793050738,quotes:{USD:{price:10+i,volume_24h:20,market_cap:30,percentage_change_24h:1}}})));
+ assert.equal(normalizeAlternative(expanded,{now}).length,25);
+ expanded.data[2].last_updated=1792791538;
+ const freshOnly=normalizeAlternative(expanded,{now});
+ assert.equal(freshOnly.length,24);
+ assert.equal(freshOnly.staleCount,1);
 });
 test('reviewed open sources carry dated evidence without changing Coinranking or GoldAPI permissions',()=>{
  for(const source of Object.values(OPEN_PRICE_SOURCES)){const s={license_status:'verified',collection_enabled:true,reviewed_at:'2026-10-26T21:00:00Z',review_due_at:'2027-04-26',terms_version:source.terms,attribution:source.attribution,source_url:source.url,financial_rights:openSourceRights(source)};
@@ -37,4 +45,7 @@ test('open price production import keeps backup, role, replay and protected data
  const workflow=await readFile(new URL('../.github/workflows/publish.yml',import.meta.url),'utf8');assert.ok(workflow.includes('"$IMPORT_OPEN_PRICES" = "true" ] && database_write_requested=true'));
  assert.ok(workflow.includes('stage="Persist reviewed monthly Gold and crypto observations"'));
  assert.ok(workflow.includes('Select one operation per protected run'));
+ assert.ok(workflow.includes("vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true'"));
+ assert.ok(workflow.includes('SCHEDULED_OPEN_PRICES_REFRESH'));
+ assert.ok(workflow.includes('open-price schedule selector'));
 });

@@ -15,6 +15,7 @@ import { RankingControls } from "./ranking-controls";
 import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib/db/world-bank-repository";
 import { resolveWorldBankDataSource, worldBankIndicatorSource } from "../../../lib/db/world-bank-mode.mjs";
 import { createIndicatorDatasetDescription, validateDatasetSchema } from "@/lib/data-platform/dataset-schema.mjs";
+import { RelatedGuides } from "./related-guides";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -64,6 +65,7 @@ export function WorldOverview({ locale, requestedIndicator, requestedYear, reque
       <p className="platform-data-note">{ranking.included}: {ranked.length} · {ranking.missing}: {Math.max(count - ranked.length, 0)}. Tied values share the same rank; missing values are omitted.</p>
     </section>
     <p className="platform-data-note">{copy.sourceNote} <a href="https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json">World Bank API</a></p>
+    <RelatedGuides locale={locale} slugs={["compare-country-gdp"]} />
   </>;
 }
 
@@ -91,6 +93,7 @@ export function IndicatorPage({ locale, slug }: { locale: Locale; slug: string }
     <section className="platform-chart-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{reference?.countryName ?? "World"}</span><h2>{copy.latest}</h2></div><span>{copy.referenceYear}: {reference?.year ?? "—"}</span></div><TrendChart locale={locale} values={series.map((item) => item.value)} label={`${label}, ${reference?.countryName ?? ""}`} /></section>
     <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">{indicator.code}</span><h2>{copy.compare}</h2></div></div><DataTable locale={locale} indicator={indicator.code} /></section>
     <section className="platform-explainer"><article><h2>{copy.definition}</h2><p>{definition}</p></article><article><h2>{copy.interpretation}</h2><p>{interpretation}</p></article><article><h2>{copy.dataSource}</h2><p>{copy.sourceNote} <a href={`https://api.worldbank.org/v2/country/all/indicator/${indicator.code}?format=json`}>World Bank · {indicator.code}</a>{reference?.dataProvider ? ` · ${reference.dataProvider}` : ""}</p><small>{reference?.license}</small></article></section>
+    {indicator.id === "gdp" || indicator.id === "gdp-growth" ? <RelatedGuides locale={locale} slugs={["compare-country-gdp"]} /> : null}
   </>;
 }
 

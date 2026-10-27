@@ -3,9 +3,12 @@ import { alternates, alternatesForLocales, locales, origin, publicDataPaths, pub
 import { indicators } from "@/lib/data-platform/registry";
 import { supportedCountries } from "@/lib/data-platform/countries";
 import { latestForCountry } from "@/lib/data-platform/snapshot";
+import { guideLocales, guides } from "@/lib/data-platform/guides";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const publicPaths = [...new Set([...publicPortalPaths, ...publicDataPaths])];
+  // These market overviews contain reviewed, persisted data and have a localized
+  // canonical page. Dated query URLs remain user navigation only and are omitted.
+  const publicPaths = [...new Set([...publicPortalPaths, ...publicDataPaths, "/markets", "/crypto", "/gold"])];
   const portalAndDataPages = locales.flatMap((locale) => publicPaths.map((path) => ({
     url: `${origin}/${locale}${path}`,
     alternates: alternates(path),
@@ -29,6 +32,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     url: `${origin}/${locale}${path}`,
     alternates: alternates(path),
   })));
+  const guidePaths = ["/guides", ...guides.map((guide) => `/guides/${guide.slug}`)];
+  const guidePages = guideLocales.flatMap((locale) => guidePaths.map((path) => ({
+    url: `${origin}/${locale}${path}`,
+    alternates: alternatesForLocales(path, guideLocales, "en"),
+  })));
 
-  return [...portalAndDataPages, ...indexableIndicatorPages, ...countryPages];
+  return [...portalAndDataPages, ...indexableIndicatorPages, ...countryPages, ...guidePages];
 }

@@ -92,12 +92,12 @@ test("gold quote math compares only like-for-like quotes and handles missing or 
   assert.equal(normalizeLicensedGoldQuote({ ...quote, sourceUnit:"gram", sourcePrice:100, rightsVerified:false }), null);
 });
 
-test("gold routes remain noindex without verified price records and all quote locales are complete", async () => {
+test("Gold overview is indexable while other Gold sections stay non-indexable until each has distinct useful content", async () => {
   const [goldPage, snapshotText] = await Promise.all([
     read("src/app/(locale)/[locale]/(platform)/gold/gold-page.tsx"),
     read("src/data/gold-prices.json"),
   ]);
-  assert.match(goldPage, /index: false/);
+  assert.match(goldPage, /index: section === "overview"/);
   assert.match(goldPage, /GoldDbQuotes/);
   assert.doesNotMatch(goldPage, /import snapshot|quoteCount > 0/);
   const snapshot = JSON.parse(snapshotText);

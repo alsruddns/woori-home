@@ -13,8 +13,9 @@ import neoSnapshot from "@/data/nasa-neows.json";
 import { goldCopy } from "@/lib/data-platform/gold-copy";
 import { cryptoCopy } from "@/lib/data-platform/crypto-copy";
 import { categoryNavigation } from "@/lib/data-platform/category-navigation";
-import { mineralCopy } from "@/lib/data-platform/mineral-copy";
 import { unitFor } from "@/lib/data-platform/country-units";
+import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-copy";
+import { MarketSnapshot } from "./market-snapshot";
 
 const viewLabels: Record<Locale, string> = {
   ru:"Открыть данные",
@@ -40,7 +41,7 @@ const viewLabels: Record<Locale, string> = {
   el: "Εξερευνήστε τα δεδομένα"
 };
 
-export function PlatformHome({ locale }: { locale: Locale }) {
+export async function PlatformHome({ locale }: { locale: Locale }) {
   const copy = platformCopy[locale];
   const stocks = stockCopy[locale];
   const countries = countryCopy[locale];
@@ -66,9 +67,8 @@ export function PlatformHome({ locale }: { locale: Locale }) {
   const navLabel = (id: string) => categoryNavigation(locale).find((item) => item.id === id)?.label ?? "";
   const cards = [
     { href: `/${locale}/stocks`, title: copy.categories[2], detail: stocks.noMarketSnapshots },
-    { href: `/${locale}/crypto`, title: cryptoCopy[locale].nav, detail: cryptoCopy[locale].unavailableBody },
+    { href: `/${locale}/crypto`, title: cryptoCopy[locale].nav, detail: financialOverviewCopy[locale].usdCrypto },
     { href: `/${locale}/gold`, title: goldCopy[locale].title, detail: goldCopy[locale].description },
-    { href: `/${locale}/commodities`, title: mineralCopy[locale].title, detail: mineralCopy[locale].description },
     { href: `/${locale}/economy/gdp`, title: navLabel("economy"), detail: gdpIndicator.definition?.[locale] ?? copy.overviewBody },
     { href: `/${locale}/world`, title: navLabel("world"), detail: copy.overviewBody },
     { href: `/${locale}/world/population`, title: copy.categories[3], detail: populationIndicator.definition?.[locale] ?? copy.overviewBody },
@@ -93,7 +93,8 @@ export function PlatformHome({ locale }: { locale: Locale }) {
 
   return <>
     <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-    <header className="platform-page-heading platform-home-heading"><span className="platform-eyebrow">{copy.dataSource} · World Bank</span><h1>{copy.overview}</h1><p>{copy.overviewBody}</p></header>
+    <header className="platform-page-heading platform-home-heading"><span className="platform-eyebrow">{copy.dataSource} · WOORI.TODAY</span><h1>{financialOverviewCopy[locale].title}</h1><p>{financialOverviewCopy[locale].description}</p></header>
+    <MarketSnapshot locale={locale} />
     <GlobalDataBriefing locale={locale} />
     <section className="platform-home-summary" aria-label={copy.latest}>
       {summaryMetrics.map(({ item, indicator, value }) => <article key={indicator.id}><span>{indicator.label[locale] ?? indicator.label.en}</span><strong>{value}</strong><small>{item ? `${copy.referenceYear}: ${item.year} · ${unitFor(locale, indicator)}` : copy.notAvailable}</small><small>{item ? `${copy.dataSource}: World Bank WDI · ${date(item.lastCheckedAt.slice(0, 10))}` : ""}</small></article>)}

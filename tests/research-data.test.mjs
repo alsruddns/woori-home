@@ -100,6 +100,8 @@ test("paper search filters locale query and exact publication dates, excludes re
   assert.equal(validPaperDate("2026-02-28"), "2026-02-28");
   const byDoi = filterResearchPapers(papers, { topic: "all", sort: "recent", query: "10.1/B", locale: "en" });
   assert.deepEqual(byDoi.records.map((paper) => paper.id), ["b"]);
+  const byPublicationDate = filterResearchPapers(papers, { topic: "all", sort: "recent", locale: "en" });
+  assert.deepEqual(byPublicationDate.records.map((paper) => paper.id), ["b", "a"]);
   const byWindow = filterResearchPapers(papers, { topic: "energy", sort: "citations", from: "2026-10-15", to: "2026-10-15", locale: "en" });
   assert.deepEqual(byWindow.records.map((paper) => paper.id), ["b"]);
   const clamped = filterResearchPapers(papers, { topic: "all", sort: "recent", query: `  ${"x".repeat(125)}  `, from: "2026-02-30", locale: "en" });

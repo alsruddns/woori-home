@@ -80,7 +80,7 @@ test("production snapshots remain empty until a provider license is approved", a
   assert.deepEqual(stockIssues.issues, []);
 });
 
-test("all twenty crypto UI locales are present and crypto routes stay out of the sitemap", async () => {
+test("all twenty-six crypto UI locales are present and reviewed Crypto/Gold overview pages are indexable", async () => {
   const copy = await read("src/lib/data-platform/crypto-copy.ts");
   const stockCopy = await read("src/lib/data-platform/market-issue-copy.ts");
   for (const locale of ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]) {
@@ -94,5 +94,9 @@ test("all twenty crypto UI locales are present and crypto routes stay out of the
   assert.match(cryptoRoute, /category === "crypto"/);
   assert.match(cryptoIssuesRoute, /index: false/);
   assert.match(stockIssuesRoute, /index: false/);
-  assert.doesNotMatch(sitemap, /crypto\/issues|\/crypto/);
+  assert.match(cryptoRoute, /category === "crypto"/);
+  assert.match(cryptoRoute, /category === "science" \|\| category === "crypto"/);
+  assert.match(sitemap, /"\/crypto"/);
+  assert.match(sitemap, /"\/gold"/);
+  assert.doesNotMatch(sitemap, /crypto\/issues/);
 });

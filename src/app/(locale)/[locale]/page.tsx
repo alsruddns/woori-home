@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { alternates, isLocale, ogLocaleFor, origin } from "@/lib/site";
-import { platformCopy } from "@/lib/data-platform/locales";
 import { PlatformLayout } from "./platform-layout";
 import { PlatformHome } from "./platform-home";
+import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-copy";
 import "./platform.css";
 import "./platform-experience.css";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const copy = platformCopy[locale];
   const canonical = `${origin}/${locale}`;
-  const title = `${copy.overview}`;
-  const description = copy.overviewBody;
+  const title = financialOverviewCopy[locale].title;
+  const description = financialOverviewCopy[locale].description;
   return {
     title,
     description,
@@ -22,6 +21,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     twitter: { card: "summary", title, description },
   };
 }
+
+export const dynamic = "force-dynamic";
 
 export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;

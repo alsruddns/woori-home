@@ -58,13 +58,14 @@ on:
   schedule:
     - cron: '17 10 * * 1-5'
     - cron: '17 2 * * *'
+    - cron: '17 3 * * *'
 
 permissions:
   contents: read
 
 jobs:
   release-guard:
-    if: github.event_name != 'schedule' || (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *')
+    if: github.event_name != 'schedule' || (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || (vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,12 +73,12 @@ jobs:
         env:
           GITHUB_REF: ${{ github.ref }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') }}
+          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || (vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *') }}
         run: node scripts/deploy/release-guard.mjs
 
   image:
     needs: release-guard
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices)))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || (vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices)))
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -120,7 +121,7 @@ jobs:
 
   deploy:
     needs: image
-    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices)))
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || (vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *'))) || (github.event_name != 'schedule' && (github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message || '', '[db-first]')) && (github.event_name == 'push' || inputs.deploy_portal || inputs.preflight_database || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices)))
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
@@ -133,7 +134,7 @@ jobs:
           ref: ${{ github.sha }}
       - name: Validate immutable release references
         env:
-          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') }}
+          SEC_EDGAR_AUTO_REFRESH_ENABLED: ${{ (vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || (vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *') }}
           RELEASE_SHA: ${{ github.sha }}
           PORTAL_DIGEST: ${{ needs.image.outputs.portal_digest }}
           TOOLS_DIGEST: ${{ needs.image.outputs.tools_digest }}
@@ -153,14 +154,15 @@ jobs:
           APPLY_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.apply_migrations || 'false' }}
           IMPORT_WORLD_BANK: ${{ github.event_name == 'workflow_dispatch' && inputs.import_world_bank || 'false' }}
           IMPORT_SEC: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || 'false' }}
-          IMPORT_OPEN_PRICES: ${{ github.event_name == 'workflow_dispatch' && inputs.import_open_prices || 'false' }}
+          IMPORT_OPEN_PRICES: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_open_prices) || (github.event_name == 'schedule' && vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *') || 'false' }}
           IMPORT_COINRANKING: ${{ (github.event_name == 'workflow_dispatch' && inputs.import_coinranking) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || 'false' }}
           SCHEDULED_SEC_REFRESH: ${{ github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' || 'false' }}
           SCHEDULED_COINRANKING_REFRESH: ${{ github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' || 'false' }}
-          CONFIRM_PRODUCTION_DB_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write) || (github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *'))) || 'false' }}
+          SCHEDULED_OPEN_PRICES_REFRESH: ${{ github.event_name == 'schedule' && vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *' || 'false' }}
+          CONFIRM_PRODUCTION_DB_WRITE: ${{ (github.event_name == 'workflow_dispatch' && inputs.confirm_production_db_write) || (github.event_name == 'schedule' && ((vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5') || (vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *') || (vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *'))) || 'false' }}
           RESTORE_VALIDATION_REFERENCE: ${{ inputs.restore_validation_reference || vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE || '' }}
           EXPECTED_RESTORE_VALIDATION_REFERENCE: ${{ vars.PRODUCTION_RESTORE_VALIDATION_REFERENCE }}
-          PRODUCTION_OPERATION_APPROVAL: ${{ (github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.automatic_release || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices) && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'push' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' && secrets.PRODUCTION_OPERATION_APPROVAL) || '' }}
+          PRODUCTION_OPERATION_APPROVAL: ${{ (github.event_name == 'workflow_dispatch' && (inputs.preflight_database || inputs.automatic_release || inputs.apply_migrations || inputs.import_world_bank || inputs.import_sec || inputs.import_coinranking || inputs.import_open_prices) && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'push' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 10 * * 1-5' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.COINRANKING_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 2 * * *' && secrets.PRODUCTION_OPERATION_APPROVAL) || (github.event_name == 'schedule' && vars.OPEN_PRICES_AUTO_REFRESH_ENABLED == 'true' && github.event.schedule == '17 3 * * *' && secrets.PRODUCTION_OPERATION_APPROVAL) || '' }}
           PRODUCTION_DB_ALLOWED_HOSTS: ${{ secrets.PRODUCTION_DB_ALLOWED_HOSTS }}
           PORTAL_HEALTH_URL: ${{ vars.PORTAL_HEALTH_URL }}
           SEC_EDGAR_USER_AGENT: ${{ ((github.event_name == 'workflow_dispatch' && inputs.import_sec) || (github.event_name == 'schedule' && vars.SEC_EDGAR_AUTO_REFRESH_ENABLED == 'true')) && secrets.SEC_EDGAR_USER_AGENT || '' }}
@@ -169,7 +171,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,AUTO_RELEASE_PREFLIGHT,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,IMPORT_COINRANKING,IMPORT_OPEN_PRICES,SCHEDULED_SEC_REFRESH,SCHEDULED_COINRANKING_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY
+          envs: RELEASE_SHA,PORTAL_DIGEST,TOOLS_DIGEST,DEPLOY_PORTAL,AUTO_RELEASE_PREFLIGHT,PREFLIGHT_DATABASE,APPLY_MIGRATIONS,IMPORT_WORLD_BANK,IMPORT_SEC,IMPORT_COINRANKING,IMPORT_OPEN_PRICES,SCHEDULED_SEC_REFRESH,SCHEDULED_COINRANKING_REFRESH,SCHEDULED_OPEN_PRICES_REFRESH,CONFIRM_PRODUCTION_DB_WRITE,RESTORE_VALIDATION_REFERENCE,EXPECTED_RESTORE_VALIDATION_REFERENCE,PRODUCTION_OPERATION_APPROVAL,PRODUCTION_DB_ALLOWED_HOSTS,PORTAL_HEALTH_URL,SEC_EDGAR_USER_AGENT,COINRANKING_API_KEY
           script: |
             set -Eeuo pipefail
             umask 077
@@ -205,8 +207,10 @@ jobs:
             fi
             case "$SCHEDULED_SEC_REFRESH" in true|false) :;; *) echo "Invalid SEC schedule selector." >&2; exit 2;; esac
             case "$SCHEDULED_COINRANKING_REFRESH" in true|false) :;; *) echo "Invalid Coinranking schedule selector." >&2; exit 2;; esac
+            case "$SCHEDULED_OPEN_PRICES_REFRESH" in true|false) :;; *) echo "Invalid reviewed open-price schedule selector." >&2; exit 2;; esac
             if [ "$SCHEDULED_SEC_REFRESH" = "true" ] && [ "$IMPORT_SEC" != "true" ]; then echo "Scheduled SEC refresh must select SEC import." >&2; exit 2; fi
             if [ "$SCHEDULED_COINRANKING_REFRESH" = "true" ] && [ "$IMPORT_COINRANKING" != "true" ]; then echo "Scheduled Coinranking refresh must select Coinranking import." >&2; exit 2; fi
+            if [ "$SCHEDULED_OPEN_PRICES_REFRESH" = "true" ] && [ "$IMPORT_OPEN_PRICES" != "true" ]; then echo "Scheduled reviewed open-price refresh must select the protected Gold and Alternative.me import." >&2; exit 2; fi
             if [ "$operation_count" -gt 1 ]; then
               echo "Select one operation per protected run; each result and approval must remain independent." >&2
               exit 2
