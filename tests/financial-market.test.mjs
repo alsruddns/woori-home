@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { formatMarketDate } from "../src/lib/data-platform/market-date-format.mjs";
 import { calculateGoldConversion, calculateMarketChange, isValidMarketDate, validateMarketPriceRecord } from "../src/lib/data-platform/financial-market.mjs";
 import { collectFinancialProviderSnapshot, FinancialProviderError } from "../src/lib/data-platform/financial-provider.mjs";
 import { createUpbitKrwDailyProvider, upbitKrwAssets } from "../src/lib/data-platform/providers/upbit.mjs";
@@ -33,6 +34,15 @@ test("financial dates require a real calendar date and preserve UTC daily bounda
   assert.equal(isValidMarketDate("2026-10-21"), true);
   assert.equal(isValidMarketDate("2026-02-30"), false);
   assert.equal(isValidMarketDate("2026-10-21T00:00:00Z"), false);
+});
+
+test("market snapshot date formatting accepts PostgreSQL Date values and ISO strings", () => {
+  const options = { dateStyle: "medium", timeZone: "UTC" };
+  const expected = new Intl.DateTimeFormat("en", options).format(new Date("2026-10-27T01:30:00.000Z"));
+  assert.equal(formatMarketDate(new Date("2026-10-27T01:30:00.000Z"), "en", "No data"), expected);
+  assert.equal(formatMarketDate("2026-10-27", "en", "No data"), expected);
+  assert.equal(formatMarketDate(null, "en", "No data"), "No data");
+  assert.equal(formatMarketDate("not-a-date", "en", "No data"), "No data");
 });
 
 test("crypto reference dates use the market calendar and wait for the finalized daily candle", () => {
