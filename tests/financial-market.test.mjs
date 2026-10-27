@@ -377,6 +377,24 @@ test("industry zoom labels cover all 26 Portal locales", async () => {
   assert.equal((groups.match(/unscaled: "/g) ?? []).length, keys.length);
 });
 
+test("SEC industry cards keep natural height until needed and expose a keyboard-scrollable tile viewport", async () => {
+  const component = await readFile(new URL("../src/app/(locale)/[locale]/company-financial-treemap.tsx", import.meta.url), "utf8");
+  const styles = await readFile(new URL("../src/app/(locale)/[locale]/platform.css", import.meta.url), "utf8");
+  const hints = await readFile(new URL("../src/lib/data-platform/company-financial-industry-scroll-hint.ts", import.meta.url), "utf8");
+
+  assert.match(component, /viewport\.scrollHeight > viewport\.clientHeight \+ 1/);
+  assert.match(component, /tabIndex=\{hasOverflow \? 0 : undefined\}/);
+  assert.match(component, /role=\{hasOverflow \? "region" : undefined\}/);
+  assert.match(component, /viewportNode\.current\.scrollTop = 0/);
+  assert.match(component, /scrollResetKey = `\$\{areaMetric\}:\$\{colorMetric\}/);
+  assert.match(component, /eligible\.map\(\(entry\)/, "all eligible companies remain in the rendered DOM");
+  assert.match(component, /company-financial-industry-unscaled/);
+  assert.match(styles, /\.company-financial-industry-scroll\{max-height:440px;overflow-x:clip;overflow-y:auto/);
+  assert.match(styles, /@media\(max-width:1024px\)\{\.company-financial-industry-scroll\{max-height:380px\}\}/);
+  assert.match(styles, /@media\(max-width:760px\)\{\.company-financial-industry-scroll\{max-height:320px\}/);
+  assert.equal((hints.match(/^\s*(?:"[a-z-]+"|[a-z-]+): "/gm) ?? []).length, 26);
+});
+
 test("SEC comparison query selects one latest statement per company and excludes cumulative quarters", async () => {
   const querySource = await readFile(new URL("../src/lib/db/financial-queries.ts", import.meta.url), "utf8");
   assert.match(querySource, /form in \('10-K','10-K\/A'\) and "fiscalPeriod"='FY' and "durationDays" between 300 and 400/);
