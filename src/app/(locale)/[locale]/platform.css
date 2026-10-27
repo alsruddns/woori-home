@@ -373,6 +373,7 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
 .portal-education-sources a{color:var(--platform-accent,#1457d9);text-decoration:underline;text-underline-offset:.16em}
 
 .market-detail-sheet{position:fixed;inset:0 0 0 auto;display:flex;flex-direction:column;box-sizing:border-box;width:min(100%,560px);height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:1px solid var(--platform-border);background:var(--platform-surface);color:var(--platform-text);overflow:hidden}
+.market-detail-sheet:not([open]){display:none}
 .market-detail-sheet::backdrop{background:rgb(4 9 16 / 54%);backdrop-filter:blur(2px)}
 .market-detail-sheet-header{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;border-bottom:1px solid var(--platform-border);background:var(--platform-surface)}
 .market-detail-sheet-header h2{min-width:0;margin:0;font-size:clamp(17px,2.3vw,22px);overflow-wrap:anywhere}
