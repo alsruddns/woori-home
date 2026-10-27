@@ -16,6 +16,7 @@ import { CryptoDashboard, CryptoDashboardLoading } from "../../crypto-dashboard"
 import { getCryptoPageCopy } from "@/lib/data-platform/crypto-page-copy";
 import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-copy";
 import { FinancialOverviewDashboard } from "../../financial-overview-dashboard";
+import { PortalEducationCards } from "../../portal-education-cards";
 
 const valid = new Set(["economy", "stocks", "crypto", "population", "energy", "science", "about", "finance"]);
 const categoryIndex: Record<string, number> = { economy: 1, stocks: 2, population: 3, energy: 4, science: 6, about: 7 };
@@ -37,11 +38,11 @@ export default async function CategoryPage({ params }: { params: Promise<{ local
   const { locale, category } = await params;
   if (!isLocale(locale) || !valid.has(category)) notFound();
   if (category === "stocks") return <Suspense fallback={<StockMarketLoading locale={locale} />}><StockMarketDashboard locale={locale} /></Suspense>;
-  if (category === "crypto") return <Suspense fallback={<CryptoDashboardLoading locale={locale} />}><CryptoDashboard locale={locale} /></Suspense>;
-  if (category === "finance") return <FinancialOverviewDashboard locale={locale} />;
+  if (category === "crypto") return <><Suspense fallback={<CryptoDashboardLoading locale={locale} />}><CryptoDashboard locale={locale} /></Suspense><PortalEducationCards locale={locale} topic="crypto" /></>;
+  if (category === "finance") return <><FinancialOverviewDashboard locale={locale} /><PortalEducationCards locale={locale} topic="markets" /></>;
   if (category === "about") return <PortalIntroduction locale={locale} />;
   if (category === "economy" || category === "population") return <IndicatorCategory locale={locale} category={category} title={platformCopy[locale].categories[categoryIndex[category]]} />;
   if (category === "energy") return <IndicatorCategory locale={locale} category="energy" title={platformCopy[locale].categories[categoryIndex.energy]} />;
-  if (category === "science") return <ScienceDashboard locale={locale} />;
+  if (category === "science") return <><ScienceDashboard locale={locale} /><PortalEducationCards locale={locale} topic="science" /></>;
   return <EmptyCategory locale={locale} title={platformCopy[locale].categories[categoryIndex[category]]} />;
 }

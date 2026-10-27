@@ -16,6 +16,7 @@ import { compareWorldBankCountries, getReviewedWorldBankSourceInfo } from "@/lib
 import { resolveWorldBankDataSource, worldBankIndicatorSource } from "../../../lib/db/world-bank-mode.mjs";
 import { createIndicatorDatasetDescription, validateDatasetSchema } from "@/lib/data-platform/dataset-schema.mjs";
 import { RelatedGuides } from "./related-guides";
+import { PortalEducationCards } from "./portal-education-cards";
 
 function format(value: number, locale: Locale, maximumFractionDigits = 1) {
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(value);
@@ -66,6 +67,7 @@ export function WorldOverview({ locale, requestedIndicator, requestedYear, reque
     </section>
     <p className="platform-data-note">{copy.sourceNote} <a href="https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json">World Bank API</a></p>
     <RelatedGuides locale={locale} slugs={["compare-country-gdp"]} />
+    <PortalEducationCards locale={locale} topic="world" />
   </>;
 }
 
@@ -130,6 +132,9 @@ export function IndicatorCategory({ locale, category, title }: { locale: Locale;
     </section>
     {energy ? <section className="platform-table-section"><div className="platform-section-heading"><div><span className="platform-eyebrow">EG.ELC.ACCS.ZS</span><h2>{energy.comparison}</h2></div><span>{energy.dateLabel}</span></div><DataTable locale={locale} indicator="EG.ELC.ACCS.ZS" limit={15} /></section> : null}
     <p className="platform-data-note">{energy ? energyAccessCopy[locale].source : copy.sourceNote} <a href={category === "energy" ? "https://data.worldbank.org/indicator/EG.ELC.ACCS.ZS" : "https://data.worldbank.org/summary-terms-of-use"}>{category === "energy" ? "EG.ELC.ACCS.ZS · CC BY 4.0" : "World Bank terms"}</a></p>
+    {category === "population" ? <PortalEducationCards locale={locale} topic="population" /> : null}
+    {category === "energy" ? <PortalEducationCards locale={locale} topic="energy" /> : null}
+    {category === "economy" ? <PortalEducationCards locale={locale} topic="world" /> : null}
   </>;
 }
 
@@ -160,7 +165,7 @@ export async function CountryComparison({ locale, requestedCountries, requestedI
     });
     sourceInfo = selectedSourceInfo;
   }
-  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header><CountryComparisonDashboard key={`${initialCountries.join(",")}:${initialIndicatorId}`} locale={locale} initialCountries={initialCountries} initialSeries={initialSeries} initialIndicatorId={initialIndicatorId} dataSource={selectedSource} initialSourceInfo={sourceInfo} /></>;
+  return <><nav className="platform-breadcrumb" aria-label="Breadcrumb"><Link href={`/${locale}/world`}>{copy.categories[0]}</Link><span>/</span><span>{copy.categories[5]}</span></nav><header className="platform-page-heading"><span className="platform-eyebrow">WORLD BANK / WDI</span><h1>{copy.compare}</h1><p>{copy.sourceNote}</p></header><CountryComparisonDashboard key={`${initialCountries.join(",")}:${initialIndicatorId}`} locale={locale} initialCountries={initialCountries} initialSeries={initialSeries} initialIndicatorId={initialIndicatorId} dataSource={selectedSource} initialSourceInfo={sourceInfo} /><PortalEducationCards locale={locale} topic="comparison" /></>;
 }
 
 export function EmptyCategory({ locale, title }: { locale: Locale; title: string }) {

@@ -16,6 +16,7 @@ import { categoryNavigation } from "@/lib/data-platform/category-navigation";
 import { unitFor } from "@/lib/data-platform/country-units";
 import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-copy";
 import { MarketSnapshot } from "./market-snapshot";
+import { PortalEducationCards } from "./portal-education-cards";
 
 const viewLabels: Record<Locale, string> = {
   ru:"Открыть данные",
@@ -107,6 +108,8 @@ export async function PlatformHome({ locale }: { locale: Locale }) {
     <section className="platform-home-section platform-home-extensions"><div className="platform-section-heading"><div><span className="platform-eyebrow">{copy.indicators}</span><h2>{extensions.map((item) => item.title).join(" · ")}</h2></div></div>
       <div className="platform-home-grid">{extensions.map((item) => <article className="platform-home-card" key={item.href}><Link href={item.href}><h3>{item.title}</h3><p>{item.detail}</p><strong>{item.value}</strong><span className="platform-card-meta">{item.meta}</span><span className="platform-home-link">{viewLabels[locale]} →</span></Link></article>)}</div>
     </section>
+    <PortalEducationCards locale={locale} topic="markets" />
+    <PortalEducationCards locale={locale} topic="insights" />
     <p className="platform-home-about"><Link href={`/${locale}/about`}>{copy.categories[7]} →</Link></p>
     <p className="platform-home-source">{countries.sourceNote}</p>
   </>;

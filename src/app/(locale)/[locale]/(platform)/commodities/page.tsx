@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale, origin } from "@/lib/site";
 import { mineralCopy } from "@/lib/data-platform/mineral-copy";
+import { PortalEducationCards } from "../../portal-education-cards";
 
 const releaseUrl = "https://www.usgs.gov/data/mineral-commodity-summaries-2026-data-release";
 const catalogUrl = "https://data.usgs.gov/datacatalog/data/USGS%3A69837ec8b66b01367d7ec7d9";
@@ -37,5 +38,6 @@ export default async function CommoditiesPage({ params }: { params: Promise<{ lo
       <article><h2>{copy.scope}</h2><p>{copy.status}</p><p>{copy.unitsNote}</p></article>
       <article><h2>{copy.source}</h2><p><a href={releaseUrl} target="_blank" rel="noreferrer">{copy.source}</a></p><p><a href={catalogUrl} target="_blank" rel="noreferrer">{copy.catalog}</a></p><p>DOI: <a href="https://doi.org/10.5066/P1WKQ63T" target="_blank" rel="noreferrer">10.5066/P1WKQ63T</a> · CC0 1.0</p></article>
     </section>
+    <PortalEducationCards locale={locale} topic="commodities" />
   </>;
 }

@@ -6,6 +6,7 @@ import { alternates, isLocale, origin } from "@/lib/site";
 import { GoldUnavailableDate } from "./gold-unavailable-date";
 import { GoldDbQuotes } from "./gold-db-quotes";
 import { RelatedGuides } from "../../related-guides";
+import { PortalEducationCards } from "../../portal-education-cards";
 
 const routeFor = (section: GoldPageSection) => section === "overview" ? "/gold" : `/gold/${section}`;
 
@@ -48,5 +49,6 @@ export function GoldPage({ localeValue, section }: { localeValue: string; sectio
       <article><h2>{copy.sourceTitle}</h2><ul><li><a href="https://global.krx.co.kr/contents/GLB/02/0201/0201050202/GLB0201050202.jsp" target="_blank" rel="noreferrer">{copy.sourceKrx}</a></li><li><a href="https://data.krx.co.kr/inc/datasale/Market%20Data%20Usage%20Polices_ko.pdf?v=20230121_1" target="_blank" rel="noreferrer">{goldSourceTermsLabel[locale]}</a></li><li><a href="https://www.goldapi.io/kb/tos" target="_blank" rel="noreferrer">{copy.sourceApi}</a></li></ul><p>{copy.sourceNote}</p></article>
     </section>
     <RelatedGuides locale={locale} slugs={["gold-monthly-average-and-units"]} />
+    {section === "overview" ? <PortalEducationCards locale={locale} topic="gold" /> : null}
   </>;
 }
