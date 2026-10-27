@@ -9,7 +9,7 @@ import { getFinancialProvider, listFinancialProviders } from "../src/lib/data-pl
 import { FINANCIAL_API_CACHE_CONTROL, financialApiErrorResponse, financialApiResponse, parseFinancialCompanyFactsQuery, parseFinancialHeatmapQuery, parseFinancialHistoryQuery, parseFinancialListQuery } from "../src/lib/data-platform/financial-api.mjs";
 import { allowFinancialRequest } from "../src/lib/data-platform/financial-rate-limit.mjs";
 import { classifyFinancialDatabaseError } from "../src/lib/data-platform/financial-db-error.mjs";
-import { companyFinancialMetrics, sicDivision } from "../src/lib/data-platform/company-financial-treemap.mjs";
+import { companyFinancialMetrics, sicDivision, sicIndustryGroup } from "../src/lib/data-platform/company-financial-treemap.mjs";
 import { createFinancialResponseCache, secFactsCacheVersion } from "../src/lib/data-platform/financial-response-cache.mjs";
 import { fetchCompanyFacts } from "../src/lib/data-platform/company-facts-fetch.mjs";
 import { adjacentCalendarDate, isDailySnapshotReady, previousDailyReferenceDate } from "../src/lib/data-platform/crypto-daily.mjs";
@@ -261,7 +261,23 @@ test("financial API parsers bound pagination, validate filters, dates, and ident
   assert.equal(parseFinancialCompanyFactsQuery(new URLSearchParams("page=0")).ok, false);
   assert.equal(sicDivision("2834").key, "manufacturing");
   assert.equal(sicDivision("6021").key, "finance-real-estate");
+  assert.equal(sicDivision("0100").key, "agriculture");
+  assert.equal(sicDivision("1000").key, "mining");
+  assert.equal(sicDivision("5000").label, "Wholesale trade");
+  assert.equal(sicDivision("5200").label, "Retail trade");
+  assert.equal(sicDivision("9800").key, "unclassified");
   assert.equal(sicDivision(null).key, "unclassified");
+  assert.deepEqual([
+    sicIndustryGroup("7372"), sicIndustryGroup("3674"), sicIndustryGroup("2834"), sicIndustryGroup("6021"),
+    sicIndustryGroup("1311"), sicIndustryGroup("5331"), sicIndustryGroup("4813"), sicIndustryGroup("3559"),
+    sicIndustryGroup("7389"), sicIndustryGroup(null),
+  ], ["technology", "semiconductors", "healthcare", "finance", "energy", "consumer", "telecom-media", "industrial", "other", "unclassified"]);
+  assert.equal(sicIndustryGroup("5013"), "other", "wholesale trade must not be mislabeled as finance or retail");
+  assert.equal(sicIndustryGroup("7990"), "other", "recreation services must not be mislabeled as telecom or media");
+  assert.equal(sicIndustryGroup("2844"), "consumer", "soap and cosmetics manufacturers belong with consumer products");
+  assert.equal(sicIndustryGroup("5171"), "energy", "petroleum bulk stations and terminals belong with energy");
+  assert.equal(sicIndustryGroup("9800"), "unclassified");
+  assert.equal(sicIndustryGroup("0000"), "unclassified");
   assert.deepEqual(companyFinancialMetrics({ revenue: "200", operatingIncome: "20", netIncome: "-5", assets: "300" }, { revenue: "100" }), {
     revenue: 200, operatingIncome: 20, netIncome: -5, assets: 300, revenueGrowth: 100, operatingMargin: 10, netMargin: -2.5,
   });
@@ -354,6 +370,11 @@ test("industry zoom labels cover all 26 Portal locales", async () => {
   const source = await readFile(new URL("../src/lib/data-platform/company-financial-industry-copy.ts", import.meta.url), "utf8");
   const keys = [...source.matchAll(/^\s*(?:"([^"]+)"|([a-z-]+)):\s*\{/gm)].map((match) => match[1] ?? match[2]);
   assert.deepEqual(keys, ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]);
+  const groups = await readFile(new URL("../src/lib/data-platform/company-financial-industry-groups.ts", import.meta.url), "utf8");
+  const groupLocales = [...groups.matchAll(/^\s*(?:"([a-z-]+)"|([a-z-]+)): \{ technology:/gm)].map((match) => match[1] ?? match[2]);
+  assert.deepEqual(groupLocales, keys);
+  assert.equal((groups.match(/equalTiles: "/g) ?? []).length, keys.length);
+  assert.equal((groups.match(/unscaled: "/g) ?? []).length, keys.length);
 });
 
 test("SEC comparison query selects one latest statement per company and excludes cumulative quarters", async () => {
