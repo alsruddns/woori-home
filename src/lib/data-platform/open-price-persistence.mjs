@@ -25,7 +25,7 @@ export async function persistOpenPrices(client,kind,snapshot,{now=new Date(),man
     const {rows:[dataset]}=await client.query('select id from datasets where id=$1 and source_id=$2',[s.dataset,s.id]);
     if(!dataset)throw new Error('Source dataset mismatch');
     const entries=kind==='gold'?[{id:'gold-monthly-usd',symbol:'XAU',name:'Gold',prices:snapshot.prices}]:snapshot.data.map(c=>({...c,prices:[{referenceDate:c.observedAt.slice(0,10),price:c.price,observedAt:c.observedAt}]}));
-    if(!entries.length||entries.length>(kind==='gold'?1:20))throw new Error('Invalid snapshot size');
+    if(!entries.length||entries.length>(kind==='gold'?1:5000))throw new Error('Invalid snapshot size');
     let inserted=0,updated=0,unchanged=0;
     for(const asset of entries){
       const {rows:[saved]}=await client.query(`insert into financial_assets(source_id,source_asset_id,asset_type,symbol,name,venue,currency,unit,timezone,metadata,last_updated_at)
@@ -51,7 +51,7 @@ export async function persistOpenPrices(client,kind,snapshot,{now=new Date(),man
     }
     const {rows:[run]}=await client.query(`insert into data_collection_runs(dataset_id,started_at,finished_at,status,record_count,inserted_count,updated_count,skipped_count,latest_reference_period,scope)
       values($1,$2,now(),$3,$4,$5,$6,$7,$8,$9::jsonb) returning id`,[s.dataset,now.toISOString(),inserted+updated?'success':'unchanged',inserted+updated+unchanged,inserted,updated,unchanged,
-      kind==='gold'?snapshot.prices.at(-1).referenceDate:snapshot.data[0].observedAt.slice(0,10),JSON.stringify({provider:s.id,url:snapshot.url,sha256:snapshot.checksum,apiRequests:kind==='gold'?2:1,inserted,updated,unchanged})]);
+      kind==='gold'?snapshot.prices.at(-1).referenceDate:snapshot.data[0].observedAt.slice(0,10),JSON.stringify({provider:s.id,url:snapshot.url,sha256:snapshot.checksum,apiRequests:kind==='gold'?2:1,sourceCount:snapshot.sourceCount??entries.length,excludedStaleCount:snapshot.excludedStaleCount??0,inserted,updated,unchanged})]);
     if(manageTransaction)await client.query('commit');return {source:s.id,assets:entries.length,inserted,updated,unchanged,runId:run.id};
   }catch(e){if(manageTransaction)await client.query('rollback');throw e;}
 }

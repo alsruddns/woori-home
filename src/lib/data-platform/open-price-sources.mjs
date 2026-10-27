@@ -72,10 +72,16 @@ export async function fetchPinkSheet({fetchImpl=fetch,now=new Date()}={}) {
 }
 
 export function normalizeAlternative(payload,{now=new Date()}={}) {
-  if(payload?.metadata?.error||!Array.isArray(payload?.data)||!payload.data.length||payload.data.length>20)throw new Error('Invalid Alternative.me payload');
+  // The public endpoint can return its full listings with limit=0. Bound the
+  // response for memory safety, while allowing the provider's catalogue to grow
+  // well beyond the old 20-symbol display sample.
+  if(payload?.metadata?.error||!Array.isArray(payload?.data)||!payload.data.length||payload.data.length>5000)throw new Error('Invalid Alternative.me payload');
+  if(Number.isInteger(payload?.metadata?.num_cryptocurrencies)&&payload.metadata.num_cryptocurrencies<payload.data.length)throw new Error('Alternative.me listing count mismatch');
   const ids=new Set();const data=[];
+  let staleCount=0;
   for(const coin of payload.data){const q=coin.quotes?.USD;const id=String(coin.id);const observedAt=new Date(coin.last_updated*1000);
-    if(!/^\d+$/.test(id)||ids.has(id)||!Number.isFinite(observedAt.getTime())||observedAt>new Date(now.getTime()+60000)||now-observedAt>86400000)throw new Error('Duplicate, stale or invalid asset observation');
+    if(!/^\d+$/.test(id)||ids.has(id)||!Number.isFinite(observedAt.getTime())||observedAt>new Date(now.getTime()+60000))throw new Error('Duplicate, future or invalid asset observation');
+    if(now-observedAt>86400000){staleCount++;ids.add(id);continue;}
     if(!/^[A-Z0-9]{1,16}$/.test(coin.symbol)||!coin.name||!Number.isInteger(coin.rank)||coin.rank<1)throw new Error('Invalid crypto identity');
     if((id==='1'&&(coin.symbol!=='BTC'||coin.website_slug!=='bitcoin'))||(id==='1027'&&(coin.symbol!=='ETH'||coin.website_slug!=='ethereum')))throw new Error('Known asset identity mismatch');
     const price=priceDecimal(q?.price,{positive:true});const change=q?.percentage_change_24h??q?.percent_change_24h;
@@ -84,11 +90,14 @@ export function normalizeAlternative(payload,{now=new Date()}={}) {
     data.push({id,symbol:coin.symbol,name:coin.name,rank:coin.rank,price,volume,marketCap,change:change==null?null:priceDecimal(change,{precision:20}),observedAt:observedAt.toISOString()});ids.add(id);
   }
   if(!data.some(c=>c.id==='1')||!data.some(c=>c.id==='1027'))throw new Error('BTC or ETH missing');
+  Object.defineProperty(data, 'staleCount', { value: staleCount, enumerable: false });
   return data;
 }
 
 export async function fetchAlternative(options={}) {
-  const url='https://api.alternative.me/v2/ticker/?limit=20&structure=array';
-  const bytes=await boundedDownload(url,500_000,options.fetchImpl??fetch);
-  return {data:normalizeAlternative(JSON.parse(bytes.toString('utf8')),options),url,checksum:createHash('sha256').update(bytes).digest('hex')};
+  const url='https://api.alternative.me/v2/ticker/?limit=0&structure=array';
+  const bytes=await boundedDownload(url,4_000_000,options.fetchImpl??fetch);
+  const payload=JSON.parse(bytes.toString('utf8'));
+  const data=normalizeAlternative(payload,options);
+  return {data,sourceCount:payload.data.length,excludedStaleCount:data.staleCount??0,url,checksum:createHash('sha256').update(bytes).digest('hex')};
 }

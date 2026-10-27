@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const title = category === "finance" ? financialOverviewCopy[locale].title : category === "stocks" ? stockCopy[locale].title : category === "crypto" ? getCryptoPageCopy(locale).title : category === "about" ? portalContent[locale].aboutTitle : category === "science" ? scienceCopy[locale].title : copy.categories[categoryIndex[category]];
   const description = category === "finance" ? financialOverviewCopy[locale].description : category === "stocks" ? stockCopy[locale].description : category === "crypto" ? getCryptoPageCopy(locale).description : category === "about" ? portalContent[locale].about : category === "science" ? scienceCopy[locale].description : category === "energy" ? energyPageCopy[locale].intro : copy.overviewBody;
   const path = `/${category}`; const url = `${origin}/${locale}${path}`;
-  const index = category === "finance" || category === "about" || category === "economy" || category === "population" || category === "energy" || category === "science";
+  const index = category === "finance" || category === "about" || category === "economy" || category === "population" || category === "energy" || category === "science" || category === "crypto";
   return { title: `${title}`, description, robots: { index, follow: true }, alternates: { canonical: url, languages: alternates(path).languages }, openGraph: { type: "website", siteName: "WOORI.TODAY", title: `${title}`, description, url }, twitter: { card: "summary", title: `${title}`, description } };
 }
 

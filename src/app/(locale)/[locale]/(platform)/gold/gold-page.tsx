@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { goldCopy, goldSectionTitle, goldSourceTermsLabel, type GoldPageSection } from "@/lib/data-platform/gold-copy";
-import { isLocale, origin } from "@/lib/site";
+import { alternates, isLocale, origin } from "@/lib/site";
 import { GoldUnavailableDate } from "./gold-unavailable-date";
 import { GoldDbQuotes } from "./gold-db-quotes";
 
@@ -20,8 +20,8 @@ export function goldMetadata(localeValue: string, section: GoldPageSection): Met
   return {
     title,
     description,
-    robots: { index: false, follow: true },
-    alternates: { canonical: url },
+    robots: { index: section === "overview", follow: true },
+    alternates: { canonical: url, languages: section === "overview" ? alternates("/gold").languages : undefined },
     openGraph: { type: "website", siteName: "WOORI.TODAY", title, description, url },
     twitter: { card: "summary", title, description },
   };

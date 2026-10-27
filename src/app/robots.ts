@@ -6,13 +6,12 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/api/"],
+      disallow: ["/api/", "/portal-api/"],
     },
     sitemap: [
       "sitemap.xml",
       "calculator-sitemap.xml",
       "tools-sitemap.xml",
-      "money-sitemap.xml",
       "docs-sitemap.xml",
       "quiz-sitemap.xml",
     ].map((path) => `${origin}/${path}`),

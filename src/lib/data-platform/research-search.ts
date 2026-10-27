@@ -32,6 +32,6 @@ export function filterResearchPapers<T extends SearchablePaper>(records: T[], fi
     })
     .sort((a, b) => filters.sort === "citations"
       ? (b.citationCount ?? -1) - (a.citationCount ?? -1) || b.publishedAt.localeCompare(a.publishedAt)
-      : b.indexedAt.localeCompare(a.indexedAt) || b.publishedAt.localeCompare(a.publishedAt));
+      : b.publishedAt.localeCompare(a.publishedAt) || b.indexedAt.localeCompare(a.indexedAt));
   return { records: filtered, from, to, query };
 }

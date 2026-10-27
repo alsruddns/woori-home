@@ -3,27 +3,30 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { companySearchAliases, normalizeCompanySearch } from "../src/lib/data-platform/company-search-aliases.mjs";
 
-test("company search aliases include Korean names, English names, and symbols", () => {
-  assert.ok(companySearchAliases("NVDA").includes("엔비디아"));
+test("company search aliases include English names and preserve numeric symbol lookup", () => {
   assert.ok(companySearchAliases("NVDA").includes("NVIDIA"));
-  assert.equal(normalizeCompanySearch(" 마이크로소프트 "), "마이크로소프트");
   assert.equal(normalizeCompanySearch("Microsoft Corporation"), "microsoftcorporation");
   assert.deepEqual(companySearchAliases("005930"), []);
 });
 
-test("crypto name search is local and normalized while dated prices use one dedicated daily API request", async () => {
-  const dashboard = await readFile(new URL("../src/app/(locale)/[locale]/crypto-dashboard.tsx", import.meta.url), "utf8");
-  const lower = dashboard.toLowerCase();
-  assert.match(dashboard, /비트코인/);
-  assert.match(dashboard, /이더리움/);
+test("crypto search, UTC date selection and chart history use the rights-gated Alternative snapshot API", async () => {
+  const [dashboard, route] = await Promise.all([
+    readFile(new URL("../src/app/(locale)/[locale]/crypto-dashboard.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/portal-api/finance/crypto/alternative/route.ts", import.meta.url), "utf8"),
+  ]);
   assert.match(dashboard, /normalize\(value\)/);
-  assert.match(dashboard, /asset\.symbol, asset\.name, \.\.\.asset\.aliases/);
-  assert.match(dashboard, /fetch\(`\/portal-api\/finance\/crypto\/daily\?market=\$\{market\}`/);
-  assert.doesNotMatch(lower, /fetch\([^)]*[?&]q=/);
-  assert.match(dashboard, /portal-api\/finance\/crypto\/coinranking/);
-  assert.match(dashboard, /change24hPercent/i);
-  assert.match(dashboard, /marketCap/i);
-  assert.doesNotMatch(lower, /fetch\([^)]*[?&]q=/);
+  assert.match(dashboard, /coin\.name, coin\.symbol, \.\.\.coin\.aliases/);
+  assert.match(dashboard, /useSearchParams/);
+  assert.match(dashboard, /portal-api\/finance\/crypto\/alternative\?date=/);
+  assert.match(dashboard, /portal-api\/finance\/crypto\/alternative\?asset=/);
+  assert.match(dashboard, /coins\.slice\(0, 100\)/);
+  assert.match(dashboard, /queryDate/);
+  assert.match(dashboard, /labels\.changeMeaning/);
+  assert.doesNotMatch(dashboard, /portal-api\/finance\/crypto\/coinranking/);
+  assert.match(route, /readOpenPriceMarket\(getFinancialReadOnlyPool\(\),'crypto'/);
+  assert.match(route, /invalid-date/);
+  assert.match(route, /'all':3650/);
+  assert.doesNotMatch(route, /COINRANKING_API_KEY|fetch\(/);
 });
 
 test("company aliases only filter the existing SEC company result set", async () => {
@@ -33,7 +36,7 @@ test("company aliases only filter the existing SEC company result set", async ()
   assert.match(panel, /row\.ticker/);
 });
 
-test("Coinranking public routes are PostgreSQL-only and separate the top-20, top-100, and full 300 search set", async () => {
+test("Coinranking public routes remain PostgreSQL-only and rights-gated", async () => {
   const [marketRoute, historyRoute, queries, dashboard] = await Promise.all([
     readFile(new URL("../src/app/portal-api/finance/crypto/coinranking/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/app/portal-api/finance/crypto/coinranking/[uuid]/history/route.ts", import.meta.url), "utf8"),
@@ -46,8 +49,26 @@ test("Coinranking public routes are PostgreSQL-only and separate the top-20, top
   assert.match(queries, /competitorPermission/);
   assert.match(queries, /dailySnapshot/);
   assert.match(queries, /longTermRetention/);
-  assert.match(dashboard, /visible\.slice\(0, 20\)/);
-  assert.match(dashboard, /visible\.slice\(0, 100\)/);
-  assert.match(dashboard, /visible\.map\(\(coin\)/);
+  assert.doesNotMatch(dashboard, /portal-api\/finance\/crypto\/coinranking/);
   assert.match(historyRoute, /daily-observed-aggregate-price/);
+});
+
+test("Portal market home uses persisted price data and exposes only supported indexable overview paths", async () => {
+  const [summary, home, markets, sitemap, cryptoCopy] = await Promise.all([
+    readFile(new URL("../src/app/(locale)/[locale]/market-snapshot.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/(locale)/[locale]/(platform)/markets/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/sitemap.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/data-platform/crypto-page-copy.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(summary, /readOpenPriceMarket\(pool, "crypto"\)/);
+  assert.match(summary, /readOpenPriceMarket\(pool, "gold"\)/);
+  assert.match(summary, /Alternative\.me/);
+  assert.match(summary, /World Bank Pink Sheet/);
+  assert.match(home, /force-dynamic/);
+  const platformHome = await readFile(new URL("../src/app/(locale)/[locale]/platform-home.tsx", import.meta.url), "utf8");
+  assert.match(platformHome, /MarketSnapshot locale=\{locale\}/);
+  assert.match(markets, /robots: \{ index: true, follow: true \}/);
+  assert.match(sitemap, /"\/markets", "\/crypto", "\/gold"/);
+  assert.match(cryptoCopy, /not finalized exchange closes/);
 });

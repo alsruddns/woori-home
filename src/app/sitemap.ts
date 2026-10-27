@@ -5,7 +5,9 @@ import { supportedCountries } from "@/lib/data-platform/countries";
 import { latestForCountry } from "@/lib/data-platform/snapshot";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const publicPaths = [...new Set([...publicPortalPaths, ...publicDataPaths])];
+  // These market overviews contain reviewed, persisted data and have a localized
+  // canonical page. Dated query URLs remain user navigation only and are omitted.
+  const publicPaths = [...new Set([...publicPortalPaths, ...publicDataPaths, "/markets", "/crypto", "/gold"])];
   const portalAndDataPages = locales.flatMap((locale) => publicPaths.map((path) => ({
     url: `${origin}/${locale}${path}`,
     alternates: alternates(path),
