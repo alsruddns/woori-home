@@ -17,10 +17,10 @@ Automatic releases first run read-only production preflight. Pending migrations 
 
 The current allowlist is limited to the exact Coinranking identity and rights migrations. The collection/public-display rights remain pending and collection remains disabled. No Coinranking, SEC, or World Bank import is part of an automatic release. Any unlisted migration, unresolved preflight finding, failed backup/restore, or changed checksum blocks the release before database writes.
 
-The release only replaces the Portal container. It runs health and route checks and retains the previous Portal image for Portal-only rollback. It does not change the shared Nginx configuration or deploy Calculator, Tools, MoneyBook, Docs, Quiz, or woori-ai-agent.
+The release only replaces the Portal container. It keeps the previous local Portal image available through health, route, data, and runtime-secret checks so a failed rollout can restore it. After every check succeeds, it removes the previous image from the VPS when it is no longer used by any container; if the same image was redeployed, it is still in use, or image removal fails, it records that outcome and leaves the image in place. This removes the old local image without pruning unrelated images, containers, volumes, or build cache. Registry image tags are not deleted by this cleanup. It does not change the shared Nginx configuration or deploy Calculator, Tools, MoneyBook, Docs, Quiz, or woori-ai-agent.
 
 ## Audit and recovery
 
 Each release records the GitHub Actions run, commit, image digest, migration versions, backup checksum, isolated restore result, deployment result, and rollback status in the protected deployment log and Actions summary. Secret values are not written to those records.
 
-If a health check fails after Portal replacement, the workflow attempts to restore the previous Portal image. It does not restore an old database backup over a database that may already contain new writes; database recovery is blocked for operator review if a migration or other write has already occurred.
+If a health check fails after Portal replacement, the workflow attempts to restore the previous Portal image, which remains available until all release checks succeed. It does not restore an old database backup over a database that may already contain new writes; database recovery is blocked for operator review if a migration or other write has already occurred.

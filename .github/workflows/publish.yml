@@ -190,6 +190,7 @@ jobs:
             migration_before="not-checked"
             migration_after="not-checked"
             rollback_result="not-needed"
+            previous_image_cleanup="not-attempted"
             coinranking_rights_migration="false"
             case "$AUTO_RELEASE_PREFLIGHT" in true|false) :;; *) echo "Invalid automatic release selector." >&2; exit 2;; esac
             database_write_requested=false
@@ -262,8 +263,8 @@ jobs:
                     fi
                   fi
                 fi
-                printf '[DEPLOY AUDIT FAILURE] run=%s release_sha=%s portal_digest=%s stage=%s exit=%s migration_before=%s migration_after=%s backup_ref=%s backup_sha256=%s restore_validation=%s portal_rollback=%s\n' \
-                  "${GITHUB_RUN_ID:-unknown}" "$RELEASE_SHA" "${PORTAL_DIGEST:-not-built}" "$stage" "$status" "$migration_before" "$migration_after" "${backup_reference:-none}" "$backup_sha256" "$restore_validation" "$rollback_result" >&2
+                printf '[DEPLOY AUDIT FAILURE] run=%s release_sha=%s portal_digest=%s stage=%s exit=%s migration_before=%s migration_after=%s backup_ref=%s backup_sha256=%s restore_validation=%s portal_rollback=%s previous_image_cleanup=%s\n' \
+                  "${GITHUB_RUN_ID:-unknown}" "$RELEASE_SHA" "${PORTAL_DIGEST:-not-built}" "$stage" "$status" "$migration_before" "$migration_after" "${backup_reference:-none}" "$backup_sha256" "$restore_validation" "$rollback_result" "$previous_image_cleanup" >&2
               fi
               if [ -n "$override" ] && ! rm -f "$override"; then
                 printf '[DEPLOY CLEANUP ERROR] Could not remove the temporary Compose override.\n' >&2
@@ -744,11 +745,29 @@ jobs:
             stage="Verify Coinranking runtime secret presence"
             printf '[DEPLOY 9.1] %s\n' "$stage"
             docker exec portal node --input-type=module -e 'if(!process.env.COINRANKING_API_KEY){console.error("Coinranking runtime key is missing");process.exit(1)};console.log("Coinranking runtime key is present; value was not read to output.")'
-            deploy_started=0
-            echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; rollback tag ${rollback_tag} retained; World Bank DB/JSON source smoke tests passed."
+
+            stage="Remove previous Portal image after successful verification"
+            printf '[DEPLOY 10] %s\n' "$stage"
+            deployed_image_id="$(docker inspect --format='{{.Image}}' portal)"
+            if [ "$deployed_image_id" = "$old_image_id" ]; then
+              previous_image_cleanup="retained-same-image"
+            else
+              if ! old_image_references="$(docker ps --all --quiet --filter "ancestor=$old_image_id")"; then
+                previous_image_cleanup="retained-reference-check-failed"
+              elif [ -n "$old_image_references" ]; then
+                previous_image_cleanup="retained-in-use"
+              elif docker image rm "$old_image_id" >/dev/null; then
+                previous_image_cleanup="removed"
+              else
+                previous_image_cleanup="retained-cleanup-failed"
+              fi
             fi
-            printf '[DEPLOY AUDIT] run=%s release_sha=%s portal_digest=%s automatic_preflight=%s migration_before=%s migration_after=%s backup_ref=%s backup_sha256=%s restore_validation=%s rollback_image=%s database_operations=migrations:%s,world_bank:%s,sec:%s,coinranking:%s portal_deploy=%s\n' \
-              "${GITHUB_RUN_ID:-unknown}" "$RELEASE_SHA" "${PORTAL_DIGEST:-not-built}" "$AUTO_RELEASE_PREFLIGHT" "$migration_before" "$migration_after" "${backup_reference:-none}" "$backup_sha256" "$restore_validation" "${rollback_result}" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC" "$IMPORT_COINRANKING" "$DEPLOY_PORTAL"
+            rollback_result="post-success-${previous_image_cleanup}"
+            deploy_started=0
+            echo "Portal deployed from commit ${RELEASE_SHA}; image digest ${PORTAL_DIGEST}; previous local image cleanup=${previous_image_cleanup}; this cleanup does not delete registry release tags; World Bank DB/JSON source smoke tests passed."
+            fi
+            printf '[DEPLOY AUDIT] run=%s release_sha=%s portal_digest=%s automatic_preflight=%s migration_before=%s migration_after=%s backup_ref=%s backup_sha256=%s restore_validation=%s rollback_image=%s previous_image_cleanup=%s database_operations=migrations:%s,world_bank:%s,sec:%s,coinranking:%s portal_deploy=%s\n' \
+              "${GITHUB_RUN_ID:-unknown}" "$RELEASE_SHA" "${PORTAL_DIGEST:-not-built}" "$AUTO_RELEASE_PREFLIGHT" "$migration_before" "$migration_after" "${backup_reference:-none}" "$backup_sha256" "$restore_validation" "${rollback_result}" "$previous_image_cleanup" "$APPLY_MIGRATIONS" "$IMPORT_WORLD_BANK" "$IMPORT_SEC" "$IMPORT_COINRANKING" "$DEPLOY_PORTAL"
       - name: Record Portal release audit summary
         if: always()
         env:
