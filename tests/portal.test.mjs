@@ -23,6 +23,7 @@ const layout = await readFile(new URL("../src/app/(locale)/[locale]/layout.tsx",
 const platformLayout = await readFile(new URL("../src/app/(locale)/[locale]/platform-layout.tsx", import.meta.url), "utf8");
 const platformControls = await readFile(new URL("../src/app/(locale)/[locale]/platform-controls.tsx", import.meta.url), "utf8");
 const platformSidebar = await readFile(new URL("../src/app/(locale)/[locale]/platform-sidebar.tsx", import.meta.url), "utf8");
+const marketSnapshot = await readFile(new URL("../src/app/(locale)/[locale]/market-snapshot.tsx", import.meta.url), "utf8");
 const categoryNavigation = await readFile(new URL("../src/lib/data-platform/category-navigation.ts", import.meta.url), "utf8");
 const datePicker = await readFile(new URL("../src/app/(locale)/[locale]/date-picker.tsx", import.meta.url), "utf8");
 const datePickerStyles = await readFile(new URL("../src/app/(locale)/[locale]/date-picker.css", import.meta.url), "utf8");
@@ -45,6 +46,7 @@ require.extensions[".ts"] = (module, filename) => {
   const output = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   module._compile(output, filename);
 };
+const { isSidebarCategoryActive } = require("../src/lib/data-platform/sidebar-active.ts");
 const siteData = require("../src/lib/site.ts");
 const privacyData = require("../src/lib/privacy.ts");
 const termsData = require("../src/lib/terms.ts");
@@ -286,6 +288,33 @@ test("about remains available by URL and in the footer but is omitted from categ
   assert.doesNotMatch(categoryNavigation, /"about"/);
   assert.match(platformLayout, /href=\{`\/\$\{locale\}\/about`\}>\{copy\.categories\[7\]\}/);
   assert.match(categoryRoute, /category === "about" \? portalContent\[locale\]\.about/);
+});
+
+test("finance and world sidebar entries activate only for their localized routes in every locale", () => {
+  for (const locale of siteData.locales) {
+    const finance = { id: "finance", path: "/finance" };
+    const world = { id: "world", path: "/world" };
+    assert.equal(isSidebarCategoryActive(`/${locale}`, locale, finance), true, `${locale}: localized home selects finance`);
+    assert.equal(isSidebarCategoryActive(`/${locale}`, locale, world), false, `${locale}: localized home does not select world`);
+    assert.equal(isSidebarCategoryActive(`/${locale}/markets`, locale, finance), true, `${locale}: markets alias selects finance`);
+    assert.equal(isSidebarCategoryActive(`/${locale}/markets/details`, locale, finance), true, `${locale}: markets child selects finance`);
+    assert.equal(isSidebarCategoryActive(`/${locale}/marketplace`, locale, finance), false, `${locale}: partial path does not select finance`);
+    assert.equal(isSidebarCategoryActive(`/${locale}/world`, locale, world), true, `${locale}: world selects world`);
+    assert.equal(isSidebarCategoryActive(`/${locale}/world/population`, locale, world), true, `${locale}: world child selects world`);
+    assert.equal(isSidebarCategoryActive(`/${locale}/world`, locale, finance), false, `${locale}: world does not select finance`);
+  }
+});
+
+test("market snapshot avoids repeating its parent heading and description while retaining prices and sources", () => {
+  assert.match(marketSnapshot, /<section className="market-snapshot" aria-label=\{copy\.title\}>/);
+  assert.doesNotMatch(marketSnapshot, /<h2[^>]*>\{copy\.title\}<\/h2>/);
+  assert.doesNotMatch(marketSnapshot, /<p>\{copy\.description\}<\/p>/);
+  assert.match(marketSnapshot, /Bitcoin · Ethereum · XRP/);
+  assert.match(marketSnapshot, /goldQuote/);
+  assert.match(marketSnapshot, /crypto\?\.observedAt/);
+  assert.match(marketSnapshot, /gold\?\.provider/);
+  assert.match(marketSnapshot, /alternative\.me\/crypto\/api/);
+  assert.match(marketSnapshot, /worldbank\.org\/en\/research\/commodity-markets/);
 });
 
 test("localized data copy explains missing years without technical interpolation wording", () => {
