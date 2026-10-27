@@ -23,6 +23,7 @@ test("published guides keep verified Korean and English source-backed articles",
   assert.match(source, /https:\/\/data\.worldbank\.org\/indicator\/NY\.GDP\.MKTP\.CD/);
   assert.match(source, /https:\/\/www\.sec\.gov\/edgar\/sec-api-documentation/);
   assert.match(source, /https:\/\/www\.crossref\.org\/documentation\/retrieve-metadata\/rest-api\//);
+  assert.match(source, /rightsNote:/);
   assert.match(source, /not investment advice/);
 });
 
@@ -41,6 +42,7 @@ test("guide pages search headings and body text, publish only reviewed language 
   assert.match(detail, /datePublished: guide\.createdAt/);
   assert.match(detail, /tableOfContents/);
   assert.match(detail, /guide\.sources\[locale\]/);
+  assert.match(detail, /source\.rightsNote/);
   assert.match(detail, /publishedLocale \? alternatesForLocales/);
   assert.match(sitemap, /guideLocales\.flatMap/);
   assert.match(sitemap, /guidePaths/);

@@ -41,7 +41,7 @@ export default async function GuideDetailPage({ params }: { params: Promise<{ lo
       <nav className="guide-toc" aria-label={copy.tableOfContents}><h2>{copy.tableOfContents}</h2><ol>{content.map((section) => <li key={section.id}><a href={`#${section.id}`}>{section.heading}</a></li>)}</ol></nav>
       <div className="guide-sections">{content.map((section) => <section id={section.id} key={section.id}><h2>{section.heading}</h2>{section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}{section.bullets ? <ul>{section.bullets.map((item) => <li key={item}>{item}</li>)}</ul> : null}</section>)}</div>
       <section className="guide-related"><h2>{copy.related}</h2><ul>{guide.related.map((item) => <li key={item.href}><Link href={`/${locale}${item.href}`}>{item.label[locale]}</Link></li>)}</ul></section>
-      <section className="guide-sources"><h2>{copy.sources}</h2><ul>{guide.sources[locale].map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.label}</a><span>{source.scope}</span></li>)}</ul></section>
+      <section className="guide-sources"><h2>{copy.sources}</h2><ul>{guide.sources[locale].map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.label}</a><span>{source.scope}</span><span><strong>{locale === "ko" ? "이용 조건" : "Use terms"}:</strong> {source.rightsNote}</span></li>)}</ul></section>
       <p className="platform-data-note"><Link href={`/${locale}/guides`}>{copy.back}</Link></p>
     </article>
   </>;

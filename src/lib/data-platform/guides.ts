@@ -1,7 +1,7 @@
 import type { Locale } from "@/lib/site";
 
 export type GuideSection = { id: string; heading: string; paragraphs: string[]; bullets?: string[] };
-export type GuideSource = { label: string; url: string; scope: string };
+export type GuideSource = { label: string; url: string; scope: string; rightsNote: string };
 export type Guide = {
   slug: string;
   searchTerms: Record<"ko" | "en", string[]>;
@@ -43,8 +43,8 @@ export const guides: Guide[] = [
     },
     related: [{ label: { ko: "코인 시장 데이터 보기", en: "View crypto market data" }, href: "/crypto" }],
     sources: {
-      ko: [{ label: "Alternative.me API 및 이용 조건", url: "https://alternative.me/crypto/api/", scope: "API 응답의 집계 가격 및 공급처 변경 가능성" }],
-      en: [{ label: "Alternative.me API and terms", url: "https://alternative.me/crypto/api/", scope: "Aggregate prices in the API response and provider methodology" }],
+      ko: [{ label: "Alternative.me API 및 이용 조건", url: "https://alternative.me/crypto/api/", scope: "API 응답의 가격 항목과 공급처가 제공한 갱신 시각", rightsNote: "공식 문서는 상업 프로젝트를 포함한 API 데이터 이용을 허용한다고 밝히며, 출처 링크는 의무가 아니라고 안내합니다. API는 변경되거나 중단될 수 있습니다." }],
+      en: [{ label: "Alternative.me API and terms", url: "https://alternative.me/crypto/api/", scope: "Price fields and provider-supplied update time in the API response", rightsNote: "The documentation permits use of API data in commercial projects and says attribution is appreciated but not required. The API may change or be discontinued." }],
     },
     createdAt: "2026-10-27", updatedAt: "2026-10-27", reviewedAt: "2026-10-27",
   },
@@ -73,8 +73,8 @@ export const guides: Guide[] = [
     },
     related: [{ label: { ko: "금 월별 자료 보기", en: "View monthly gold data" }, href: "/gold" }],
     sources: {
-      ko: [{ label: "World Bank Commodity Markets / Pink Sheet", url: "https://www.worldbank.org/en/research/commodity-markets", scope: "상품 월별 자료와 금 가격 기준" }],
-      en: [{ label: "World Bank Commodity Markets / Pink Sheet", url: "https://www.worldbank.org/en/research/commodity-markets", scope: "Monthly commodity series and gold price reference" }],
+      ko: [{ label: "World Bank Commodity Markets / Pink Sheet", url: "https://www.worldbank.org/en/research/commodity-markets", scope: "상품 월별 자료와 금 가격 기준", rightsNote: "공식 자료 페이지를 출처로 연결합니다. 개별 원자료의 이용·재배포 조건과 출처 표기 요건은 해당 자료의 현재 고지를 따릅니다." }],
+      en: [{ label: "World Bank Commodity Markets / Pink Sheet", url: "https://www.worldbank.org/en/research/commodity-markets", scope: "Monthly commodity series and gold price reference", rightsNote: "This links to the official data page. Current use, redistribution, and attribution terms for each source file apply." }],
     },
     createdAt: "2026-10-27", updatedAt: "2026-10-27", reviewedAt: "2026-10-27",
   },
@@ -106,8 +106,8 @@ export const guides: Guide[] = [
       { label: { ko: "GDP 지표 정의와 국가 자료", en: "GDP indicator and country data" }, href: "/economy/gdp" },
     ],
     sources: {
-      ko: [{ label: "World Bank WDI: GDP (current US$)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD", scope: "명목 GDP 지표 정의와 단위" }, { label: "World Bank WDI: GDP growth (annual %)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG", scope: "연간 실질 GDP 성장률" }],
-      en: [{ label: "World Bank WDI: GDP (current US$)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD", scope: "Nominal GDP definition and unit" }, { label: "World Bank WDI: GDP growth (annual %)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG", scope: "Annual real GDP growth" }],
+      ko: [{ label: "World Bank WDI: GDP (current US$)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD", scope: "명목 GDP 지표 정의와 단위", rightsNote: "World Bank 지표 페이지에는 CC BY 4.0이 표시됩니다. 재사용 시 해당 라이선스의 출처 표기와 조건을 따릅니다." }, { label: "World Bank WDI: GDP growth (annual %)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG", scope: "연간 실질 GDP 성장률", rightsNote: "개별 지표 페이지의 라이선스 및 출처 표기 조건을 확인하세요." }],
+      en: [{ label: "World Bank WDI: GDP (current US$)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.CD", scope: "Nominal GDP definition and unit", rightsNote: "The World Bank indicator page lists CC BY 4.0. Reuse remains subject to its attribution and license terms." }, { label: "World Bank WDI: GDP growth (annual %)", url: "https://data.worldbank.org/indicator/NY.GDP.MKTP.KD.ZG", scope: "Annual real GDP growth", rightsNote: "Check the indicator page for its license and attribution terms." }],
     },
     createdAt: "2026-10-27", updatedAt: "2026-10-27", reviewedAt: "2026-10-27",
   },
@@ -136,8 +136,8 @@ export const guides: Guide[] = [
     },
     related: [{ label: { ko: "SEC 기업 재무 데이터", en: "SEC company financial data" }, href: "/stocks" }],
     sources: {
-      ko: [{ label: "SEC Company Facts API", url: "https://www.sec.gov/edgar/sec-api-documentation", scope: "기업 제출자료의 XBRL 사실·기간·단위" }],
-      en: [{ label: "SEC Company Facts API", url: "https://www.sec.gov/edgar/sec-api-documentation", scope: "XBRL facts, periods, and units in company submissions" }],
+      ko: [{ label: "SEC Company Facts API", url: "https://www.sec.gov/edgar/sec-api-documentation", scope: "기업 제출자료의 XBRL 사실·기간·단위", rightsNote: "공식 API 안내와 SEC 접근 정책을 따릅니다. 개별 공시의 제3자 자료 권리는 별도로 적용될 수 있습니다." }],
+      en: [{ label: "SEC Company Facts API", url: "https://www.sec.gov/edgar/sec-api-documentation", scope: "XBRL facts, periods, and units in company submissions", rightsNote: "Follow the official API documentation and SEC access policies. Rights in third-party material within individual filings may apply separately." }],
     },
     createdAt: "2026-10-27", updatedAt: "2026-10-27", reviewedAt: "2026-10-27",
   },
@@ -164,8 +164,8 @@ export const guides: Guide[] = [
     },
     related: [{ label: { ko: "최근 발표 논문", en: "Recently published research" }, href: "/papers" }],
     sources: {
-      ko: [{ label: "Crossref REST API 문서", url: "https://www.crossref.org/documentation/retrieve-metadata/rest-api/", scope: "논문 서지 레코드와 날짜 메타데이터" }],
-      en: [{ label: "Crossref REST API documentation", url: "https://www.crossref.org/documentation/retrieve-metadata/rest-api/", scope: "Bibliographic records and date metadata" }],
+      ko: [{ label: "Crossref REST API 문서", url: "https://www.crossref.org/documentation/retrieve-metadata/rest-api/", scope: "논문 서지 레코드와 날짜 메타데이터", rightsNote: "Crossref는 메타데이터 대부분을 자유롭게 사용할 수 있다고 안내하지만, 일부 초록은 저작권 보호 대상일 수 있습니다." }],
+      en: [{ label: "Crossref REST API documentation", url: "https://www.crossref.org/documentation/retrieve-metadata/rest-api/", scope: "Bibliographic records and date metadata", rightsNote: "Crossref says most metadata is not subject to copyright and may be used for any purpose, but some abstracts may be copyrighted." }],
     },
     createdAt: "2026-10-27", updatedAt: "2026-10-27", reviewedAt: "2026-10-27",
   },
