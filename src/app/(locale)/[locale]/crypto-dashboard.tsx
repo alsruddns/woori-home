@@ -131,7 +131,7 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
         </button>)}
       </div> : <div className="platform-empty-state" role="status"><p>{loading ? copy.sourcePending : labels.noSnapshot}</p>{payload?.latestDate && payload.latestDate !== selectedDate ? <button type="button" onClick={() => chooseDate(payload.latestDate!)}>{labels.latestSnapshot}: {payload.latestDate}</button> : null}</div>}
 
-      {selected && payload?.data.length ? <section className="crypto-daily-detail" aria-label={`${selected.name} ${copy.price}`}>
+      {selected && payload?.data.length ? <section className="crypto-daily-detail" aria-label={`${selected.name} ${labels.observationType}`}>
         <dl className="crypto-daily-metrics">
           <div><dt>{selected.name} ({selected.symbol})</dt><dd>{formatPrice(selected.price, locale)}</dd></div>
           <div><dt>{labels.sortChange}</dt><dd className={direction(selected.change24hPercent)}>{formatPercent(selected.change24hPercent, locale)}</dd></div>
