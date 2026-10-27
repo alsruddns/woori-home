@@ -6,6 +6,7 @@ import { stockUnavailableCopy } from "@/lib/data-platform/stock-unavailable-copy
 import { stockIssueCopy } from "@/lib/data-platform/market-issue-copy";
 import { CompanyFundamentalsPanel } from "./company-fundamentals-panel";
 import { RelatedGuides } from "./related-guides";
+import { PortalEducationCards } from "./portal-education-cards";
 
 export function StockMarketDashboard({ locale }: { locale: Locale }) {
   const platform = platformCopy[locale];
@@ -24,6 +25,7 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
       <p>{copy.sourceDisclosure}</p>
       <Link href={`/${locale}/stocks/issues`}>{stockIssueCopy[locale].title}</Link>
     </section>
+    <PortalEducationCards locale={locale} topic="stocks" />
   </>;
 }
 
