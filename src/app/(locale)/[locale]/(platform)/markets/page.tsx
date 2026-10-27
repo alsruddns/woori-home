@@ -6,6 +6,7 @@ import { financialOverviewCopy } from "@/lib/data-platform/financial-overview-co
 import { goldCopy } from "@/lib/data-platform/gold-copy";
 import { MarketSnapshot } from "../../market-snapshot";
 import { categoryNavigation } from "@/lib/data-platform/category-navigation";
+import { RelatedGuides } from "../../related-guides";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,7 @@ export default async function MarketsPage({ params }: { params: Promise<{ locale
     <nav className="platform-breadcrumb" aria-label={copy.title}><Link href={`/${locale}`}>WOORI.TODAY</Link><span>/</span><span>{copy.title}</span></nav>
     <header className="platform-page-heading"><span className="platform-eyebrow">WOORI.TODAY</span><h1>{copy.title}</h1><p>{copy.description}</p></header>
     <MarketSnapshot locale={locale} />
+    <RelatedGuides locale={locale} slugs={["crypto-price-observations", "gold-monthly-average-and-units", "compare-country-gdp", "sec-company-fundamentals"]} />
     <nav className="market-snapshot-links" aria-label={copy.title}>
       <Link href={`/${locale}/crypto`}>{copy.usdCrypto} →</Link>
       <Link href={`/${locale}/gold`}>{goldCopy[locale].title} →</Link>

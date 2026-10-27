@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Locale } from "@/lib/site";
 import { getCryptoPageCopy } from "@/lib/data-platform/crypto-page-copy";
+import { RelatedGuides } from "./related-guides";
 import { cryptoDirectoryCopy } from "@/lib/data-platform/crypto-directory-copy";
 import { aggregatePriceLabel, stalePriceLabel } from "@/lib/data-platform/financial-price-status-copy";
 import { dailyPriceChartSegments } from "@/lib/data-platform/financial-chart-series.mjs";
@@ -153,6 +154,7 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
       </> : null}
       {payload?.data.length ? <p className="crypto-daily-attribution"><a href="https://alternative.me/crypto/api/" target="_blank" rel="noreferrer">Data from Alternative.me</a> · {payload.referenceDate} UTC · {labels.changeMeaning}</p> : null}
     </section>
+    <RelatedGuides locale={locale} slugs={["crypto-price-observations"]} />
   </>;
 }
 

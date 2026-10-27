@@ -9,6 +9,7 @@ import { hasPaperTitleTranslation, paperLocalizedTitle, type PaperTitleRecord } 
 import { paperTitleCopy } from "@/lib/data-platform/paper-title-copy";
 import { paperPublishedCopy } from "@/lib/data-platform/paper-published-copy";
 import { PaperFilterForm } from "./paper-filter-form";
+import { RelatedGuides } from "../../related-guides";
 
 type Topic = keyof typeof researchCopy.en.topics;
 type Paper = (typeof paperSnapshot.records)[number] & PaperTitleRecord;
@@ -61,6 +62,7 @@ export default async function ResearchPapersPage({ params, searchParams }: {
       </article>)}
       {records.length === 0 ? <p className="platform-empty-state">{copy.noPapers}</p> : null}
     </section>
+    <RelatedGuides locale={locale} slugs={["research-paper-dates-and-metadata"]} />
     <p className="platform-data-note">{copy.paperSource} · <a href="https://www.crossref.org/documentation/retrieve-metadata/rest-api/" target="_blank" rel="noreferrer">Crossref API guidance</a>. {copy.refreshNotice}</p>
   </>;
 }

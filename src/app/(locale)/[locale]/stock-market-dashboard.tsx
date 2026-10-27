@@ -5,6 +5,7 @@ import { stockCopy } from "@/lib/data-platform/stock-copy";
 import { stockUnavailableCopy } from "@/lib/data-platform/stock-unavailable-copy";
 import { stockIssueCopy } from "@/lib/data-platform/market-issue-copy";
 import { CompanyFundamentalsPanel } from "./company-fundamentals-panel";
+import { RelatedGuides } from "./related-guides";
 
 export function StockMarketDashboard({ locale }: { locale: Locale }) {
   const platform = platformCopy[locale];
@@ -15,6 +16,7 @@ export function StockMarketDashboard({ locale }: { locale: Locale }) {
     <header className="platform-page-heading stock-page-heading"><span className="platform-eyebrow">{platform.categories[2]}</span><h1>{platform.categories[2]}</h1></header>
 
     <CompanyFundamentalsPanel locale={locale} compactHeader />
+    <RelatedGuides locale={locale} slugs={["sec-company-fundamentals"]} />
 
     <section className="stock-price-availability" role="status" aria-labelledby="stock-price-availability-title">
       <div><span className="stock-price-availability-indicator" aria-hidden="true" /><h2 id="stock-price-availability-title">{copy.noSnapshotTitle}</h2></div>
