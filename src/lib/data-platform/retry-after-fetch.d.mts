@@ -1,0 +1,1 @@
+export function fetchRespectingRetryAfter(url: string, options?: { fetchImpl?: typeof fetch; signal?: AbortSignal; waitImpl?: (milliseconds: number, signal?: AbortSignal) => Promise<void>; now?: () => number }): Promise<Response>;

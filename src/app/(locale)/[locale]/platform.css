@@ -371,3 +371,26 @@ html[data-theme="light"] .stock-legend .is-down{color:#a93242}
 .portal-education-sources ul{display:flex;flex-wrap:wrap;gap:.55rem 1.2rem;padding:0;margin:0;list-style:none}
 .portal-education-sources li{min-width:0;overflow-wrap:anywhere}
 .portal-education-sources a{color:var(--platform-accent,#1457d9);text-decoration:underline;text-underline-offset:.16em}
+
+.market-detail-sheet{position:fixed;inset:0 0 0 auto;display:flex;flex-direction:column;box-sizing:border-box;width:min(100%,560px);height:100dvh;max-width:none;max-height:none;margin:0;padding:0;border:1px solid var(--platform-border);background:var(--platform-surface);color:var(--platform-text);overflow:hidden}
+.market-detail-sheet::backdrop{background:rgb(4 9 16 / 54%);backdrop-filter:blur(2px)}
+.market-detail-sheet-header{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(14px + env(safe-area-inset-top)) 18px 14px;border-bottom:1px solid var(--platform-border);background:var(--platform-surface)}
+.market-detail-sheet-header h2{min-width:0;margin:0;font-size:clamp(17px,2.3vw,22px);overflow-wrap:anywhere}
+.market-detail-sheet-close{flex:none;min-height:42px;padding:8px 12px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-bg);color:var(--platform-text);font:inherit;cursor:pointer}
+.market-detail-sheet-close:focus-visible{outline:3px solid var(--platform-accent);outline-offset:2px}
+.market-detail-sheet-content{flex:1;min-height:0;box-sizing:border-box;height:auto;padding:16px 18px calc(18px + env(safe-area-inset-bottom));overflow:auto;overscroll-behavior:contain;overflow-wrap:anywhere}
+.market-detail-sheet-content .crypto-daily-detail{grid-template-columns:minmax(0,1fr);margin:0}
+.market-detail-sheet-content .crypto-daily-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+.market-detail-sheet-content .crypto-daily-metrics dd{overflow-wrap:anywhere;word-break:break-word}
+.market-detail-skeleton{display:grid;gap:10px;min-height:150px;padding:18px;border:1px solid var(--platform-border);border-radius:9px}
+.market-detail-skeleton i{display:block;height:22px;border-radius:6px;background:color-mix(in srgb,var(--platform-muted) 18%,transparent);animation:market-detail-pulse 1.2s ease-in-out infinite alternate}
+.market-detail-skeleton i:nth-child(2){width:82%}.market-detail-skeleton i:nth-child(3){width:61%}
+.company-facts-sheet-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.company-facts-sheet-metrics>div{min-width:0;padding:12px;border:1px solid var(--platform-border);border-radius:8px;background:var(--platform-bg)}
+.company-facts-sheet-metrics dt{color:var(--platform-muted);font-size:12px}
+.company-facts-sheet-metrics dd{margin:5px 0 0;font-weight:650;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.market-detail-sheet-content .company-facts-detail{margin:0;padding:0;border:0}
+@keyframes market-detail-pulse{to{opacity:.45}}
+@media(max-width:640px){.market-detail-sheet{inset:0;width:100%;height:100dvh;border:0;border-radius:0}.market-detail-sheet-header{padding-right:calc(14px + env(safe-area-inset-right));padding-left:calc(14px + env(safe-area-inset-left))}.market-detail-sheet-content{padding-right:calc(14px + env(safe-area-inset-right));padding-left:calc(14px + env(safe-area-inset-left))}.market-detail-sheet-content .crypto-daily-metrics,.company-facts-sheet-metrics{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.market-detail-skeleton i{animation:none}}
+.company-financial-treemap-tile.is-selected,.company-financial-industry-readable-tile.is-selected,.company-financial-industry-unscaled button.is-selected{outline:3px solid var(--platform-accent);outline-offset:-3px;box-shadow:inset 0 0 0 2px var(--platform-bg)}
