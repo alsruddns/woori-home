@@ -1,7 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createCountryDatasetDescription, createIndicatorDatasetDescription, datasetLocales, validateDatasetSchema } from "../src/lib/data-platform/dataset-schema.mjs";
+import { countryDatasetLicense, createCountryDatasetDescription, createIndicatorDatasetDescription, datasetLocales, validateDatasetSchema } from "../src/lib/data-platform/dataset-schema.mjs";
+
+test("country Dataset license requires every measured WDI indicator to have verified CC BY 4.0 metadata", () => {
+  const license = "https://creativecommons.org/licenses/by/4.0/";
+  assert.equal(countryDatasetLicense(["SP.POP.TOTL", "NY.GDP.MKTP.CD", "SP.DYN.TFRT.IN"]), license);
+  assert.equal(countryDatasetLicense(["SP.POP.TOTL", "UNREVIEWED.INDICATOR"]), undefined);
+  assert.equal(countryDatasetLicense([]), undefined);
+  assert.equal(countryDatasetLicense(undefined), undefined);
+  assert.equal(new URL(countryDatasetLicense(["SP.POP.TOTL"])).protocol, "https:");
+});
 
 test("Dataset description builders produce descriptive text and the supported locale list stays complete", () => {
   assert.equal(datasetLocales.length, 26);
