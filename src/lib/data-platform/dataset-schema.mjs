@@ -1,5 +1,17 @@
 export const datasetLocales = Object.freeze(["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"]);
 
+const verifiedWorldBankIndicators = new Set([
+  "EG.ELC.ACCS.ZS", "FP.CPI.TOTL.ZG", "NY.GDP.MKTP.CD", "NY.GDP.MKTP.KD.ZG",
+  "NY.GDP.PCAP.CD", "NY.GDP.PCAP.KD", "SL.UEM.TOTL.ZS", "SP.DYN.LE00.IN",
+  "SP.DYN.TFRT.IN", "SP.POP.GROW", "SP.POP.TOTL",
+]);
+
+export function countryDatasetLicense(indicatorCodes) {
+  if (!Array.isArray(indicatorCodes) || indicatorCodes.length === 0) return undefined;
+  if (!indicatorCodes.every((code) => verifiedWorldBankIndicators.has(code))) return undefined;
+  return "https://creativecommons.org/licenses/by/4.0/";
+}
+
 function nonEmpty(parts) {
   return parts.map((part) => String(part ?? "").trim()).filter(Boolean).join(" ").replace(/\s+/g, " ");
 }

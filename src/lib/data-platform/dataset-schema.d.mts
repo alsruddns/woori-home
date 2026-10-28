@@ -1,4 +1,5 @@
 export const datasetLocales: readonly ["ko", "en", "ja", "zh", "es", "pt-br", "de", "fr", "vi", "id", "th", "zh-tw", "it", "nl", "hi", "ru", "tr", "pl", "fil", "bn", "uk", "ms", "sv", "cs", "ro", "el"];
+export function countryDatasetLicense(indicatorCodes: readonly string[] | undefined): string | undefined;
 export function createCountryDatasetDescription(input: { summary: string; country: string; iso3: string; measuresLabel: string; measures: string[]; periodLabel: string; period: string; source: string; caveat: string; updatedLabel: string; updatedAt: string }): string;
 export function createIndicatorDatasetDescription(input: { definition: string; interpretation: string; source: string; label: string; code: string; periodLabel: string; period: string }): string;
 export function validateDatasetSchema<T extends { name: string; description: string; url: string; license?: string }>(dataset: T): T;
