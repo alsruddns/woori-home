@@ -162,14 +162,14 @@ export function CryptoDashboard({ locale }: { locale: Locale }) {
     <header className="platform-page-heading crypto-page-heading"><span className="platform-eyebrow">{copy.nav}</span><h1>{copy.title}</h1><p>{aggregatePriceLabel[locale]} · {labels.observationType}</p></header>
     <section className="crypto-daily-dashboard coinranking-market" aria-labelledby="crypto-market-heading" aria-busy={loading}>
       <header className="crypto-daily-heading crypto-market-heading">
-        <div><span className="platform-eyebrow">{payload?.provider ?? "Alternative.me"} · USD</span><h2 id="crypto-market-heading">{aggregatePriceLabel[locale]}</h2></div>
+        <div className="crypto-market-heading-copy"><span className="platform-eyebrow">{payload?.provider ?? "Alternative.me"} · USD</span><h2 id="crypto-market-heading">{aggregatePriceLabel[locale]}</h2></div>
+        {payload?.data.length ? <p className="crypto-daily-asof"><span>{copy.date}</span><strong>{payload.referenceDate}</strong><span>· USD · {payload.priceType ?? labels.observationType} · {formatTime(payload.observedAt, locale)} UTC</span>{payload.sourceUrl ? <><span>·</span><a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution ?? "Alternative.me"}</a></> : null}</p> : null}
         <div className="crypto-daily-controls crypto-market-controls">
           <label className="crypto-directory-search"><span>{ui.search}</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={ui.searchPlaceholder} autoComplete="off" /></label>
           <label><span>{labels.selectedDate}</span><input type="date" value={selectedDate} max={today} onChange={(event) => chooseDate(event.target.value)} /></label>
           <label><span>{labels.sort}</span><select value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}><option value="rank">{labels.sortRank}</option><option value="price">{labels.sortPrice}</option><option value="change">{labels.sortChange}</option><option value="cap">{labels.sortCap}</option></select></label>
         </div>
       </header>
-      {payload?.data.length ? <p className="crypto-daily-asof"><span>{copy.date}</span><strong>{payload.referenceDate}</strong><span>· USD · {payload.priceType ?? labels.observationType} · {formatTime(payload.observedAt, locale)} UTC</span>{payload.sourceUrl ? <><span>·</span><a href={payload.sourceUrl} target="_blank" rel="noreferrer">{payload.attribution ?? "Alternative.me"}</a></> : null}</p> : null}
       {payload?.stale ? <p className="platform-data-note" role="status">{stalePriceLabel[locale]}</p> : null}
 
       {snapshotErrorKey === selectedDate ? <p className="platform-data-note" role="alert">{detailCopy.snapshotError} <button type="button" onClick={() => { snapshotCache.delete(selectedDate); setSnapshotErrorKey(""); setSnapshotAttempt((attempt) => attempt + 1); }}>{detailCopy.retry}</button></p> : null}
